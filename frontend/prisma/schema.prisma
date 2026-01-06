@@ -1,0 +1,257 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Study {
+  id                String             @id @default(uuid())
+  title             String
+  description       String?
+  status            StudyStatus        @default(DRAFT)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  motivation        String?
+  importStatistics  Json?
+  researchQuestions ResearchQuestion[]
+  sources           Source[]
+  parameters        StudyParameters?
+  importBatches     ImportBatch[]
+}
+
+model ResearchQuestion {
+  id       String @id @default(uuid())
+  studyId  String
+  question String
+  order    Int
+  study    Study  @relation(fields: [studyId], references: [id], onDelete: Cascade)
+
+  @@index([studyId])
+}
+
+model StudyParameters {
+  id                   String               @id @default(uuid())
+  studyId              String               @unique
+  classificationSchema Json
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+  exclusionCriteria    ExclusionCriterion[]
+  formalSources        FormalSource[]
+  greySources          GreySource[]
+  inclusionCriteria    InclusionCriterion[]
+  study                Study                @relation(fields: [studyId], references: [id], onDelete: Cascade)
+
+  @@index([studyId])
+}
+
+model FormalSource {
+  id           String           @id @default(uuid())
+  parametersId String
+  name         String
+  type         FormalSourceType
+  searchString String?
+  dateRange    Json?
+  parameters   StudyParameters  @relation(fields: [parametersId], references: [id], onDelete: Cascade)
+
+  @@index([parametersId])
+}
+
+model GreySource {
+  id             String          @id @default(uuid())
+  parametersId   String
+  name           String
+  type           GreySourceType
+  url            String?
+  searchStrategy String?
+  parameters     StudyParameters @relation(fields: [parametersId], references: [id], onDelete: Cascade)
+
+  @@index([parametersId])
+}
+
+model InclusionCriterion {
+  id           String          @id @default(uuid())
+  parametersId String
+  criterion    String
+  order        Int
+  parameters   StudyParameters @relation(fields: [parametersId], references: [id], onDelete: Cascade)
+
+  @@index([parametersId])
+}
+
+model ExclusionCriterion {
+  id           String          @id @default(uuid())
+  parametersId String
+  criterion    String
+  order        Int
+  parameters   StudyParameters @relation(fields: [parametersId], references: [id], onDelete: Cascade)
+
+  @@index([parametersId])
+}
+
+model Source {
+  id                String          @id @default(uuid())
+  studyId           String
+  type              SourceType
+  sourceCategory    SourceCategory
+  originalUrl       String?
+  storagePath       String?
+  classificationFileId String?
+  classificationThreadId String?
+  hasPdf            Boolean         @default(false)
+  title             String
+  authors           String[]
+  publicationDate   DateTime?
+  venue             String?
+  doi               String?
+  abstract          String?
+  keywords          String[]
+  sourceOrigin      String?
+  sourceOrigins     String[]        @default([])
+  importBatchId     String?
+  needsPdf          Boolean         @default(false)
+  status            SourceStatus    @default(PENDING)
+  metadataExtension Json?
+  metadataParsed    Json?
+  metadataChosen    Json?
+  metadataChosenSource String?
+  finalDecision     Decision?
+  decisionRationale String?
+  bibtex            String?
+  decisionMadeAt    DateTime?
+  uploadedAt        DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  study             Study           @relation(fields: [studyId], references: [id], onDelete: Cascade)
+  importBatch       ImportBatch?    @relation("ImportBatchSources", fields: [importBatchId], references: [id])
+  analysis          SourceAnalysis?
+
+  @@index([studyId])
+  @@index([status])
+  @@index([importBatchId])
+}
+
+model SourceAnalysis {
+  id                      String           @id @default(uuid())
+  sourceId                String           @unique
+  extractedText           String
+  inclusionRecommendation Boolean
+  inclusionReasoning      String
+  exclusionReasoning      String
+  confidenceScore         Float
+  relevanceScore          Float?
+  qualityNotes            String?
+  isUserEdited            Boolean          @default(false)
+  editedFields            String[]
+  analysisDate            DateTime         @default(now())
+  updatedAt               DateTime         @updatedAt
+  exclusionCriteria       Json?
+  inclusionCriteria       Json?
+  classifications         Classification[]
+  source                  Source           @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  @@index([sourceId])
+}
+
+model Classification {
+  id               String         @id @default(uuid())
+  analysisId       String
+  facetName        String
+  category         String
+  confidence       Float
+  reasoning        String?
+  isManualOverride Boolean        @default(false)
+  analysis         SourceAnalysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+
+  @@index([analysisId])
+}
+
+enum StudyStatus {
+  DRAFT
+  ACTIVE
+  COMPLETED
+  ARCHIVED
+}
+
+enum FormalSourceType {
+  ACADEMIC_DATABASE
+  JOURNAL
+  CONFERENCE_PROCEEDINGS
+}
+
+enum GreySourceType {
+  BLOG
+  WHITE_PAPER
+  TECHNICAL_REPORT
+  PREPRINT_SERVER
+  COMPANY_WEBSITE
+  RESEARCH_LAB_SITE
+  GOVERNMENT_REPORT
+}
+
+enum SourceType {
+  PDF
+  WEBPAGE
+  PREPRINT
+  TECHNICAL_REPORT
+  WHITE_PAPER
+  BLOG_POST
+}
+
+enum SourceCategory {
+  FORMAL
+  GREY
+}
+
+enum SourceStatus {
+  PENDING
+  ANALYZING
+  ANALYZED
+  INCLUDED
+  EXCLUDED
+  NEEDS_REVIEW
+  EXTRACTING_METADATA
+  PENDING_METADATA
+  READY_FOR_ANALYSIS
+  ANALYZING_INCLUSION
+  ANALYZING_CLASSIFICATION
+  CLASSIFIED
+  READY_FOR_CLASSIFICATION
+  CLASSIFYING
+}
+
+enum Decision {
+  INCLUDE
+  EXCLUDE
+}
+
+model ImportBatch {
+  id               String           @id @default(uuid())
+  studyId          String
+  databaseSource   String
+  fileName         String
+  status           ImportStatus     @default(PROCESSING)
+  totalRecords     Int              @default(0)
+  duplicates       Int              @default(0)
+  newSources       Int              @default(0)
+  relevant         Int              @default(0)
+  irrelevant       Int              @default(0)
+  needsPdf         Int              @default(0)
+  errors           Int              @default(0)
+  errorLog         Json?
+  startedAt        DateTime         @default(now())
+  completedAt      DateTime?
+  study            Study            @relation(fields: [studyId], references: [id], onDelete: Cascade)
+  sources          Source[]         @relation("ImportBatchSources")
+
+  @@index([studyId])
+  @@index([status])
+}
+
+enum ImportStatus {
+  PROCESSING
+  COMPLETED
+  FAILED
+  PARTIAL
+}

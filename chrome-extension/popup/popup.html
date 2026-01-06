@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SMS Assistant</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <h1 class="title">SMS Assistant</h1>
+      <div class="subtitle">Add source to study</div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="content">
+      <!-- Loading State -->
+      <div id="loadingState" class="state">
+        <div class="loader"></div>
+        <p>Extracting metadata...</p>
+      </div>
+
+      <!-- Error State -->
+      <div id="errorState" class="state hidden">
+        <div class="error-icon">⚠️</div>
+        <p class="error-message"></p>
+        <button id="retryBtn" class="btn btn-secondary">Retry</button>
+      </div>
+
+      <!-- Main Form -->
+      <div id="mainForm" class="hidden">
+        <!-- Study Selection -->
+        <section class="section">
+          <label for="studySelect" class="label">Select Study *</label>
+          <div class="select-wrapper">
+            <select id="studySelect" class="select" required>
+              <option value="">Choose a study...</option>
+            </select>
+          </div>
+          <div class="help-text">Recently used studies appear first</div>
+        </section>
+
+        <!-- Metadata Preview -->
+        <section class="section">
+          <h3 class="section-title">Source Metadata</h3>
+          
+          <div class="metadata-grid">
+            <!-- Title -->
+            <div class="metadata-item">
+              <label class="metadata-label">Title</label>
+              <div id="metaTitle" class="metadata-value">—</div>
+            </div>
+
+            <!-- Authors -->
+            <div class="metadata-item">
+              <label class="metadata-label">Authors</label>
+              <div id="metaAuthors" class="metadata-value">—</div>
+            </div>
+
+            <!-- Venue -->
+            <div class="metadata-item">
+              <label class="metadata-label">Venue</label>
+              <div id="metaVenue" class="metadata-value">—</div>
+            </div>
+
+            <!-- Publication Date -->
+            <div class="metadata-item">
+              <label class="metadata-label">Date</label>
+              <div id="metaDate" class="metadata-value">—</div>
+            </div>
+
+            <!-- DOI -->
+            <div class="metadata-item">
+              <label class="metadata-label">DOI</label>
+              <div id="metaDoi" class="metadata-value">—</div>
+            </div>
+
+            <!-- PDF Status -->
+            <div class="metadata-item">
+              <label class="metadata-label">PDF</label>
+              <div id="metaPdf" class="metadata-value">
+                <span class="badge badge-info">Checking...</span>
+              </div>
+            </div>
+
+            <!-- Source Type -->
+            <div class="metadata-item">
+              <label class="metadata-label">Type</label>
+              <div id="metaType" class="metadata-value">—</div>
+            </div>
+
+            <!-- Source Category -->
+            <div class="metadata-item">
+              <label class="metadata-label">Category</label>
+              <div id="metaCategory" class="metadata-value">—</div>
+            </div>
+          </div>
+
+          <!-- Abstract (if available) -->
+          <div id="abstractSection" class="metadata-item hidden">
+            <label class="metadata-label">Abstract</label>
+            <div id="metaAbstract" class="metadata-value metadata-abstract">—</div>
+          </div>
+        </section>
+
+        <!-- Validation Warning -->
+        <div id="validation-warning" class="warning-message hidden"></div>
+
+        <!-- Action Buttons -->
+        <div class="actions">
+          <button id="addBtn" class="btn btn-primary" disabled>
+            Add to Study
+          </button>
+          <button id="attachBtn" class="btn btn-warning hidden">
+            Attach PDF
+          </button>
+          <button id="cancelBtn" class="btn btn-secondary">
+            Cancel
+          </button>
+        </div>
+      </div>
+
+      <!-- Success State -->
+      <div id="successState" class="state hidden">
+        <div class="success-icon">✓</div>
+        <p class="success-message">Source added successfully!</p>
+        <button id="doneBtn" class="btn btn-primary">Done</button>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="footer-text">Backend: localhost:3000</div>
+    </footer>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
+

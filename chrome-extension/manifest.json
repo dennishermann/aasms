@@ -1,0 +1,46 @@
+{
+  "manifest_version": 3,
+  "name": "SMS Assistant",
+  "version": "1.0.0",
+  "description": "Add research sources to your Systematic Mapping Studies directly from academic databases and web pages",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "webRequest"
+  ],
+  "host_permissions": [
+    "http://localhost:3000/*",
+    "https://*/*",
+    "http://*/*"
+  ],
+  "action": {
+    "default_popup": "popup/popup.html"
+  },
+  "background": {
+    "service_worker": "background/service-worker.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "utils/schema.js",
+        "utils/readability.js",
+        "utils/dompurify.js",
+        "extractors/base-extractor.js",
+        "extractors/acm-extractor.js",
+        "extractors/ieee-extractor.js",
+        "extractors/arxiv-extractor.js",
+        "extractors/springer-extractor.js",
+        "extractors/sciencedirect-extractor.js",
+        "extractors/scopus-extractor.js",
+        "extractors/generic-extractor.js",
+        "extractors/website-extractor.js",
+        "extractors/index.js",
+        "content/content-script.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}

@@ -1,0 +1,282 @@
+"use client";
+
+import { useParams, useSearchParams } from "next/navigation";
+import Link from "next/link";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { StudyLayout } from "@/components/layout/study-layout";
+import { SourceAnalysisPanel } from "@/components/source/analysis/source-analysis-panel";
+import { AnalysisData } from "@/components/source/analysis/types";
+import { SourceMetadataView } from "@/components/source/common/source-metadata-display";
+import { SourceWebsiteViewer } from "@/components/source/website/website-viewer";
+import { SourceMetadataEditor } from "@/components/source/common/source-metadata-editor";
+import { WebsiteMetadataEditor } from "@/components/source/website/website-metadata-editor";
+import { useSourceDetails } from "@/hooks/use-source-details";
+import { PdfUploadCard } from "@/components/source/pdf/pdf-upload-card";
+import { SourceHeader } from "@/components/source/detail/source-header";
+import { SourceMetadataReviewSection } from "@/components/source/detail/source-metadata-review-section";
+import { useMetadataReview } from "@/hooks/use-metadata-review";
+
+export default function SourceDetailPage() {
+  const params = useParams();
+  const searchParams = useSearchParams();
+  const studyId = params.id as string;
+  const sourceId = params.sourceId as string;
+  const tabParam = searchParams.get("filter") || "all";
+
+  const [isMetadataEditing, setIsMetadataEditing] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+
+  const {
+    source,
+    sourceLoading,
+    sourceError,
+    analysisData,
+    analysisLoading,
+    analysisIsError,
+    analysisError,
+    deleteMutation,
+    reparseMutation,
+    patchMutation,
+    classifyMutation,
+    reparseLoading,
+    autoAnalyzeError,
+    loadingInclusionAnalysis,
+    loadingClassificationAnalysis,
+  } = useSourceDetails(studyId, sourceId);
+
+  const metadataReviewState = useMetadataReview({
+    source,
+    patchMutation,
+    onApplySuccess: () => {
+      // any additional logic if needed
+    }
+  });
+
+  if (sourceLoading || analysisLoading) {
+    return (
+      <StudyLayout studyId={studyId} studyTitle="Loading...">
+        <div className="container mx-auto px-4 py-8">
+          <p className="text-muted-foreground">Loading source...</p>
+        </div>
+      </StudyLayout>
+    );
+  }
+
+  if (sourceError || !source) {
+    return (
+      <StudyLayout>
+        <div className="container mx-auto px-4 py-8 text-center">
+          <h2 className="text-2xl font-bold mb-2">Source not found</h2>
+          <Button asChild>
+            <Link href={`/studies/${studyId}/sources`}>Back to Sources</Link>
+          </Button>
+        </div>
+      </StudyLayout>
+    );
+  }
+
+  // Parse classification schema from study parameters
+  let facets: any[] = [];
+  if (source.study?.parameters?.classificationSchema) {
+    if (Array.isArray(source.study.parameters.classificationSchema)) {
+      facets = source.study.parameters.classificationSchema;
+    }
+  }
+
+  const loadingInclusion =
+    !!source && (source.status === "ANALYZING_INCLUSION" || loadingInclusionAnalysis);
+  const loadingClassifications =
+    !!source && (source.status === "ANALYZING_CLASSIFICATION" || loadingClassificationAnalysis);
+
+  const derivedAnalysis: AnalysisData | null = (() => {
+    if (analysisData?.data) return analysisData.data;
+    if (!source) return null;
+    // Show placeholder panel while analysis is running
+    if (
+      source.status === "ANALYZING_INCLUSION" ||
+      source.status === "ANALYZING_CLASSIFICATION" ||
+      loadingInclusionAnalysis ||
+      loadingClassificationAnalysis
+    ) {
+      return {
+        inclusionRecommendation: false,
+        inclusionReasoning: "",
+        exclusionReasoning: "",
+        confidenceScore: 0.0,
+        classifications: [],
+        inclusionCriteria: [],
+        exclusionCriteria: [],
+      };
+    }
+    return null;
+  })();
+
+  const inclusionRecommendation =
+    analysisData?.data?.inclusionRecommendation ?? false;
+  const showClassifications = !!analysisData?.data && inclusionRecommendation && !loadingInclusion;
+  const canEditInclusion = !loadingInclusion;
+  const canEditClassifications = showClassifications && !loadingClassifications;
+
+  const batchId = searchParams.get("batchId");
+
+  // Construct back URL
+  const backUrl = `/studies/${studyId}/sources?` + new URLSearchParams({
+    ...(tabParam !== "all" && { filter: tabParam }),
+    ...(batchId && { batchId }),
+    sourceId: sourceId
+  }).toString();
+
+  return (
+    <StudyLayout
+      studyId={studyId}
+      studyTitle={source.study?.title || "Source Details"}
+      studyStatus={source.study?.status}
+    >
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-6xl mx-auto space-y-6">
+          {source.status === "NEEDS_REVIEW" && (
+            <div className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+              Analysis failed. Please review metadata or try again.
+            </div>
+          )}
+
+          {/* Main Source Card */}
+          <Button asChild variant="ghost" size="sm" className="-ml-2 mb-2 w-fit">
+            <Link href={backUrl}>
+              ← Back to Sources
+            </Link>
+          </Button>
+          <Card>
+            {isMetadataEditing ? (
+              (source.type === "WEBPAGE" || source.type === "BLOG_POST") ? (
+                <WebsiteMetadataEditor
+                  source={source}
+                  onCancel={() => setIsMetadataEditing(false)}
+                  onSaveSuccess={() => setIsMetadataEditing(false)}
+                />
+              ) : (
+                <SourceMetadataEditor
+                  source={source}
+                  onCancel={() => setIsMetadataEditing(false)}
+                  onSaveSuccess={() => setIsMetadataEditing(false)}
+                />
+              )
+            ) : (
+              <>
+                <SourceHeader
+                  source={source}
+                  studyId={studyId}
+                  sourceId={sourceId}
+                  onEdit={() => setIsMetadataEditing(true)}
+                  onDeleteRequest={() => setShowDeleteDialog(true)}
+                  reparseMutation={reparseMutation}
+                  onReparseSuccess={(data) => {
+                    metadataReviewState.setParsedSuggestion(data);
+                    metadataReviewState.setSelectedFields({});
+                    metadataReviewState.setApplyAll(false);
+                  }}
+                  classifyMutation={classifyMutation}
+                  loadingInclusionAnalysis={loadingInclusionAnalysis}
+                  loadingClassificationAnalysis={loadingClassificationAnalysis}
+                />
+
+                {/* Separator for cleaner UI */}
+                <div className="border-b" />
+
+                {/* Content - Uses new Metadata component */}
+                <SourceMetadataView source={source} />
+
+                {/* Content Viewer for Websites */}
+                {(source.type === "WEBPAGE" || source.type === "BLOG_POST") && source.storagePath && (source.storagePath.endsWith('.html') || source.storagePath.endsWith('.txt')) && (
+                  <div className="mt-8">
+                    <SourceWebsiteViewer
+                      contentUrl={`/api/studies/${studyId}/sources/${sourceId}/content`}
+                      originalUrl={source.originalUrl}
+                    />
+                  </div>
+                )}
+              </>
+            )}
+          </Card>
+
+
+          <SourceMetadataReviewSection
+            source={source}
+            patchMutation={patchMutation}
+            reparseLoading={reparseLoading}
+            reviewState={metadataReviewState}
+          />
+
+          {source.needsPdf && (
+            <PdfUploadCard
+              studyId={studyId}
+              sourceId={sourceId}
+              onUploadSuccess={() => {
+                window.location.reload();
+              }}
+            />
+          )}
+
+          {/* Analysis Results */}
+          {analysisIsError && (
+            <div className="mb-4 rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+              Failed to load analysis:{" "}
+              {analysisError instanceof Error ? analysisError.message : "Unknown error"}
+            </div>
+          )}
+          {derivedAnalysis && (
+            <SourceAnalysisPanel
+              studyId={studyId}
+              sourceId={sourceId}
+              analysis={derivedAnalysis}
+              facets={facets}
+              loadingInclusion={loadingInclusion}
+              loadingClassifications={loadingClassifications}
+              canEditInclusion={canEditInclusion}
+              canEditClassifications={canEditClassifications}
+              showClassifications={showClassifications}
+            />
+          )}
+
+
+        </div>
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Source?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete "{source.title}"? This action cannot be undone and will also delete all associated analysis data.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={deleteMutation.isPending}>
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => deleteMutation.mutate()}
+                disabled={deleteMutation.isPending}
+                className="bg-destructive hover:bg-destructive/90"
+              >
+                {deleteMutation.isPending ? "Deleting..." : "Delete"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+    </StudyLayout >
+  );
+}

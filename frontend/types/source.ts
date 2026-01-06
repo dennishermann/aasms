@@ -1,0 +1,30 @@
+export interface Source {
+    id: string;
+    studyId: string;
+    type: string;
+    sourceCategory: string;
+    originalUrl: string | null;
+    storagePath: string | null;
+    title: string;
+    authors: string[];
+    publicationDate: string | null;
+    venue: string | null;
+    doi: string | null;
+    abstract: string | null;
+    keywords: string[];
+    status: string;
+    analysis: any;
+    study: any;
+    metadataExtension?: any;
+    metadataParsed?: any;
+    metadataChosen?: any;
+    metadataChosenSource?: string | null;
+    bibtex?: string | null;
+    hasPdf?: boolean;
+    needsPdf?: boolean;
+    sourceOrigin?: string | null;
+    sourceOrigins?: string[];
+    finalDecision?: string | null;
+    decisionRationale?: string | null;
+    importBatchId?: string | null;
+}
