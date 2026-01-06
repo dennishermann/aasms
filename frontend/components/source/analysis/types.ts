@@ -1,3 +1,5 @@
+// ============ Criterion Evaluation (from LLM) ============
+
 export interface CriterionEval {
   criterion: string;
   fulfilled?: boolean;
@@ -6,13 +8,29 @@ export interface CriterionEval {
   confidence?: number;
 }
 
+// ============ Classification ============
+
 export interface Classification {
-  facetName: string;
-  category: string;
+  id: string;
+  facetId: string;
+  categoryId: string | null;
+  value: string | null;  // For OPEN facets
   confidence: number;
   reasoning?: string;
   isManualOverride?: boolean;
+  // Populated from relations for display
+  facet?: {
+    id: string;
+    name: string;
+    type: "CLOSED" | "OPEN";
+  };
+  category?: {
+    id: string;
+    name: string;
+  } | null;
 }
+
+// ============ Analysis Data ============
 
 export interface AnalysisData {
   inclusionRecommendation: boolean;
@@ -26,12 +44,32 @@ export interface AnalysisData {
   exclusionCriteria?: CriterionEval[];
 }
 
+// ============ Facet (for UI components) ============
+
 export interface Facet {
   id: string;
   name: string;
-  categories: string[];
+  description?: string;
+  type: "CLOSED" | "OPEN";
+  required: boolean;
+  categories: FacetCategory[];
+  researchQuestionIds: string[];
 }
 
+export interface FacetCategory {
+  id: string;
+  name: string;
+  description?: string;
+}
 
+// ============ Display Helpers ============
 
+// Helper to get facet name from classification
+export function getFacetName(c: Classification): string {
+  return c.facet?.name ?? "Unknown";
+}
 
+// Helper to get category/value for display
+export function getCategoryDisplay(c: Classification): string {
+  return c.category?.name ?? c.value ?? "Unknown";
+}

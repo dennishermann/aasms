@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
 
+// Updated schema to use facetId and categoryId instead of facetName/category
 const classificationSchema = z.object({
-  facetName: z.string(),
-  category: z.string(),
+  facetId: z.string(),
+  categoryId: z.string().optional().nullable(),  // null for OPEN facets
+  value: z.string().optional().nullable(),       // For OPEN facets
   confidence: z.number().min(0).max(1),
   reasoning: z.string().optional(),
   isManualOverride: z.boolean().optional(),
@@ -44,49 +46,65 @@ export async function PUT(
 
     const analysis = source.analysis
       ? await prisma.sourceAnalysis.update({
-          where: { id: source.analysis.id },
-          data: {
-            classifications: {
-              deleteMany: {},
-              create: data.classifications.map((c) => ({
-                facetName: c.facetName,
-                category: c.category,
-                confidence: c.confidence,
-                reasoning: c.reasoning,
-                isManualOverride: c.isManualOverride ?? true,
-              })),
-            },
-            isUserEdited: true,
-            editedFields,
+        where: { id: source.analysis.id },
+        data: {
+          classifications: {
+            deleteMany: {},
+            create: data.classifications.map((c) => ({
+              facetId: c.facetId,
+              categoryId: c.categoryId ?? null,
+              value: c.value ?? null,
+              confidence: c.confidence,
+              reasoning: c.reasoning,
+              isManualOverride: c.isManualOverride ?? true,
+            })),
           },
-          include: { classifications: true },
-        })
+          isUserEdited: true,
+          editedFields,
+        },
+        include: {
+          classifications: {
+            include: {
+              facet: true,
+              category: true,
+            },
+          },
+        },
+      })
       : await prisma.sourceAnalysis.create({
-          data: {
-            sourceId,
-            extractedText: "",
-            inclusionRecommendation: false,
-            inclusionReasoning: "",
-            exclusionReasoning: "",
-            confidenceScore: 0.5,
-            relevanceScore: null,
-            qualityNotes: null,
-            inclusionCriteria: [],
-            exclusionCriteria: [],
-            classifications: {
-              create: data.classifications.map((c) => ({
-                facetName: c.facetName,
-                category: c.category,
-                confidence: c.confidence,
-                reasoning: c.reasoning,
-                isManualOverride: c.isManualOverride ?? true,
-              })),
-            },
-            isUserEdited: true,
-            editedFields,
+        data: {
+          sourceId,
+          extractedText: "",
+          inclusionRecommendation: false,
+          inclusionReasoning: "",
+          exclusionReasoning: "",
+          confidenceScore: 0.5,
+          relevanceScore: null,
+          qualityNotes: null,
+          inclusionCriteria: [],
+          exclusionCriteria: [],
+          classifications: {
+            create: data.classifications.map((c) => ({
+              facetId: c.facetId,
+              categoryId: c.categoryId ?? null,
+              value: c.value ?? null,
+              confidence: c.confidence,
+              reasoning: c.reasoning,
+              isManualOverride: c.isManualOverride ?? true,
+            })),
           },
-          include: { classifications: true },
-        });
+          isUserEdited: true,
+          editedFields,
+        },
+        include: {
+          classifications: {
+            include: {
+              facet: true,
+              category: true,
+            },
+          },
+        },
+      });
 
     return NextResponse.json({ data: analysis });
   } catch (error) {
@@ -94,7 +112,3 @@ export async function PUT(
     return NextResponse.json({ error: "Failed to save classifications" }, { status: 500 });
   }
 }
-
-
-
-

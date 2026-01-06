@@ -21,10 +21,12 @@ const addSourceSchema = z.object({
   authors: z.array(z.string()).optional(),
   publicationDate: z.string().optional(),
   venue: z.string().optional(),
+  venueType: z.enum(["JOURNAL", "CONFERENCE", "WORKSHOP", "SYMPOSIUM", "BOOK_CHAPTER", "PREPRINT_SERVER", "TECHNICAL_REPORT", "BLOG", "OTHER"]).optional().nullable(),
   doi: z.string().optional(),
   abstract: z.string().optional(),
   keywords: z.array(z.string()).optional(),
   sourceCategory: z.enum(["FORMAL", "GREY"]),
+  greyLiteratureTier: z.enum(["TIER_1", "TIER_2", "TIER_3"]).optional().nullable(),
 });
 
 type AddSourceInput = z.infer<typeof addSourceSchema>;
@@ -51,10 +53,12 @@ export function AddSourceForm({ studyId, onSuccess }: AddSourceFormProps) {
       title: "",
       authors: [],
       venue: "",
+      venueType: null,
       doi: "",
       abstract: "",
       keywords: [],
       sourceCategory: "FORMAL",
+      greyLiteratureTier: null,
       publicationDate: "",
     },
   });

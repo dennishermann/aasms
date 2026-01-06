@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 
-// Type helpers for Prisma relations
+// ============ Prisma-based Types ============
+
 export type StudyWithRelations = Prisma.StudyGetPayload<{
   include: {
     researchQuestions: true;
@@ -13,6 +14,16 @@ export type StudyWithRelations = Prisma.StudyGetPayload<{
       };
     };
     sources: true;
+    facets: {
+      include: {
+        categories: true;
+        researchQuestions: {
+          include: {
+            researchQuestion: true;
+          };
+        };
+      };
+    };
   };
 }>;
 
@@ -20,7 +31,12 @@ export type SourceWithAnalysis = Prisma.SourceGetPayload<{
   include: {
     analysis: {
       include: {
-        classifications: true;
+        classifications: {
+          include: {
+            facet: true;
+            category: true;
+          };
+        };
       };
     };
   };
@@ -35,18 +51,83 @@ export type StudyParametersWithRelations = Prisma.StudyParametersGetPayload<{
   };
 }>;
 
-// Classification schema types
-export interface ClassificationFacet {
+export type FacetWithRelations = Prisma.FacetGetPayload<{
+  include: {
+    categories: true;
+    researchQuestions: {
+      include: {
+        researchQuestion: true;
+      };
+    };
+  };
+}>;
+
+export type ClassificationWithRelations = Prisma.ClassificationGetPayload<{
+  include: {
+    facet: true;
+    category: true;
+  };
+}>;
+
+// ============ Transformed/Frontend Types ============
+
+// Facet type as returned by API (with transformed RQ data)
+export interface Facet {
+  id: string;
+  studyId: string;
+  name: string;
+  description: string | null;
+  type: "CLOSED" | "OPEN";
+  required: boolean;
+  order: number;
+  createdAt: string;
+  updatedAt: string;
+  categories: FacetCategory[];
+  researchQuestionIds: string[];
+  researchQuestions: {
+    id: string;
+    question: string;
+    order: number;
+  }[];
+}
+
+export interface FacetCategory {
+  id: string;
+  facetId: string;
+  name: string;
+  description: string | null;
+  order: number;
+}
+
+// For creating/updating facets
+export interface FacetInput {
   name: string;
   description?: string;
-  categories: string[];
+  type?: "CLOSED" | "OPEN";
+  required?: boolean;
+  categories?: (string | { name: string; description?: string })[];
+  researchQuestionIds?: string[];
 }
 
-export interface ClassificationSchema {
-  [facetName: string]: ClassificationFacet;
-}
+// ============ Enums (mirror Prisma) ============
 
-// API Response types
+export type FacetType = "CLOSED" | "OPEN";
+
+export type GreyLiteratureTier = "TIER_1" | "TIER_2" | "TIER_3";
+
+export type VenueType =
+  | "JOURNAL"
+  | "CONFERENCE"
+  | "WORKSHOP"
+  | "SYMPOSIUM"
+  | "BOOK_CHAPTER"
+  | "PREPRINT_SERVER"
+  | "TECHNICAL_REPORT"
+  | "BLOG"
+  | "OTHER";
+
+// ============ API Response Types ============
+
 export interface ApiResponse<T> {
   data?: T;
   error?: string;
@@ -57,4 +138,3 @@ export interface ApiError {
   message: string;
   statusCode: number;
 }
-

@@ -10,9 +10,11 @@ const criterionSchema = z.object({
   confidence: z.number().min(0).max(1).optional(),
 });
 
+// Updated to use facetId/categoryId instead of facetName/category
 const classificationSchema = z.object({
-  facetName: z.string(),
-  category: z.string(),
+  facetId: z.string(),
+  categoryId: z.string().optional().nullable(),  // null for OPEN facets
+  value: z.string().optional().nullable(),       // For OPEN facets
   confidence: z.number().min(0).max(1),
   reasoning: z.string().optional(),
   isManualOverride: z.boolean().optional(),
@@ -46,7 +48,12 @@ export async function GET(
       include: {
         analysis: {
           include: {
-            classifications: true,
+            classifications: {
+              include: {
+                facet: true,
+                category: true,
+              },
+            },
           },
         },
       },
@@ -133,61 +140,73 @@ export async function PUT(
     // Update or create analysis
     const analysis = source.analysis
       ? await prisma.sourceAnalysis.update({
-          where: { id: source.analysis.id },
-          data: {
-            inclusionRecommendation: data.inclusionRecommendation,
-            inclusionReasoning: data.inclusionReasoning,
-            exclusionReasoning: data.exclusionReasoning,
-            confidenceScore: data.confidenceScore,
-            relevanceScore: data.relevanceScore,
-            qualityNotes: data.qualityNotes,
-            inclusionCriteria,
-            exclusionCriteria,
-            isUserEdited: true,
-            editedFields,
-            classifications: {
-              deleteMany: {}, // Remove old classifications
-              create: data.classifications.map((c) => ({
-                facetName: c.facetName,
-                category: c.category,
-                confidence: c.confidence,
-                reasoning: c.reasoning,
-                isManualOverride: c.isManualOverride ?? true,
-              })),
+        where: { id: source.analysis.id },
+        data: {
+          inclusionRecommendation: data.inclusionRecommendation,
+          inclusionReasoning: data.inclusionReasoning,
+          exclusionReasoning: data.exclusionReasoning,
+          confidenceScore: data.confidenceScore,
+          relevanceScore: data.relevanceScore,
+          qualityNotes: data.qualityNotes,
+          inclusionCriteria,
+          exclusionCriteria,
+          isUserEdited: true,
+          editedFields,
+          classifications: {
+            deleteMany: {}, // Remove old classifications
+            create: data.classifications.map((c) => ({
+              facetId: c.facetId,
+              categoryId: c.categoryId ?? null,
+              value: c.value ?? null,
+              confidence: c.confidence,
+              reasoning: c.reasoning,
+              isManualOverride: c.isManualOverride ?? true,
+            })),
+          },
+        },
+        include: {
+          classifications: {
+            include: {
+              facet: true,
+              category: true,
             },
           },
-          include: {
-            classifications: true,
-          },
-        })
+        },
+      })
       : await prisma.sourceAnalysis.create({
-          data: {
-            sourceId,
-            extractedText: "", // Will be filled by actual analysis later
-            inclusionRecommendation: data.inclusionRecommendation,
-            inclusionReasoning: data.inclusionReasoning,
-            exclusionReasoning: data.exclusionReasoning,
-            confidenceScore: data.confidenceScore,
-            relevanceScore: data.relevanceScore,
-            qualityNotes: data.qualityNotes,
-            inclusionCriteria,
-            exclusionCriteria,
-            isUserEdited: true,
-            editedFields,
-            classifications: {
-              create: data.classifications.map((c) => ({
-                facetName: c.facetName,
-                category: c.category,
-                confidence: c.confidence,
-                reasoning: c.reasoning,
-                isManualOverride: c.isManualOverride ?? true,
-              })),
+        data: {
+          sourceId,
+          extractedText: "", // Will be filled by actual analysis later
+          inclusionRecommendation: data.inclusionRecommendation,
+          inclusionReasoning: data.inclusionReasoning,
+          exclusionReasoning: data.exclusionReasoning,
+          confidenceScore: data.confidenceScore,
+          relevanceScore: data.relevanceScore,
+          qualityNotes: data.qualityNotes,
+          inclusionCriteria,
+          exclusionCriteria,
+          isUserEdited: true,
+          editedFields,
+          classifications: {
+            create: data.classifications.map((c) => ({
+              facetId: c.facetId,
+              categoryId: c.categoryId ?? null,
+              value: c.value ?? null,
+              confidence: c.confidence,
+              reasoning: c.reasoning,
+              isManualOverride: c.isManualOverride ?? true,
+            })),
+          },
+        },
+        include: {
+          classifications: {
+            include: {
+              facet: true,
+              category: true,
             },
           },
-          include: {
-            classifications: true,
-          },
-        });
+        },
+      });
 
     // Update source status
     await prisma.source.update({
@@ -209,4 +228,3 @@ export async function PUT(
     return NextResponse.json({ error: "Failed to save analysis" }, { status: 500 });
   }
 }
-

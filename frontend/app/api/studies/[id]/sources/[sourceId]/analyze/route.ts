@@ -25,6 +25,17 @@ export async function POST(
                 exclusionCriteria: { orderBy: { order: "asc" } },
               },
             },
+            facets: {
+              include: {
+                categories: { orderBy: { order: "asc" } },
+                researchQuestions: {
+                  include: {
+                    researchQuestion: true,
+                  },
+                },
+              },
+              orderBy: { order: "asc" },
+            },
           },
         },
         analysis: true,
@@ -61,8 +72,23 @@ export async function POST(
       source.study?.parameters?.inclusionCriteria?.map((c) => c.criterion) || [];
     const studyExclusionCriteria =
       source.study?.parameters?.exclusionCriteria?.map((c) => c.criterion) || [];
-    const classificationSchema = source.study?.parameters?.classificationSchema || {};
     const researchQuestions = source.study?.researchQuestions?.map((rq) => rq.question) || [];
+
+    // Build classification schema from new Facet model
+    // Format matches what Python service expects
+    const classificationSchema = (source.study?.facets || []).map((facet) => ({
+      id: facet.id,
+      name: facet.name,
+      description: facet.description,
+      type: facet.type.toLowerCase(), // CLOSED -> closed, OPEN -> open
+      required: facet.required,
+      categories: facet.categories.map((cat) => ({
+        id: cat.id,
+        name: cat.name,
+        description: cat.description,
+      })),
+      researchQuestionIds: facet.researchQuestions.map((frq) => frq.researchQuestionId),
+    }));
 
     // Build source content from chosen metadata (or fallback)
     const chosen: any = source.metadataChosen || source.metadataParsed || source.metadataExtension || {};
@@ -82,7 +108,6 @@ export async function POST(
     });
     console.log("[analyze] status -> ANALYZING_INCLUSION", { sourceId });
 
-    // Download PDF from MinIO for full-text analysis
     // Download PDF from MinIO for full-text analysis if hasPdf is true
     let pdfBuffer: Buffer | null = null;
     if (source.hasPdf) {

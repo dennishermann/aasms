@@ -7,6 +7,8 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ============ STUDY & RESEARCH QUESTIONS ============
+
 model Study {
   id                String             @id @default(uuid())
   title             String
@@ -20,29 +22,32 @@ model Study {
   sources           Source[]
   parameters        StudyParameters?
   importBatches     ImportBatch[]
+  facets            Facet[]
 }
 
 model ResearchQuestion {
-  id       String @id @default(uuid())
+  id       String                  @id @default(uuid())
   studyId  String
   question String
   order    Int
-  study    Study  @relation(fields: [studyId], references: [id], onDelete: Cascade)
+  study    Study                   @relation(fields: [studyId], references: [id], onDelete: Cascade)
+  facets   FacetResearchQuestion[]
 
   @@index([studyId])
 }
 
+// ============ STUDY PARAMETERS ============
+
 model StudyParameters {
-  id                   String               @id @default(uuid())
-  studyId              String               @unique
-  classificationSchema Json
-  createdAt            DateTime             @default(now())
-  updatedAt            DateTime             @updatedAt
-  exclusionCriteria    ExclusionCriterion[]
-  formalSources        FormalSource[]
-  greySources          GreySource[]
-  inclusionCriteria    InclusionCriterion[]
-  study                Study                @relation(fields: [studyId], references: [id], onDelete: Cascade)
+  id                String               @id @default(uuid())
+  studyId           String               @unique
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  exclusionCriteria ExclusionCriterion[]
+  formalSources     FormalSource[]
+  greySources       GreySource[]
+  inclusionCriteria InclusionCriterion[]
+  study             Study                @relation(fields: [studyId], references: [id], onDelete: Cascade)
 
   @@index([studyId])
 }
@@ -91,46 +96,121 @@ model ExclusionCriterion {
   @@index([parametersId])
 }
 
-model Source {
-  id                String          @id @default(uuid())
+// ============ FACETS & CATEGORIES ============
+
+model Facet {
+  id                String                  @id @default(uuid())
   studyId           String
-  type              SourceType
-  sourceCategory    SourceCategory
-  originalUrl       String?
-  storagePath       String?
-  classificationFileId String?
+  name              String
+  description       String?
+  type              FacetType               @default(CLOSED)
+  required          Boolean                 @default(true)
+  order             Int                     @default(0)
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+  study             Study                   @relation(fields: [studyId], references: [id], onDelete: Cascade)
+  categories        FacetCategory[]
+  researchQuestions FacetResearchQuestion[]
+  classifications   Classification[]
+
+  @@index([studyId])
+}
+
+model FacetCategory {
+  id              String           @id @default(uuid())
+  facetId         String
+  name            String
+  description     String?
+  order           Int              @default(0)
+  facet           Facet            @relation(fields: [facetId], references: [id], onDelete: Cascade)
+  classifications Classification[]
+
+  @@unique([facetId, name])
+  @@index([facetId])
+}
+
+// Join table for many-to-many Facet <-> ResearchQuestion
+model FacetResearchQuestion {
+  id                 String           @id @default(uuid())
+  facetId            String
+  researchQuestionId String
+  facet              Facet            @relation(fields: [facetId], references: [id], onDelete: Cascade)
+  researchQuestion   ResearchQuestion @relation(fields: [researchQuestionId], references: [id], onDelete: Cascade)
+
+  @@unique([facetId, researchQuestionId])
+  @@index([facetId])
+  @@index([researchQuestionId])
+}
+
+enum FacetType {
+  CLOSED // Must choose from predefined categories
+  OPEN   // Free text / LLM-generated value
+}
+
+// ============ SOURCES ============
+
+model Source {
+  id                     String              @id @default(uuid())
+  studyId                String
+  type                   SourceType
+  sourceCategory         SourceCategory
+  originalUrl            String?
+  storagePath            String?
+  classificationFileId   String?
   classificationThreadId String?
-  hasPdf            Boolean         @default(false)
-  title             String
-  authors           String[]
-  publicationDate   DateTime?
-  venue             String?
-  doi               String?
-  abstract          String?
-  keywords          String[]
-  sourceOrigin      String?
-  sourceOrigins     String[]        @default([])
-  importBatchId     String?
-  needsPdf          Boolean         @default(false)
-  status            SourceStatus    @default(PENDING)
-  metadataExtension Json?
-  metadataParsed    Json?
-  metadataChosen    Json?
-  metadataChosenSource String?
-  finalDecision     Decision?
-  decisionRationale String?
-  bibtex            String?
-  decisionMadeAt    DateTime?
-  uploadedAt        DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
-  study             Study           @relation(fields: [studyId], references: [id], onDelete: Cascade)
-  importBatch       ImportBatch?    @relation("ImportBatchSources", fields: [importBatchId], references: [id])
-  analysis          SourceAnalysis?
+  hasPdf                 Boolean             @default(false)
+  title                  String
+  authors                String[]
+  publicationDate        DateTime?
+  venue                  String?
+  venueType              VenueType?
+  doi                    String?
+  abstract               String?
+  keywords               String[]
+  sourceOrigin           String?
+  sourceOrigins          String[]            @default([])
+  importBatchId          String?
+  needsPdf               Boolean             @default(false)
+  status                 SourceStatus        @default(PENDING)
+  greyLiteratureTier     GreyLiteratureTier?
+  metadataExtension      Json?
+  metadataParsed         Json?
+  metadataChosen         Json?
+  metadataChosenSource   String?
+  finalDecision          Decision?
+  decisionRationale      String?
+  bibtex                 String?
+  decisionMadeAt         DateTime?
+  uploadedAt             DateTime            @default(now())
+  updatedAt              DateTime            @updatedAt
+  study                  Study               @relation(fields: [studyId], references: [id], onDelete: Cascade)
+  importBatch            ImportBatch?        @relation("ImportBatchSources", fields: [importBatchId], references: [id])
+  analysis               SourceAnalysis?
 
   @@index([studyId])
   @@index([status])
   @@index([importBatchId])
 }
+
+enum GreyLiteratureTier {
+  TIER_1 // High credibility (academic blogs, official industry reports)
+  TIER_2 // Moderate credibility (company websites, news articles)
+  TIER_3 // Lower credibility (personal blogs, forums)
+}
+
+enum VenueType {
+  JOURNAL
+  CONFERENCE
+  WORKSHOP
+  SYMPOSIUM
+  BOOK_CHAPTER
+  PREPRINT_SERVER
+  TECHNICAL_REPORT
+  BLOG
+  OTHER
+}
+
+// ============ ANALYSIS & CLASSIFICATIONS ============
 
 model SourceAnalysis {
   id                      String           @id @default(uuid())
@@ -155,17 +235,50 @@ model SourceAnalysis {
 }
 
 model Classification {
-  id               String         @id @default(uuid())
+  id               String          @id @default(uuid())
   analysisId       String
-  facetName        String
-  category         String
+  facetId          String
+  categoryId       String?
+  value            String?
   confidence       Float
   reasoning        String?
-  isManualOverride Boolean        @default(false)
-  analysis         SourceAnalysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  isManualOverride Boolean         @default(false)
+  createdAt        DateTime        @default(now())
+  analysis         SourceAnalysis  @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  facet            Facet           @relation(fields: [facetId], references: [id], onDelete: Cascade)
+  category         FacetCategory?  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
   @@index([analysisId])
+  @@index([facetId])
+  @@index([categoryId])
 }
+
+// ============ IMPORT BATCHES ============
+
+model ImportBatch {
+  id             String       @id @default(uuid())
+  studyId        String
+  databaseSource String
+  fileName       String
+  status         ImportStatus @default(PROCESSING)
+  totalRecords   Int          @default(0)
+  duplicates     Int          @default(0)
+  newSources     Int          @default(0)
+  relevant       Int          @default(0)
+  irrelevant     Int          @default(0)
+  needsPdf       Int          @default(0)
+  errors         Int          @default(0)
+  errorLog       Json?
+  startedAt      DateTime     @default(now())
+  completedAt    DateTime?
+  study          Study        @relation(fields: [studyId], references: [id], onDelete: Cascade)
+  sources        Source[]     @relation("ImportBatchSources")
+
+  @@index([studyId])
+  @@index([status])
+}
+
+// ============ ENUMS ============
 
 enum StudyStatus {
   DRAFT
@@ -224,29 +337,6 @@ enum SourceStatus {
 enum Decision {
   INCLUDE
   EXCLUDE
-}
-
-model ImportBatch {
-  id               String           @id @default(uuid())
-  studyId          String
-  databaseSource   String
-  fileName         String
-  status           ImportStatus     @default(PROCESSING)
-  totalRecords     Int              @default(0)
-  duplicates       Int              @default(0)
-  newSources       Int              @default(0)
-  relevant         Int              @default(0)
-  irrelevant       Int              @default(0)
-  needsPdf         Int              @default(0)
-  errors           Int              @default(0)
-  errorLog         Json?
-  startedAt        DateTime         @default(now())
-  completedAt      DateTime?
-  study            Study            @relation(fields: [studyId], references: [id], onDelete: Cascade)
-  sources          Source[]         @relation("ImportBatchSources")
-
-  @@index([studyId])
-  @@index([status])
 }
 
 enum ImportStatus {

@@ -131,6 +131,15 @@ def format_criteria(criteria: list) -> str:
     return "\n".join([f"{i+1}. {c}" for i, c in enumerate(criteria)])
 
 
+def _get_category_name(cat) -> str:
+    """Extract category name from either a string or object with name field."""
+    if isinstance(cat, str):
+        return cat
+    elif isinstance(cat, dict) and cat.get("name"):
+        return cat["name"]
+    return str(cat)
+
+
 def format_classification_schema(schema: dict) -> str:
     """Format classification schema with different instructions for closed vs open facets."""
     if not schema:
@@ -155,7 +164,8 @@ def format_classification_schema(schema: dict) -> str:
                 # Open-set: instruct LLM to generate category
                 formatted.append("  Type: OPEN-SET (Generate an appropriate category based on document content)")
                 if categories:  # If examples provided
-                    formatted.append(f"  Example categories (for guidance): {', '.join(categories)}")
+                    cat_names = [_get_category_name(c) for c in categories]
+                    formatted.append(f"  Example categories (for guidance): {', '.join(cat_names)}")
                 if required:
                     formatted.append("  Instructions: You MUST analyze the document and create a category. Do not skip.")
                 else:
@@ -166,7 +176,7 @@ def format_classification_schema(schema: dict) -> str:
                 if categories:
                     formatted.append("  Allowed categories:")
                     for cat in categories:
-                        formatted.append(f"    - {cat}")
+                        formatted.append(f"    - {_get_category_name(cat)}")
                 else:
                     formatted.append("  ERROR: No categories defined for closed-set facet")
                 
@@ -191,7 +201,8 @@ def format_classification_schema(schema: dict) -> str:
                 if facet_type == "open":
                     formatted.append("  Type: OPEN-SET (Generate an appropriate category based on document content)")
                     if categories:
-                        formatted.append(f"  Example categories (for guidance): {', '.join(categories)}")
+                        cat_names = [_get_category_name(c) for c in categories]
+                        formatted.append(f"  Example categories (for guidance): {', '.join(cat_names)}")
                     if required:
                          formatted.append("  Instructions: You MUST analyze the document and create a category.")
                     else:
@@ -202,7 +213,7 @@ def format_classification_schema(schema: dict) -> str:
                     if categories:
                         formatted.append("  Allowed categories:")
                         for cat in categories:
-                            formatted.append(f"    - {cat}")
+                            formatted.append(f"    - {_get_category_name(cat)}")
                         
                         if not required:
                             formatted.append("  Note: This facet is optional. If not applicable, select 'Not Applicable'.")
@@ -211,7 +222,7 @@ def format_classification_schema(schema: dict) -> str:
                 formatted.append("  Type: CLOSED-SET (Must select ONE from the predefined list)")
                 formatted.append("  Allowed categories:")
                 for cat in facet_data:
-                    formatted.append(f"    - {cat}")
+                    formatted.append(f"    - {_get_category_name(cat)}")
 
     return "\n".join(formatted)
 

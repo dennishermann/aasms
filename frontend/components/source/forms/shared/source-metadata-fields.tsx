@@ -181,6 +181,36 @@ export function SourceMetadataFields({
                     )}
                 />
 
+                {/* Venue Type - shown for both pdf and url */}
+                <FormField
+                    control={form.control}
+                    name="venueType"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Venue Type</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value || ""}>
+                                <FormControl>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select venue type (optional)" />
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    <SelectItem value="JOURNAL">Journal</SelectItem>
+                                    <SelectItem value="CONFERENCE">Conference</SelectItem>
+                                    <SelectItem value="WORKSHOP">Workshop</SelectItem>
+                                    <SelectItem value="SYMPOSIUM">Symposium</SelectItem>
+                                    <SelectItem value="BOOK_CHAPTER">Book Chapter</SelectItem>
+                                    <SelectItem value="PREPRINT_SERVER">Preprint Server (arXiv, etc.)</SelectItem>
+                                    <SelectItem value="TECHNICAL_REPORT">Technical Report</SelectItem>
+                                    <SelectItem value="BLOG">Blog / Online Article</SelectItem>
+                                    <SelectItem value="OTHER">Other</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+
                 {sourceType === "pdf" && (
                     <FormField
                         control={form.control}
@@ -294,6 +324,50 @@ export function SourceMetadataFields({
                         </FormItem>
                     )}
                 />
+
+                {/* Grey Literature Tier - shown only when sourceCategory is GREY */}
+                {form.watch("sourceCategory") === "GREY" && (
+                    <FormField
+                        control={form.control}
+                        name="greyLiteratureTier"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Grey Literature Credibility Tier</FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value || ""}>
+                                    <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select credibility tier" />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="TIER_1">
+                                            <div className="flex flex-col">
+                                                <span className="font-medium">Tier 1 - High Credibility</span>
+                                                <span className="text-xs text-muted-foreground">Academic blogs, official industry reports, government docs</span>
+                                            </div>
+                                        </SelectItem>
+                                        <SelectItem value="TIER_2">
+                                            <div className="flex flex-col">
+                                                <span className="font-medium">Tier 2 - Moderate Credibility</span>
+                                                <span className="text-xs text-muted-foreground">Company websites, news articles, white papers</span>
+                                            </div>
+                                        </SelectItem>
+                                        <SelectItem value="TIER_3">
+                                            <div className="flex flex-col">
+                                                <span className="font-medium">Tier 3 - Lower Credibility</span>
+                                                <span className="text-xs text-muted-foreground">Personal blogs, forums, social media</span>
+                                            </div>
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <FormDescription>
+                                    Tier classification based on grey literature assessment guidelines
+                                </FormDescription>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                )}
             </CardContent>
         </Card>
     );

@@ -4,14 +4,13 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { StudyLayout } from "@/components/layout/study-layout";
 import { ResearchQuestionsEditor, ResearchQuestion } from "@/components/parameters/research-questions-editor";
 import { CriteriaEditor, Criterion } from "@/components/parameters/criteria-editor";
-import { ClassificationSchemaEditor, Facet } from "@/components/parameters/classification-schema-editor";
+import { ClassificationSchemaEditor, Facet, FacetCategory } from "@/components/parameters/classification-schema-editor";
 import { UnsavedChangesDialog } from "@/components/parameters/unsaved-changes-dialog";
 import { AlertCircle, Save } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -37,7 +36,22 @@ interface Parameters {
     criterion: string;
     order: number;
   }>;
-  classificationSchema: any;
+}
+
+interface ApiFacet {
+  id: string;
+  name: string;
+  description: string | null;
+  type: "CLOSED" | "OPEN";
+  required: boolean;
+  order: number;
+  categories: Array<{
+    id: string;
+    name: string;
+    description: string | null;
+    order: number;
+  }>;
+  researchQuestionIds: string[];
 }
 
 interface ParametersFormData {
@@ -45,7 +59,7 @@ interface ParametersFormData {
   researchQuestions: ResearchQuestion[];
   inclusionCriteria: Criterion[];
   exclusionCriteria: Criterion[];
-  classificationSchema: Facet[];
+  facets: Facet[];
 }
 
 async function fetchStudy(id: string): Promise<Study> {
@@ -58,49 +72,18 @@ async function fetchStudy(id: string): Promise<Study> {
 async function fetchParameters(studyId: string): Promise<Parameters | null> {
   const response = await fetch(`/api/studies/${studyId}/parameters`);
   if (response.status === 404) {
-    return null; // No parameters yet
+    return null;
   }
   if (!response.ok) throw new Error("Failed to fetch parameters");
   const data = await response.json();
   return data.data;
 }
 
-async function saveResearchQuestions(studyId: string, questions: ResearchQuestion[]) {
-  const response = await fetch(`/api/studies/${studyId}/research-questions`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ researchQuestions: questions }),
-  });
-  if (!response.ok) throw new Error("Failed to save research questions");
-  return response.json();
-}
-
-async function saveParameters(studyId: string, data: Omit<ParametersFormData, "researchQuestions">) {
-  console.log("[saveParameters] sending to API", {
-    studyId,
-    schemaType: Array.isArray(data.classificationSchema) ? 'array' : typeof data.classificationSchema,
-    schemaCount: Array.isArray(data.classificationSchema) ? data.classificationSchema.length : 0,
-    schemaSample: Array.isArray(data.classificationSchema) && data.classificationSchema.length > 0
-      ? {
-        name: data.classificationSchema[0].name,
-        hasCategories: !!data.classificationSchema[0].categories,
-        categoriesCount: data.classificationSchema[0].categories?.length || 0,
-        categoriesSample: data.classificationSchema[0].categories?.slice(0, 2),
-      }
-      : null,
-  });
-
-  const response = await fetch(`/api/studies/${studyId}/parameters`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      inclusionCriteria: data.inclusionCriteria,
-      exclusionCriteria: data.exclusionCriteria,
-      classificationSchema: data.classificationSchema,
-    }),
-  });
-  if (!response.ok) throw new Error("Failed to save parameters");
-  return response.json();
+async function fetchFacets(studyId: string): Promise<ApiFacet[]> {
+  const response = await fetch(`/api/studies/${studyId}/facets`);
+  if (!response.ok) throw new Error("Failed to fetch facets");
+  const data = await response.json();
+  return data.data || [];
 }
 
 export default function ParametersPage() {
@@ -112,7 +95,7 @@ export default function ParametersPage() {
   const [researchQuestions, setResearchQuestions] = useState<ResearchQuestion[]>([]);
   const [inclusionCriteria, setInclusionCriteria] = useState<Criterion[]>([]);
   const [exclusionCriteria, setExclusionCriteria] = useState<Criterion[]>([]);
-  const [classificationSchema, setClassificationSchema] = useState<Facet[]>([]);
+  const [facets, setFacets] = useState<Facet[]>([]);
   const [motivation, setMotivation] = useState<string>("");
   const [isInitialized, setIsInitialized] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -131,57 +114,67 @@ export default function ParametersPage() {
     enabled: !!study,
   });
 
+  const { data: apiFacets, isLoading: facetsLoading } = useQuery({
+    queryKey: ["facets", studyId],
+    queryFn: () => fetchFacets(studyId),
+    enabled: !!study,
+  });
+
+  // Convert API facets to editor format
+  const convertApiFacetToEditorFacet = (apiFacet: ApiFacet): Facet => ({
+    id: apiFacet.id,
+    name: apiFacet.name,
+    description: apiFacet.description || undefined,
+    type: apiFacet.type,
+    required: apiFacet.required,
+    categories: apiFacet.categories.map(cat => ({
+      id: cat.id,
+      name: cat.name,
+      description: cat.description || undefined,
+    })),
+    researchQuestionIds: apiFacet.researchQuestionIds,
+  });
+
   // Initialize form state when data is loaded
-  if (study && !isInitialized && !parametersLoading) {
-    const mot = study.motivation || "";
+  useEffect(() => {
+    if (study && !isInitialized && !parametersLoading && !facetsLoading) {
+      const mot = study.motivation || "";
 
-    const rqs = study.researchQuestions.map(rq => ({
-      id: rq.id,
-      question: rq.question,
-      order: rq.order,
-    }));
+      const rqs = study.researchQuestions.map(rq => ({
+        id: rq.id,
+        question: rq.question,
+        order: rq.order,
+      }));
 
-    const inc = parameters ? parameters.inclusionCriteria.map(ic => ({
-      criterion: ic.criterion,
-      order: ic.order,
-    })) : [];
+      const inc = parameters ? parameters.inclusionCriteria.map(ic => ({
+        criterion: ic.criterion,
+        order: ic.order,
+      })) : [];
 
-    const exc = parameters ? parameters.exclusionCriteria.map(ec => ({
-      criterion: ec.criterion,
-      order: ec.order,
-    })) : [];
+      const exc = parameters ? parameters.exclusionCriteria.map(ec => ({
+        criterion: ec.criterion,
+        order: ec.order,
+      })) : [];
 
-    let schema: Facet[] = [];
-    if (parameters) {
-      // Parse classification schema and migrate legacy facets
-      if (Array.isArray(parameters.classificationSchema)) {
-        schema = parameters.classificationSchema.map((facet: any) => ({
-          ...facet,
-          type: facet.type || "closed", // Default to closed for backward compatibility
-        }));
-      } else if (parameters.classificationSchema && typeof parameters.classificationSchema === 'object') {
-        // Convert old format to new if needed
-        schema = [];
-      }
+      const editorFacets = (apiFacets || []).map(convertApiFacetToEditorFacet);
+
+      setMotivation(mot);
+      setResearchQuestions(rqs);
+      setInclusionCriteria(inc);
+      setExclusionCriteria(exc);
+      setFacets(editorFacets);
+
+      setInitialState({
+        motivation: mot,
+        researchQuestions: rqs,
+        inclusionCriteria: inc,
+        exclusionCriteria: exc,
+        facets: editorFacets,
+      });
+
+      setIsInitialized(true);
     }
-
-    setMotivation(mot);
-    setResearchQuestions(rqs);
-    setInclusionCriteria(inc);
-    setExclusionCriteria(exc);
-    setClassificationSchema(schema);
-
-    // Store initial state for comparison
-    setInitialState({
-      motivation: mot,
-      researchQuestions: rqs,
-      inclusionCriteria: inc,
-      exclusionCriteria: exc,
-      classificationSchema: schema,
-    });
-
-    setIsInitialized(true);
-  }
+  }, [study, parameters, apiFacets, isInitialized, parametersLoading, facetsLoading]);
 
   // Check for unsaved changes
   useEffect(() => {
@@ -192,14 +185,14 @@ export default function ParametersPage() {
       researchQuestions,
       inclusionCriteria,
       exclusionCriteria,
-      classificationSchema,
+      facets,
     };
 
     const hasChanges = JSON.stringify(currentState) !== JSON.stringify(initialState);
     setHasUnsavedChanges(hasChanges);
-  }, [motivation, researchQuestions, inclusionCriteria, exclusionCriteria, classificationSchema, initialState]);
+  }, [motivation, researchQuestions, inclusionCriteria, exclusionCriteria, facets, initialState]);
 
-  // Warn before leaving page with unsaved changes (browser-level)
+  // Warn before leaving page with unsaved changes
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (hasUnsavedChanges) {
@@ -213,7 +206,7 @@ export default function ParametersPage() {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [hasUnsavedChanges]);
 
-  // Intercept navigation attempts (client-side)
+  // Intercept navigation attempts
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
       if (!hasUnsavedChanges) return;
@@ -222,7 +215,6 @@ export default function ParametersPage() {
       const link = target.closest('a');
 
       if (link && link.href && !link.href.includes('#')) {
-        // Check if it's an internal navigation
         const currentOrigin = window.location.origin;
         const linkUrl = new URL(link.href, currentOrigin);
 
@@ -255,7 +247,7 @@ export default function ParametersPage() {
 
   const saveMutation = useMutation({
     mutationFn: async (data: ParametersFormData) => {
-      // Save motivation to study
+      // 1. Save motivation to study
       const motivationResponse = await fetch(`/api/studies/${studyId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -265,7 +257,7 @@ export default function ParametersPage() {
         throw new Error("Failed to save motivation");
       }
 
-      // Save research questions and get the saved questions with real IDs
+      // 2. Save research questions and get real IDs
       const savedRQsResponse = await fetch(`/api/studies/${studyId}/research-questions`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -281,66 +273,125 @@ export default function ParametersPage() {
         throw new Error("Failed to save research questions");
       }
 
-      // Fetch the updated study to get the new RQ IDs
+      // Fetch updated study to get new RQ IDs
       const studyResponse = await fetch(`/api/studies/${studyId}`);
       const studyData = await studyResponse.json();
       const savedResearchQuestions = studyData.data.researchQuestions;
 
-      // Create a mapping from old temp IDs to new real IDs
-      const idMapping: Record<string, string> = {};
+      // Create ID mapping for RQs
+      const rqIdMapping: Record<string, string> = {};
       data.researchQuestions.forEach((oldRQ, index) => {
         const oldId = oldRQ.id || `temp-${oldRQ.order}`;
         const newRQ = savedResearchQuestions.find((rq: any) => rq.order === index);
         if (newRQ) {
-          idMapping[oldId] = newRQ.id;
+          rqIdMapping[oldId] = newRQ.id;
         }
       });
 
-      // Update classification schema with real RQ IDs
-      const updatedSchema = data.classificationSchema.map((facet: any) => {
-        if (facet.researchQuestionId && idMapping[facet.researchQuestionId]) {
-          return {
-            ...facet,
-            researchQuestionId: idMapping[facet.researchQuestionId],
-          };
-        }
-        return facet;
+      // 3. Save parameters (criteria only, no more classificationSchema)
+      const parametersResponse = await fetch(`/api/studies/${studyId}/parameters`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          inclusionCriteria: data.inclusionCriteria,
+          exclusionCriteria: data.exclusionCriteria,
+        }),
       });
+      if (!parametersResponse.ok) {
+        throw new Error("Failed to save parameters");
+      }
 
-      // Save parameters with updated classification schema
-      await saveParameters(studyId, {
-        motivation: data.motivation,
-        inclusionCriteria: data.inclusionCriteria,
-        exclusionCriteria: data.exclusionCriteria,
-        classificationSchema: updatedSchema,
-      });
+      // 4. Save facets via new API
+      // First, get existing facets to determine what to create/update/delete
+      const existingFacetsResponse = await fetch(`/api/studies/${studyId}/facets`);
+      const existingFacetsData = await existingFacetsResponse.json();
+      const existingFacets: ApiFacet[] = existingFacetsData.data || [];
+      const existingFacetIds = new Set(existingFacets.map(f => f.id));
+
+      // Process each facet
+      for (let i = 0; i < data.facets.length; i++) {
+        const facet = data.facets[i];
+
+        // Map RQ IDs to real IDs
+        const mappedRqIds = facet.researchQuestionIds.map(id => rqIdMapping[id] || id);
+
+        // Prepare categories
+        const categories = facet.categories.map((cat, idx) => ({
+          id: cat.id,
+          name: cat.name,
+          description: cat.description,
+          order: idx,
+        }));
+
+        if (facet.id && existingFacetIds.has(facet.id)) {
+          // Update existing facet
+          await fetch(`/api/studies/${studyId}/facets/${facet.id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              name: facet.name,
+              description: facet.description,
+              type: facet.type,
+              required: facet.required,
+              order: i,
+              researchQuestionIds: mappedRqIds,
+              categories: categories,
+            }),
+          });
+        } else {
+          // Create new facet
+          await fetch(`/api/studies/${studyId}/facets`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              name: facet.name,
+              description: facet.description,
+              type: facet.type,
+              required: facet.required,
+              researchQuestionIds: mappedRqIds,
+              categories: categories.map(c => ({ name: c.name, description: c.description })),
+            }),
+          });
+        }
+      }
+
+      // Delete removed facets
+      const currentFacetIds = new Set(data.facets.filter(f => f.id).map(f => f.id));
+      for (const existingFacet of existingFacets) {
+        if (!currentFacetIds.has(existingFacet.id)) {
+          await fetch(`/api/studies/${studyId}/facets/${existingFacet.id}`, {
+            method: "DELETE",
+          });
+        }
+      }
     },
-    onSuccess: (_, variables) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["study", studyId] });
       queryClient.invalidateQueries({ queryKey: ["parameters", studyId] });
+      queryClient.invalidateQueries({ queryKey: ["facets", studyId] });
 
-      // Update initial state after successful save
-      setInitialState(variables);
+      // Reset initialization to refetch clean data
+      setIsInitialized(false);
       setHasUnsavedChanges(false);
     },
   });
 
   const handleSave = () => {
-    // Filter out empty questions and criteria
     const validQuestions = researchQuestions.filter(rq => rq.question.trim() !== "");
     const validInclusion = inclusionCriteria.filter(ic => ic.criterion.trim() !== "");
     const validExclusion = exclusionCriteria.filter(ec => ec.criterion.trim() !== "");
+    const validFacets = facets.filter(f => f.name.trim() !== "");
 
     saveMutation.mutate({
       motivation,
       researchQuestions: validQuestions,
       inclusionCriteria: validInclusion,
       exclusionCriteria: validExclusion,
-      classificationSchema: classificationSchema,
+      facets: validFacets,
     });
   };
 
-  if (studyLoading || parametersLoading) {
+  if (studyLoading || parametersLoading || facetsLoading) {
     return (
       <StudyLayout studyId={studyId} studyTitle="Loading...">
         <div className="container mx-auto px-4 py-8">
@@ -450,8 +501,8 @@ export default function ParametersPage() {
             </CardHeader>
             <CardContent>
               <ClassificationSchemaEditor
-                value={classificationSchema}
-                onChange={setClassificationSchema}
+                value={facets}
+                onChange={setFacets}
                 researchQuestions={researchQuestions.map(rq => ({
                   id: rq.id || `temp-${rq.order}`,
                   question: rq.question,

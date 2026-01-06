@@ -12,7 +12,7 @@ export async function POST(
     try {
         const { id: studyId, sourceId } = await params;
 
-        // 1. Verify source exists
+        // 1. Verify source exists and get facets
         const source = await prisma.source.findFirst({
             where: { id: sourceId, studyId },
             include: {
@@ -25,6 +25,17 @@ export async function POST(
                             },
                         },
                         researchQuestions: { orderBy: { order: "asc" } },
+                        facets: {
+                            include: {
+                                categories: { orderBy: { order: "asc" } },
+                                researchQuestions: {
+                                    include: {
+                                        researchQuestion: true,
+                                    },
+                                },
+                            },
+                            orderBy: { order: "asc" },
+                        },
                     },
                 },
             },
@@ -63,6 +74,21 @@ export async function POST(
         // Optimization: If already included, skip re-evaluating inclusion
         const skipInclusion = existingAnalysis?.inclusionRecommendation === true;
 
+        // Build classification schema from new Facet model
+        const classificationSchema = (source.study.facets || []).map((facet) => ({
+            id: facet.id,
+            name: facet.name,
+            description: facet.description,
+            type: facet.type.toLowerCase(),
+            required: facet.required,
+            categories: facet.categories.map((cat) => ({
+                id: cat.id,
+                name: cat.name,
+                description: cat.description,
+            })),
+            researchQuestionIds: facet.researchQuestions.map((frq) => frq.researchQuestionId),
+        }));
+
         // 3b. Prepare payload for Python service
         const pythonFormData = new FormData();
         pythonFormData.append("file", file); // file is Blob/File, ok for fetch
@@ -74,7 +100,7 @@ export async function POST(
                 researchQuestions: source.study.researchQuestions.map(rq => rq.question),
                 inclusionCriteria: source.study.parameters?.inclusionCriteria.map(ic => ic.criterion) || [],
                 exclusionCriteria: source.study.parameters?.exclusionCriteria.map(ic => ic.criterion) || [],
-                classificationSchema: source.study.parameters?.classificationSchema || {},
+                classificationSchema: classificationSchema,
             },
             sourceContent: {
                 title: source.title,
@@ -114,14 +140,28 @@ export async function POST(
         const newStatus = isIncluded ? SourceStatus.CLASSIFIED : SourceStatus.EXCLUDED;
         const finalDecision = isIncluded ? null : "EXCLUDE";
 
-        // Prepare classifications
-        const classificationCreates = (analysisResult.classifications || []).map((c: any) => ({
-            facetName: c.facetName,
-            category: c.category,
-            confidence: c.confidence,
-            reasoning: c.reasoning,
-            isManualOverride: c.isManualOverride || false,
-        }));
+        // Build a map of facet name -> facet id for looking up
+        const facetNameToId = new Map(source.study.facets.map(f => [f.name, f.id]));
+        const facetIdToCategoryMap = new Map(
+            source.study.facets.map(f => [f.id, new Map(f.categories.map(c => [c.name, c.id]))])
+        );
+
+        // Convert classifications to use facetId and categoryId
+        const classificationCreates = (analysisResult.classifications || []).map((c: any) => {
+            const cFacetName = c.facetName || c.facet_name || "unknown";
+            const cFacetId = c.facetId || facetNameToId.get(cFacetName);
+            const categoryMap = cFacetId ? facetIdToCategoryMap.get(cFacetId) : null;
+            const cCategoryId = categoryMap?.get(c.category) || null;
+
+            return {
+                facetId: cFacetId || source.study.facets[0]?.id,
+                categoryId: cCategoryId,
+                value: cCategoryId ? null : (c.category || c.value || null),
+                confidence: c.confidence,
+                reasoning: c.reasoning,
+                isManualOverride: c.isManualOverride || false,
+            };
+        });
 
         // If skipped, use existing reasoning/criteria
         const inclusionReasoning = skipInclusion ? existingAnalysis?.inclusionReasoning : analysisResult.inclusionReasoning;

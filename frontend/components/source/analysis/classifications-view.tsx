@@ -5,11 +5,11 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { CardContent } from "@/components/ui/card";
 import { Loader2, ChevronDown, ChevronUp } from "lucide-react";
-import { AnalysisData } from "./types";
+import { Classification, getFacetName, getCategoryDisplay } from "./types";
 import { cn } from "@/lib/utils";
 
 interface ClassificationsViewProps {
-  classifications: AnalysisData["classifications"];
+  classifications: Classification[];
   loading?: boolean;
 }
 
@@ -131,20 +131,18 @@ export function ClassificationsView({ classifications, loading = false }: Classi
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {classifications.map((classification, index) => (
-          <ClassificationCard
-            key={index}
-            facetName={classification.facetName}
-            category={classification.category}
-            confidence={classification.confidence}
-            reasoning={classification.reasoning}
-          />
-        ))}
+        {classifications.map((classification, index) => {
+          return (
+            <ClassificationCard
+              key={classification.id || index}
+              facetName={getFacetName(classification)}
+              category={getCategoryDisplay(classification)}
+              confidence={classification.confidence}
+              reasoning={classification.reasoning}
+            />
+          );
+        })}
       </div>
     </CardContent>
   );
 }
-
-
-
-

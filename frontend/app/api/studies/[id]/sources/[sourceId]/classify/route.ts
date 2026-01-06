@@ -12,7 +12,8 @@ export async function POST(
   try {
     const { id: studyId, sourceId } = await params;
     const requestBody = await request.json().catch(() => ({}));
-    const facetName: string | undefined = requestBody?.facetName;
+    const facetId: string | undefined = requestBody?.facetId;
+    const facetName: string | undefined = requestBody?.facetName; // Legacy support
 
     const source = await prisma.source.findFirst({
       where: { id: sourceId, studyId },
@@ -20,7 +21,17 @@ export async function POST(
         study: {
           include: {
             researchQuestions: { orderBy: { order: "asc" } },
-            parameters: true,
+            facets: {
+              include: {
+                categories: { orderBy: { order: "asc" } },
+                researchQuestions: {
+                  include: {
+                    researchQuestion: true,
+                  },
+                },
+              },
+              orderBy: { order: "asc" },
+            },
           },
         },
         analysis: true,
@@ -61,106 +72,74 @@ export async function POST(
       );
     }
 
-    const classificationSchema = source.study?.parameters?.classificationSchema as any;
+    // Get facets from the new Facet model
+    let facets = source.study?.facets || [];
 
-    console.log("[classify] raw schema from database", {
+    console.log("[classify] facets from database", {
       sourceId,
-      hasSchema: !!classificationSchema,
-      type: Array.isArray(classificationSchema) ? 'array' : typeof classificationSchema,
-      schemaKeys: classificationSchema ? Object.keys(classificationSchema) : [],
-      schemaSample: Array.isArray(classificationSchema)
-        ? JSON.stringify(classificationSchema[0], null, 2)
-        : classificationSchema ? JSON.stringify(Object.entries(classificationSchema)[0], null, 2) : null,
+      totalFacets: facets.length,
+      facetNames: facets.map(f => f.name),
     });
 
-    if (!classificationSchema) {
+    if (facets.length === 0) {
       return NextResponse.json(
-        { error: "Classification schema not configured for this study" },
+        { error: "Classification schema not configured for this study. Please add facets in study parameters." },
         { status: 400 }
       );
     }
 
-    // Filter out facets that are invalid (closed-set without categories) and optionally narrow to a single facet
-    let schemaToUse: any;
-    if (Array.isArray(classificationSchema)) {
-      // Accept open-set facets OR closed-set facets with categories
-      schemaToUse = classificationSchema.filter((f: any) => {
-        const isOpen = f.type === "open";
-        const hasCategories = f.categories && Array.isArray(f.categories) && f.categories.length > 0;
-        return isOpen || hasCategories;
-      });
+    // Filter out facets that are invalid (CLOSED without categories)
+    // Accept OPEN facets OR CLOSED facets with categories
+    const validFacets = facets.filter((f) => {
+      const isOpen = f.type === "OPEN";
+      const hasCategories = f.categories && f.categories.length > 0;
+      return isOpen || hasCategories;
+    });
 
-      console.log("[classify] filtered schema", {
-        sourceId,
-        totalFacets: classificationSchema.length,
-        validFacets: schemaToUse.length,
-        openSetFacets: schemaToUse.filter((f: any) => f.type === "open").map((f: any) => f.name || f.facet_name),
-        closedSetFacets: schemaToUse.filter((f: any) => f.type !== "open").map((f: any) => f.name || f.facet_name),
-        invalidFacets: classificationSchema.filter((f: any) => {
-          const isOpen = f.type === "open";
-          const hasCategories = f.categories && Array.isArray(f.categories) && f.categories.length > 0;
-          return !isOpen && !hasCategories;
-        }).map((f: any) => f.name || f.facet_name || 'unnamed'),
-      });
+    console.log("[classify] filtered facets", {
+      sourceId,
+      totalFacets: facets.length,
+      validFacets: validFacets.length,
+      openFacets: validFacets.filter(f => f.type === "OPEN").map(f => f.name),
+      closedFacets: validFacets.filter(f => f.type === "CLOSED").map(f => f.name),
+      invalidFacets: facets.filter(f => f.type === "CLOSED" && (!f.categories || f.categories.length === 0)).map(f => f.name),
+    });
 
-      if (facetName) {
-        schemaToUse = schemaToUse.filter(
-          (f: any) => f.name === facetName || f.facet_name === facetName
-        );
-      }
-    } else if (typeof classificationSchema === "object") {
-      // Accept open-set facets OR closed-set facets with categories
-      schemaToUse = Object.fromEntries(
-        Object.entries(classificationSchema).filter(([key, value]: [string, any]) => {
-          const isOpen = value?.type === "open";
-          const hasCategories = value?.categories && Array.isArray(value.categories) && value.categories.length > 0;
-          return isOpen || hasCategories;
-        })
-      );
-
-      console.log("[classify] filtered schema", {
-        sourceId,
-        totalFacets: Object.keys(classificationSchema).length,
-        validFacets: Object.keys(schemaToUse).length,
-        openSetFacets: Object.entries(schemaToUse)
-          .filter(([_, value]: [string, any]) => value?.type === "open")
-          .map(([key]) => key),
-        closedSetFacets: Object.entries(schemaToUse)
-          .filter(([_, value]: [string, any]) => value?.type !== "open")
-          .map(([key]) => key),
-        invalidFacets: Object.entries(classificationSchema)
-          .filter(([key, value]: [string, any]) => {
-            const isOpen = value?.type === "open";
-            const hasCategories = value?.categories && Array.isArray(value.categories) && value.categories.length > 0;
-            return !isOpen && !hasCategories;
-          })
-          .map(([key]) => key),
-      });
-
-      if (facetName) {
-        schemaToUse = Object.fromEntries(
-          Object.entries(schemaToUse).filter(([k]) => k === facetName)
-        );
-      }
+    // Optionally narrow to a single facet
+    let facetsToUse = validFacets;
+    if (facetId) {
+      facetsToUse = validFacets.filter(f => f.id === facetId);
+    } else if (facetName) {
+      facetsToUse = validFacets.filter(f => f.name === facetName);
     }
 
-    // Check if we have any valid facets after filtering
-    const hasValidFacets = Array.isArray(schemaToUse)
-      ? schemaToUse.length > 0
-      : Object.keys(schemaToUse || {}).length > 0;
-
-    if (!hasValidFacets) {
-      if (facetName) {
+    if (facetsToUse.length === 0) {
+      if (facetId || facetName) {
         return NextResponse.json(
-          { error: `Facet '${facetName}' not found or is invalid (closed-set facets must have categories defined)` },
+          { error: `Facet '${facetId || facetName}' not found or is invalid (CLOSED facets must have categories defined)` },
           { status: 400 }
         );
       }
       return NextResponse.json(
-        { error: "No valid facets found in classification schema. Closed-set facets must have categories defined, or use open-set type for LLM-generated categories." },
+        { error: "No valid facets found. CLOSED facets must have categories defined, or use OPEN type." },
         { status: 400 }
       );
     }
+
+    // Build classification schema in format Python service expects
+    const classificationSchema = facetsToUse.map((facet) => ({
+      id: facet.id,
+      name: facet.name,
+      description: facet.description,
+      type: facet.type.toLowerCase(), // CLOSED -> closed, OPEN -> open
+      required: facet.required,
+      categories: facet.categories.map((cat) => ({
+        id: cat.id,
+        name: cat.name,
+        description: cat.description,
+      })),
+      researchQuestionIds: facet.researchQuestions.map((frq) => frq.researchQuestionId),
+    }));
 
     // Build source content payload preferring chosen/parsed metadata
     const chosen: any = source.metadataChosen || source.metadataParsed || source.metadataExtension || {};
@@ -179,15 +158,13 @@ export async function POST(
 
     const studyParametersPayload = {
       research_questions: researchQuestions,
-      classification_schema: schemaToUse,
+      classification_schema: classificationSchema,
     };
 
-    // Download PDF from MinIO for full-text classification
     // Download PDF from MinIO for full-text classification if hasPdf is true
     let pdfBuffer: Buffer | null = null;
     if (source.hasPdf) {
       if (!source.storagePath) {
-        // Since we don't return here, we proceed, but classification without content might fail or just use metadata
         console.warn("[classify] Source marked as PDF but storagePath missing. Using extracted metadata only.");
       } else {
         try {
@@ -211,10 +188,8 @@ export async function POST(
     console.log("[classify] payload to python-service", {
       sourceId,
       researchQuestionsCount: researchQuestions.length,
-      facetsCount: Array.isArray(schemaToUse) ? schemaToUse.length : Object.keys(schemaToUse || {}).length,
-      facetNames: Array.isArray(schemaToUse)
-        ? schemaToUse.map((f: any) => f.name || f.facet_name)
-        : Object.keys(schemaToUse || {}),
+      facetsCount: classificationSchema.length,
+      facetNames: classificationSchema.map((f: any) => f.name),
       title: content.title,
       abstractLength: content.abstract?.length || 0,
       hasContentExcerpt: !!content.content_excerpt,
@@ -290,17 +265,35 @@ export async function POST(
         classifications.length
         : source.analysis?.confidenceScore || 0.5;
 
-    const deleteScope = facetName
-      ? { facetName: facetName }
-      : {};
+    // Build a map of facet name -> facet id for looking up
+    const facetNameToId = new Map(facetsToUse.map(f => [f.name, f.id]));
+    const facetIdToCategoryMap = new Map(
+      facetsToUse.map(f => [f.id, new Map(f.categories.map(c => [c.name, c.id]))])
+    );
 
-    const createClassifications = classifications.map((c: any) => ({
-      facetName: c.facetName || c.facet_name || "unknown",
-      category: c.category || "unknown",
-      confidence: parseFloat(c.confidence || 0),
-      reasoning: c.reasoning || "",
-      isManualOverride: false,
-    }));
+    // Determine delete scope
+    const deleteScope = facetId
+      ? { facetId: facetId }
+      : facetName
+        ? { facetId: facetNameToId.get(facetName) }
+        : {};
+
+    // Convert classifications to use facetId and categoryId
+    const createClassifications = classifications.map((c: any) => {
+      const cFacetName = c.facetName || c.facet_name || "unknown";
+      const cFacetId = c.facetId || facetNameToId.get(cFacetName);
+      const categoryMap = cFacetId ? facetIdToCategoryMap.get(cFacetId) : null;
+      const cCategoryId = categoryMap?.get(c.category) || null;
+
+      return {
+        facetId: cFacetId || facetsToUse[0]?.id, // Fallback to first facet if not found
+        categoryId: cCategoryId,
+        value: cCategoryId ? null : (c.category || c.value || null), // For OPEN facets
+        confidence: parseFloat(c.confidence || 0),
+        reasoning: c.reasoning || "",
+        isManualOverride: false,
+      };
+    });
 
     const analysis = await prisma.sourceAnalysis.upsert({
       where: { sourceId },
@@ -324,7 +317,14 @@ export async function POST(
         exclusionCriteria: source.analysis?.exclusionCriteria || [],
         classifications: { create: createClassifications },
       },
-      include: { classifications: true },
+      include: {
+        classifications: {
+          include: {
+            facet: true,
+            category: true,
+          },
+        },
+      },
     });
     console.log("[classify] analysis saved", {
       sourceId,

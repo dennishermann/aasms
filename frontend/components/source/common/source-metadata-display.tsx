@@ -14,6 +14,8 @@ interface Source {
     authors: string[];
     publicationDate: string | null;
     venue: string | null;
+    venueType?: string | null;
+    greyLiteratureTier?: string | null;
     doi: string | null;
     abstract: string | null;
     keywords: string[];
@@ -23,6 +25,26 @@ interface Source {
     storagePath?: string | null;
     bibtex?: string | null;
 }
+
+// Human-readable labels for venue types
+const VENUE_TYPE_LABELS: Record<string, string> = {
+    JOURNAL: "Journal",
+    CONFERENCE: "Conference",
+    WORKSHOP: "Workshop",
+    SYMPOSIUM: "Symposium",
+    BOOK_CHAPTER: "Book Chapter",
+    PREPRINT_SERVER: "Preprint Server",
+    TECHNICAL_REPORT: "Technical Report",
+    BLOG: "Blog / Online Article",
+    OTHER: "Other",
+};
+
+// Human-readable labels for grey literature tiers
+const GREY_LIT_TIER_LABELS: Record<string, { label: string; description: string }> = {
+    TIER_1: { label: "Tier 1", description: "High Credibility" },
+    TIER_2: { label: "Tier 2", description: "Moderate Credibility" },
+    TIER_3: { label: "Tier 3", description: "Lower Credibility" },
+};
 
 interface SourceMetadataViewProps {
     source: Source;
@@ -52,7 +74,29 @@ export function SourceMetadataView({ source }: SourceMetadataViewProps) {
                         <BookOpen className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
                         <div>
                             <p className="text-sm font-medium">Venue</p>
-                            <p className="text-sm text-muted-foreground">{source.venue}</p>
+                            <p className="text-sm text-muted-foreground">
+                                {source.venue}
+                                {source.venueType && (
+                                    <span className="ml-2 text-xs bg-muted px-2 py-0.5 rounded-full">
+                                        {VENUE_TYPE_LABELS[source.venueType] || source.venueType}
+                                    </span>
+                                )}
+                            </p>
+                        </div>
+                    </div>
+                )}
+
+                {source.greyLiteratureTier && (
+                    <div className="flex items-start gap-3">
+                        <FileText className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
+                        <div>
+                            <p className="text-sm font-medium">Grey Literature Tier</p>
+                            <p className="text-sm text-muted-foreground">
+                                {GREY_LIT_TIER_LABELS[source.greyLiteratureTier]?.label || source.greyLiteratureTier}
+                                <span className="ml-2 text-xs text-muted-foreground">
+                                    ({GREY_LIT_TIER_LABELS[source.greyLiteratureTier]?.description || ""})
+                                </span>
+                            </p>
                         </div>
                     </div>
                 )}
