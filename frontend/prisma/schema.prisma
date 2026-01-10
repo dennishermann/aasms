@@ -10,19 +10,20 @@ datasource db {
 // ============ STUDY & RESEARCH QUESTIONS ============
 
 model Study {
-  id                String             @id @default(uuid())
-  title             String
-  description       String?
-  status            StudyStatus        @default(DRAFT)
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
-  motivation        String?
-  importStatistics  Json?
-  researchQuestions ResearchQuestion[]
-  sources           Source[]
-  parameters        StudyParameters?
-  importBatches     ImportBatch[]
-  facets            Facet[]
+  id                      String                   @id @default(uuid())
+  title                   String
+  description             String?
+  status                  StudyStatus              @default(DRAFT)
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+  motivation              String?
+  importStatistics        Json?
+  researchQuestions       ResearchQuestion[]
+  sources                 Source[]
+  parameters              StudyParameters?
+  importBatches           ImportBatch[]
+  facets                  Facet[]
+  analysisConfigurations  AnalysisConfiguration[]
 }
 
 model ResearchQuestion {
@@ -99,19 +100,23 @@ model ExclusionCriterion {
 // ============ FACETS & CATEGORIES ============
 
 model Facet {
-  id                String                  @id @default(uuid())
-  studyId           String
-  name              String
-  description       String?
-  type              FacetType               @default(CLOSED)
-  required          Boolean                 @default(true)
-  order             Int                     @default(0)
-  createdAt         DateTime                @default(now())
-  updatedAt         DateTime                @updatedAt
-  study             Study                   @relation(fields: [studyId], references: [id], onDelete: Cascade)
-  categories        FacetCategory[]
-  researchQuestions FacetResearchQuestion[]
-  classifications   Classification[]
+  id                  String                  @id @default(uuid())
+  studyId             String
+  name                String
+  description         String?
+  type                FacetType               @default(CLOSED)
+  required            Boolean                 @default(true)
+  order               Int                     @default(0)
+  createdAt           DateTime                @default(now())
+  updatedAt           DateTime                @updatedAt
+  // Coding fields for OPEN_CODED facets
+  codingEnabled       Boolean                 @default(false)
+  autoAssignThreshold Float?                  @default(0.8)
+  codingCreatedAt     DateTime?
+  study               Study                   @relation(fields: [studyId], references: [id], onDelete: Cascade)
+  categories          FacetCategory[]
+  researchQuestions   FacetResearchQuestion[]
+  classifications     Classification[]
 
   @@index([studyId])
 }
@@ -143,8 +148,9 @@ model FacetResearchQuestion {
 }
 
 enum FacetType {
-  CLOSED // Must choose from predefined categories
-  OPEN   // Free text / LLM-generated value
+  CLOSED     // Must choose from predefined categories
+  OPEN       // Free text / LLM-generated value
+  OPEN_CODED // OPEN facet with user-created categories from values
 }
 
 // ============ SOURCES ============
@@ -239,10 +245,13 @@ model Classification {
   analysisId       String
   facetId          String
   categoryId       String?
-  value            String?
+  value            String?         // For OPEN facets - LLM-generated value
+  rawValue         String?         // Original value before any coding (preserved)
   confidence       Float
   reasoning        String?
   isManualOverride Boolean         @default(false)
+  autoAssigned     Boolean         @default(false)  // Was this category auto-assigned by coding?
+  needsReview      Boolean         @default(false)  // Flagged for user review (low confidence)
   createdAt        DateTime        @default(now())
   analysis         SourceAnalysis  @relation(fields: [analysisId], references: [id], onDelete: Cascade)
   facet            Facet           @relation(fields: [facetId], references: [id], onDelete: Cascade)
@@ -251,6 +260,22 @@ model Classification {
   @@index([analysisId])
   @@index([facetId])
   @@index([categoryId])
+  @@index([needsReview])
+}
+
+// ============ ANALYSIS CONFIGURATIONS ============
+
+model AnalysisConfiguration {
+  id          String   @id @default(uuid())
+  studyId     String
+  name        String
+  description String?
+  artifacts   Json     @default("[]")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  study       Study    @relation(fields: [studyId], references: [id], onDelete: Cascade)
+
+  @@index([studyId])
 }
 
 // ============ IMPORT BATCHES ============

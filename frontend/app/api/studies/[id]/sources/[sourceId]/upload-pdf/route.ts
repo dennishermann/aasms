@@ -138,7 +138,7 @@ export async function POST(
         // 5. Update Source with Analysis Results
         const isIncluded = analysisResult.recommendation === "include";
         const newStatus = isIncluded ? SourceStatus.CLASSIFIED : SourceStatus.EXCLUDED;
-        const finalDecision = isIncluded ? null : "EXCLUDE";
+        const finalDecision = isIncluded ? "INCLUDE" : "EXCLUDE";
 
         // Build a map of facet name -> facet id for looking up
         const facetNameToId = new Map(source.study.facets.map(f => [f.name, f.id]));

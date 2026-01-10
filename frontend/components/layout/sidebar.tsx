@@ -8,7 +8,8 @@ import {
   Settings,
   BarChart3,
   CheckSquare,
-  Home
+  Home,
+  PieChart,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -40,16 +41,10 @@ export function Sidebar({ studyId }: SidebarProps) {
       current: pathname === `/studies/${studyId}/sources`,
     },
     {
-      name: "Review",
-      href: `/studies/${studyId}/review`,
-      icon: CheckSquare,
-      current: pathname === `/studies/${studyId}/review`,
-    },
-    {
-      name: "Dashboard",
-      href: `/studies/${studyId}/dashboard`,
-      icon: BarChart3,
-      current: pathname === `/studies/${studyId}/dashboard`,
+      name: "Analysis",
+      href: `/studies/${studyId}/analysis`,
+      icon: PieChart,
+      current: pathname === `/studies/${studyId}/analysis`,
     },
   ];
 

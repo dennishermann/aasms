@@ -332,10 +332,13 @@ export async function POST(
       classifications: analysis.classifications?.length ?? 0,
     });
 
-    // Mark source as analyzed
+    // Mark source as analyzed and included
     await prisma.source.update({
       where: { id: sourceId },
-      data: { status: SourceStatus.CLASSIFIED },
+      data: {
+        status: SourceStatus.CLASSIFIED,
+        finalDecision: "INCLUDE",
+      },
     });
     console.log("[classify] status -> CLASSIFIED", { sourceId });
 

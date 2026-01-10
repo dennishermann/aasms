@@ -109,11 +109,12 @@ export function useSourcesPage() {
                 );
             case "included":
                 return sources.filter((s) =>
-                    (s.status === "ANALYZED" ||
+                    s.finalDecision === "INCLUDE" ||
+                    ((s.status === "ANALYZED" ||
                         s.status === "INCLUDED" ||
                         s.status === "CLASSIFIED" ||
                         s.status === "NEEDS_REVIEW") &&
-                    !s.finalDecision
+                        !s.finalDecision)
                 );
             case "excluded":
                 return sources.filter((s) => s.finalDecision === "EXCLUDE" || s.status === "EXCLUDED");
@@ -239,7 +240,7 @@ export function useSourcesPage() {
             needs_pdf: study.sources.filter((s) => s.needsPdf).length,
             pending: study.sources.filter((s) => (s.status === "PENDING" || s.status === "PENDING_METADATA" || s.status === "EXTRACTING_METADATA") && !s.needsPdf).length,
             analyzing: study.sources.filter((s) => ["READY_FOR_ANALYSIS", "READY_FOR_CLASSIFICATION", "ANALYZING", "ANALYZING_INCLUSION", "ANALYZING_CLASSIFICATION", "CLASSIFYING"].includes(s.status)).length,
-            included: study.sources.filter((s) => ["ANALYZED", "INCLUDED", "CLASSIFIED", "NEEDS_REVIEW"].includes(s.status) && !s.finalDecision).length,
+            included: study.sources.filter((s) => s.finalDecision === "INCLUDE" || (["ANALYZED", "INCLUDED", "CLASSIFIED", "NEEDS_REVIEW"].includes(s.status) && !s.finalDecision)).length,
             excluded: study.sources.filter((s) => s.finalDecision === "EXCLUDE" || s.status === "EXCLUDED").length,
         } : { all: 0, new_import: 0, needs_pdf: 0, pending: 0, analyzing: 0, included: 0, excluded: 0 },
         batchIdParam,
