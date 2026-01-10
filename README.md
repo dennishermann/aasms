@@ -338,4 +338,5 @@ cd frontend && npx prisma db push
 
 ## License
 
-MIT
+License: PolyForm Noncommercial
+https://polyformproject.org/licenses/noncommercial/1.0.0/
