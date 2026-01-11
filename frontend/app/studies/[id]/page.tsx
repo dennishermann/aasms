@@ -4,11 +4,24 @@ import { useQuery } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { StudyLayout } from "@/components/layout/study-layout";
 import { CriteriaTable } from "@/components/study/criteria-table";
 import { ClassificationSchemaTable } from "@/components/study/classification-schema-table";
+import { StudySummaryStats } from "@/components/shared/study-summary-stats";
+import type { SummaryStats } from "@/types/analysis";
+
+interface Source {
+  id: string;
+  status: string;
+  finalDecision?: string | null;
+  hasPdf?: boolean;
+  needsPdf?: boolean;
+  publicationDate?: string | null;
+  venue?: string | null;
+}
 
 interface StudyDetail {
   id: string;
@@ -23,7 +36,22 @@ interface StudyDetail {
     exclusionCriteria: Array<{ id: string; criterion: string; order: number }>;
     classificationSchema: any;
   } | null;
-  sources: any[];
+  sources: Source[];
+}
+
+interface FacetCategory {
+  id: string;
+  name: string;
+  description?: string;
+}
+
+interface Facet {
+  id: string;
+  name: string;
+  description?: string;
+  type: "CLOSED" | "OPEN" | "OPEN_CODED";
+  categories: FacetCategory[];
+  researchQuestionIds?: string[];
 }
 
 async function fetchStudy(id: string): Promise<StudyDetail> {
@@ -48,6 +76,33 @@ async function fetchParameters(studyId: string) {
   }
 }
 
+async function fetchFacets(studyId: string): Promise<Facet[]> {
+  try {
+    const response = await fetch(`/api/studies/${studyId}/facets`);
+    if (!response.ok) {
+      if (response.status === 404) return [];
+      throw new Error("Failed to fetch facets");
+    }
+    const data = await response.json();
+    return data.data || [];
+  } catch (error) {
+    console.error("Error fetching facets:", error);
+    return [];
+  }
+}
+
+async function fetchSummaryStats(studyId: string): Promise<SummaryStats | null> {
+  try {
+    const response = await fetch(`/api/studies/${studyId}/analysis/summary`);
+    if (!response.ok) return null;
+    const data = await response.json();
+    return data.data;
+  } catch (error) {
+    console.error("Error fetching summary stats:", error);
+    return null;
+  }
+}
+
 export default function StudyDetailPage() {
   const params = useParams();
   const studyId = params.id as string;
@@ -63,11 +118,31 @@ export default function StudyDetailPage() {
     enabled: !!study,
   });
 
+  const { data: facets, isLoading: facetsLoading } = useQuery({
+    queryKey: ["facets", studyId],
+    queryFn: () => fetchFacets(studyId),
+    enabled: !!study,
+  });
+
+  const { data: summaryStats, isLoading: statsLoading } = useQuery({
+    queryKey: ["summary-stats", studyId],
+    queryFn: () => fetchSummaryStats(studyId),
+    enabled: !!study,
+  });
+
   if (isLoading) {
     return (
       <StudyLayout studyId={studyId} studyTitle="Loading...">
         <div className="container mx-auto px-4 py-8">
-          <p className="text-muted-foreground">Loading study...</p>
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton key={i} className="h-24" />
+              ))}
+            </div>
+            <Skeleton className="h-48" />
+            <Skeleton className="h-32" />
+          </div>
         </div>
       </StudyLayout>
     );
@@ -86,97 +161,145 @@ export default function StudyDetailPage() {
     );
   }
 
+  // Compute stats from sources
+  const sources = study.sources;
+  const included = sources.filter(
+    (s) =>
+      s.finalDecision === "INCLUDE" ||
+      (["ANALYZED", "INCLUDED", "CLASSIFIED", "NEEDS_REVIEW"].includes(s.status) &&
+        !s.finalDecision)
+  ).length;
+
+  const excluded = sources.filter(
+    (s) => s.finalDecision === "EXCLUDE" || s.status === "EXCLUDED"
+  ).length;
+
+  const pending = sources.length - included - excluded;
+
+  // Compute year range from included sources
+  const includedSources = sources.filter(
+    (s) =>
+      s.finalDecision === "INCLUDE" ||
+      (["ANALYZED", "INCLUDED", "CLASSIFIED", "NEEDS_REVIEW"].includes(s.status) &&
+        !s.finalDecision)
+  );
+
+  const years = includedSources
+    .map((s) => (s.publicationDate ? new Date(s.publicationDate).getFullYear() : null))
+    .filter((y): y is number => y !== null);
+
+  const yearRange =
+    years.length > 0
+      ? { min: Math.min(...years), max: Math.max(...years) }
+      : { min: null, max: null };
+
+  // Get unique venues
+  const uniqueVenues = new Set(
+    includedSources.map((s) => s.venue).filter(Boolean)
+  ).size;
+
+  const stats = {
+    total: sources.length,
+    included,
+    excluded,
+    pending,
+    yearRange,
+    uniqueVenues,
+  };
+
   return (
     <StudyLayout
       studyId={studyId}
       studyTitle={study.title}
       studyStatus={study.status}
     >
-      <div className="container mx-auto px-4 py-8">
-        <div className="space-y-4">
-            {/* Description and Motivation */}
+      <div className="container mx-auto px-4 py-6">
+        <div className="space-y-6">
+          {/* Source Statistics */}
+          <section>
+            <h2 className="text-lg font-semibold mb-4">Study Progress</h2>
+            <StudySummaryStats stats={stats} isLoading={isLoading} variant="full" />
+          </section>
+
+          {/* Description and Motivation */}
+          {(study.description || study.motivation) && (
             <Card>
               <CardHeader>
-                <CardTitle>Overview</CardTitle>
+                <CardTitle className="text-base">Overview</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {study.description && (
-                  <div>
-                    <p className="text-sm font-semibold mb-2">Description:</p>
-                    <p className="text-sm text-muted-foreground">{study.description}</p>
-                  </div>
-                )}
                 {study.motivation && (
                   <div>
-                    <p className="text-sm font-semibold mb-2">Motivation:</p>
-                    <p className="text-sm text-muted-foreground">{study.motivation}</p>
+                    <p className="text-sm font-semibold text-muted-foreground mb-2">
+                      Motivation
+                    </p>
+                    <p className="text-sm leading-relaxed">{study.motivation}</p>
                   </div>
                 )}
-                {!study.description && !study.motivation && (
-                  <p className="text-muted-foreground text-sm">No description or motivation provided yet.</p>
+                {study.description && (
+                  <div>
+                    <p className="text-sm font-semibold text-muted-foreground mb-2">
+                      Description
+                    </p>
+                    <p className="text-sm leading-relaxed">{study.description}</p>
+                  </div>
                 )}
               </CardContent>
             </Card>
+          )}
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Research Questions</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {study.researchQuestions.length === 0 ? (
-                  <p className="text-muted-foreground">No research questions defined</p>
-                ) : (
-                  <ol className="list-decimal list-inside space-y-2">
-                    {study.researchQuestions
-                      .sort((a, b) => a.order - b.order)
-                      .map((rq) => (
-                        <li key={rq.id} className="text-sm">
-                          {rq.question}
-                        </li>
-                      ))}
-                  </ol>
-                )}
-              </CardContent>
-            </Card>
+          {/* Research Questions */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Research Questions</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {study.researchQuestions.length === 0 ? (
+                <p className="text-muted-foreground text-sm text-center py-4">
+                  No research questions defined yet.{" "}
+                  <Link
+                    href={`/studies/${studyId}/parameters`}
+                    className="text-primary hover:underline"
+                  >
+                    Add them in Parameters
+                  </Link>
+                </p>
+              ) : (
+                <ol className="space-y-3">
+                  {study.researchQuestions
+                    .sort((a, b) => a.order - b.order)
+                    .map((rq, index) => (
+                      <li key={rq.id} className="flex gap-3 text-sm">
+                        <Badge
+                          variant="secondary"
+                          className="h-6 w-6 shrink-0 rounded-full p-0 flex items-center justify-center text-xs font-bold"
+                        >
+                          {index + 1}
+                        </Badge>
+                        <span className="leading-relaxed">{rq.question}</span>
+                      </li>
+                    ))}
+                </ol>
+              )}
+            </CardContent>
+          </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Study Information</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Created:</span>
-                  <span>{new Date(study.createdAt).toLocaleDateString()}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Total Sources:</span>
-                  <span>{study.sources.length}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Status:</span>
-                  <Badge variant="outline">{study.status}</Badge>
-                </div>
-              </CardContent>
-            </Card>
+          {/* Inclusion & Exclusion Criteria */}
+          {parameters && (
+            <CriteriaTable
+              inclusionCriteria={parameters.inclusionCriteria || []}
+              exclusionCriteria={parameters.exclusionCriteria || []}
+            />
+          )}
 
-            {/* Inclusion & Exclusion Criteria */}
-            {parameters && (
-              <CriteriaTable
-                inclusionCriteria={parameters.inclusionCriteria || []}
-                exclusionCriteria={parameters.exclusionCriteria || []}
-              />
-            )}
-
-            {/* Classification Schema */}
-            {parameters && (
-              <ClassificationSchemaTable
-                classificationSchema={parameters.classificationSchema || []}
-                researchQuestions={study.researchQuestions}
-              />
-            )}
+          {/* Classification Schema with Coverage */}
+          <ClassificationSchemaTable
+            classificationSchema={facets || []}
+            researchQuestions={study.researchQuestions}
+            facetCoverage={summaryStats?.facetCoverage}
+          />
         </div>
       </div>
     </StudyLayout>
   );
 }
-

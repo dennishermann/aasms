@@ -3,16 +3,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { StudySummaryStats } from "@/components/shared/study-summary-stats";
 import type { SummaryStats } from "@/types/analysis";
-import {
-  FileText,
-  CheckCircle,
-  XCircle,
-  Calendar,
-  Building,
-  Layers,
-  Bookmark,
-} from "lucide-react";
 
 interface SummaryStatsCardProps {
   stats: SummaryStats | undefined;
@@ -22,17 +14,19 @@ interface SummaryStatsCardProps {
 export function SummaryStatsCard({ stats, isLoading }: SummaryStatsCardProps) {
   if (isLoading) {
     return (
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {Array.from({ length: 8 }).map((_, i) => (
-          <Card key={i}>
-            <CardHeader className="pb-2">
-              <Skeleton className="h-4 w-24" />
-            </CardHeader>
-            <CardContent>
-              <Skeleton className="h-8 w-16" />
-            </CardContent>
-          </Card>
-        ))}
+      <div className="space-y-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Card key={i}>
+              <CardHeader className="pb-2">
+                <Skeleton className="h-4 w-24" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-8 w-16" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
     );
   }
@@ -47,85 +41,22 @@ export function SummaryStatsCard({ stats, isLoading }: SummaryStatsCardProps) {
     );
   }
 
-  const statItems = [
-    {
-      label: "Total Sources",
-      value: stats.totalSources,
-      icon: FileText,
-      color: "text-muted-foreground",
-    },
-    {
-      label: "Included",
-      value: stats.includedSources,
-      icon: CheckCircle,
-      color: "text-green-600",
-    },
-    {
-      label: "Excluded",
-      value: stats.excludedSources,
-      icon: XCircle,
-      color: "text-red-600",
-    },
-    {
-      label: "Classified",
-      value: stats.classifiedSources,
-      icon: Layers,
-      color: "text-blue-600",
-    },
-    {
-      label: "Formal Sources",
-      value: stats.formalSources,
-      icon: Bookmark,
-      color: "text-purple-600",
-    },
-    {
-      label: "Grey Literature",
-      value: stats.greySources,
-      icon: Bookmark,
-      color: "text-orange-600",
-    },
-    {
-      label: "Year Range",
-      value:
-        stats.yearRange.min && stats.yearRange.max
-          ? `${stats.yearRange.min} - ${stats.yearRange.max}`
-          : "N/A",
-      icon: Calendar,
-      color: "text-muted-foreground",
-    },
-    {
-      label: "Unique Venues",
-      value: stats.uniqueVenues,
-      icon: Building,
-      color: "text-muted-foreground",
-    },
-  ];
+  // Transform SummaryStats to the format expected by StudySummaryStats
+  const sourceStats = {
+    total: stats.totalSources,
+    included: stats.includedSources,
+    excluded: stats.excludedSources,
+    pending: stats.totalSources - stats.includedSources - stats.excludedSources,
+    yearRange: stats.yearRange,
+    uniqueVenues: stats.uniqueVenues,
+  };
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {statItems.map((item) => {
-          const Icon = item.icon;
-          return (
-            <Card key={item.label}>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  {item.label}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-2">
-                  <Icon className={`h-4 w-4 ${item.color}`} />
-                  <p className={`text-2xl font-bold ${item.color}`}>
-                    {item.value}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+      {/* Core stats using shared component */}
+      <StudySummaryStats stats={sourceStats} variant="full" />
 
+      {/* Top Venues - specific to Analysis page */}
       {stats.topVenues.length > 0 && (
         <Card>
           <CardHeader>
@@ -143,6 +74,7 @@ export function SummaryStatsCard({ stats, isLoading }: SummaryStatsCardProps) {
         </Card>
       )}
 
+      {/* Classification Coverage - specific to Analysis page */}
       {stats.facetCoverage.length > 0 && (
         <Card>
           <CardHeader>
