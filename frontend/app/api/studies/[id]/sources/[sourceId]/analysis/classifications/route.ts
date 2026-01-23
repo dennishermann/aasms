@@ -44,21 +44,27 @@ export async function PUT(
       return NextResponse.json({ error: "Source not found" }, { status: 404 });
     }
 
+    const facetIds = data.classifications.map((c) => c.facetId).filter(Boolean);
+    const hasClassifications = data.classifications.length > 0;
+    const classificationsUpdate = hasClassifications
+      ? {
+        deleteMany: { facetId: { in: facetIds } },
+        create: data.classifications.map((c) => ({
+          facetId: c.facetId,
+          categoryId: c.categoryId ?? null,
+          value: c.value ?? null,
+          confidence: c.confidence,
+          reasoning: c.reasoning,
+          isManualOverride: c.isManualOverride ?? true,
+        })),
+      }
+      : undefined;
+
     const analysis = source.analysis
       ? await prisma.sourceAnalysis.update({
         where: { id: source.analysis.id },
         data: {
-          classifications: {
-            deleteMany: {},
-            create: data.classifications.map((c) => ({
-              facetId: c.facetId,
-              categoryId: c.categoryId ?? null,
-              value: c.value ?? null,
-              confidence: c.confidence,
-              reasoning: c.reasoning,
-              isManualOverride: c.isManualOverride ?? true,
-            })),
-          },
+          ...(classificationsUpdate ? { classifications: classificationsUpdate } : {}),
           isUserEdited: true,
           editedFields,
         },

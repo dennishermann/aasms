@@ -61,6 +61,24 @@ class ClassifyValueResponse(BaseModel):
     reasoning: str = Field(..., description="Explanation for the classification decision")
 
 
+class MapKeywordRequest(BaseModel):
+    """Request to map a keyword/phrase to categories or propose a new category."""
+    keyword: str = Field(..., description="Keyword/phrase to map")
+    categories: List[dict] = Field(..., description="Existing categories with id, name, description")
+    facet_name: str = Field(..., description="Name of the facet")
+    facet_description: Optional[str] = Field(None, description="Facet description")
+
+
+class MapKeywordResponse(BaseModel):
+    """Response with mapping suggestion."""
+    category_name: Optional[str] = Field(None, description="Name of the matched category, if any")
+    confidence: float = Field(..., ge=0, le=1, description="Confidence score for the suggestion")
+    reasoning: str = Field(..., description="Explanation for the mapping decision")
+    propose_new: bool = Field(..., description="Whether a new category is proposed")
+    proposed_category_name: Optional[str] = Field(None, description="Proposed category name")
+    proposed_category_description: Optional[str] = Field(None, description="Proposed category description")
+
+
 # ============ Endpoints ============
 
 
@@ -123,4 +141,29 @@ async def classify_value(request: ClassifyValueRequest) -> ClassifyValueResponse
         category_name=result.get("category_name"),
         confidence=result.get("confidence", 0.0),
         reasoning=result.get("reasoning", ""),
+    )
+
+
+@router.post("/map-keyword", response_model=MapKeywordResponse)
+async def map_keyword(request: MapKeywordRequest) -> MapKeywordResponse:
+    """
+    Map a keyword/phrase to existing categories or propose a new category.
+    """
+    llm_provider = get_llm_provider()
+    coding_service = CodingService(llm_provider)
+
+    result = await coding_service.map_keyword(
+        keyword=request.keyword,
+        categories=request.categories,
+        facet_name=request.facet_name,
+        facet_description=request.facet_description,
+    )
+
+    return MapKeywordResponse(
+        category_name=result.get("category_name"),
+        confidence=result.get("confidence", 0.0),
+        reasoning=result.get("reasoning", ""),
+        propose_new=result.get("propose_new", False),
+        proposed_category_name=result.get("proposed_category_name"),
+        proposed_category_description=result.get("proposed_category_description"),
     )

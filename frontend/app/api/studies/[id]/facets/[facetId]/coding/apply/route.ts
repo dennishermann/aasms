@@ -92,6 +92,35 @@ export async function POST(request: NextRequest, { params }: ApplyRouteParams) {
             }
         }
 
+        // Upsert keyword mappings for reuse on new sources
+        for (const cat of categories) {
+            const categoryId = createdCategories.find(c => c.name === cat.name)?.id;
+            if (!categoryId) continue;
+            for (const value of cat.values) {
+                if (!value || !value.trim()) continue;
+                await prisma.facetKeywordMapping.upsert({
+                    where: {
+                        facetId_keyword: {
+                            facetId,
+                            keyword: value.trim(),
+                        },
+                    },
+                    create: {
+                        facetId,
+                        keyword: value.trim(),
+                        categoryId,
+                        status: "APPROVED",
+                        source: "USER",
+                    },
+                    update: {
+                        categoryId,
+                        status: "APPROVED",
+                        source: "USER",
+                    },
+                });
+            }
+        }
+
         // Update facet to OPEN_CODED
         await prisma.facet.update({
             where: { id: facetId },
@@ -103,44 +132,64 @@ export async function POST(request: NextRequest, { params }: ApplyRouteParams) {
             },
         });
 
-        // Get all classifications for this facet and assign categories
-        const classifications = await prisma.classification.findMany({
-            where: {
-                facetId,
-                value: { not: null },
+        // Rebuild classifications for this facet from extracted keywords
+        const facetKeywords = await prisma.facetKeyword.findMany({
+            where: { facetId },
+            select: {
+                analysisId: true,
+                keyword: true,
             },
         });
 
+        const analysisCategoryMap = new Map<string, Set<string>>();
         let assignedCount = 0;
         let unassignedCount = 0;
 
-        for (const classification of classifications) {
-            if (!classification.value) continue;
-
-            const categoryId = valueToCategory[classification.value.toLowerCase()];
-
-            if (categoryId) {
-                await prisma.classification.update({
-                    where: { id: classification.id },
-                    data: {
-                        categoryId,
-                        rawValue: classification.value, // Preserve original
-                        autoAssigned: true,
-                        needsReview: false,
-                    },
-                });
-                assignedCount++;
-            } else {
-                // Mark as needing review (uncategorized)
-                await prisma.classification.update({
-                    where: { id: classification.id },
-                    data: {
-                        rawValue: classification.value,
-                        needsReview: true,
-                    },
-                });
+        for (const keyword of facetKeywords) {
+            const categoryId = valueToCategory[keyword.keyword.toLowerCase()];
+            if (!categoryId) {
                 unassignedCount++;
+                continue;
             }
+            assignedCount++;
+            const entry = analysisCategoryMap.get(keyword.analysisId) || new Set<string>();
+            entry.add(categoryId);
+            analysisCategoryMap.set(keyword.analysisId, entry);
+        }
+
+        const classificationCreates: Array<{
+            analysisId: string;
+            facetId: string;
+            categoryId: string;
+            confidence: number;
+            reasoning: string;
+            autoAssigned: boolean;
+            needsReview: boolean;
+        }> = [];
+
+        for (const [analysisId, categoryIds] of analysisCategoryMap.entries()) {
+            for (const categoryId of categoryIds) {
+                classificationCreates.push({
+                    analysisId,
+                    facetId,
+                    categoryId,
+                    confidence: 1.0,
+                    reasoning: "Mapped from extracted keywords",
+                    autoAssigned: true,
+                    needsReview: false,
+                });
+            }
+        }
+
+        // Replace all classifications for this facet
+        await prisma.classification.deleteMany({
+            where: { facetId },
+        });
+
+        if (classificationCreates.length > 0) {
+            await prisma.classification.createMany({
+                data: classificationCreates,
+            });
         }
 
         return NextResponse.json({
@@ -155,7 +204,7 @@ export async function POST(request: NextRequest, { params }: ApplyRouteParams) {
                 categoriesCreated: createdCategories.length,
                 assignedCount,
                 unassignedCount,
-                totalClassifications: classifications.length,
+                totalClassifications: facetKeywords.length,
             },
         });
 

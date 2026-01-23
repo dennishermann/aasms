@@ -1,3 +1,29 @@
+// ============ Multi-LLM Voting Types ============
+
+export interface VoteDetail {
+  provider: string;
+  decision: boolean;
+  confidence: number;
+  reasoning?: string | null;
+  error?: string | null;
+}
+
+export interface VotingDetails {
+  votes: VoteDetail[];
+  agreementRatio: number;
+  voteCount: number;
+  totalVoters: number;
+}
+
+export interface VotingSummary {
+  totalProviders: number;
+  providersUsed: string[];
+  overallAgreementRatio: number;
+  totalCriteriaEvaluated: number;
+  unanimousDecisions: number;
+  splitDecisions: number;
+}
+
 // ============ Criterion Evaluation (from LLM) ============
 
 export interface CriterionEval {
@@ -6,6 +32,7 @@ export interface CriterionEval {
   decision?: boolean;
   reasoning?: string;
   confidence?: number;
+  votingDetails?: VotingDetails | null;
 }
 
 // ============ Classification ============
@@ -22,12 +49,25 @@ export interface Classification {
   facet?: {
     id: string;
     name: string;
-    type: "CLOSED" | "OPEN";
+    type: "CLOSED" | "OPEN" | "OPEN_CODED";
   };
   category?: {
     id: string;
     name: string;
   } | null;
+}
+
+export interface FacetKeyword {
+  id: string;
+  facetId: string;
+  keyword: string;
+  confidence?: number | null;
+  evidence?: string | null;
+  facet?: {
+    id: string;
+    name: string;
+    type: "CLOSED" | "OPEN" | "OPEN_CODED";
+  };
 }
 
 // ============ Analysis Data ============
@@ -38,10 +78,15 @@ export interface AnalysisData {
   exclusionReasoning: string;
   confidenceScore: number;
   classifications: Classification[];
+  facetKeywords?: FacetKeyword[];
   relevanceScore?: number;
   qualityNotes?: string;
+  classificationBasis?: "FULL_TEXT" | "METADATA_ONLY";
   inclusionCriteria?: CriterionEval[];
   exclusionCriteria?: CriterionEval[];
+  // Voting fields
+  votingEnabled?: boolean;
+  votingSummary?: VotingSummary | null;
 }
 
 // ============ Facet (for UI components) ============
@@ -50,10 +95,12 @@ export interface Facet {
   id: string;
   name: string;
   description?: string;
-  type: "CLOSED" | "OPEN";
+  type: "CLOSED" | "OPEN" | "OPEN_CODED";
   required: boolean;
   categories: FacetCategory[];
   researchQuestionIds: string[];
+  metadataField?: string | null;
+  metadataTransform?: string | null;
 }
 
 export interface FacetCategory {

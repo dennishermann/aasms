@@ -54,6 +54,11 @@ export async function GET(
                 category: true,
               },
             },
+            facetKeywords: {
+              include: {
+                facet: true,
+              },
+            },
           },
         },
       },
@@ -138,6 +143,22 @@ export async function PUT(
     const exclusionCriteria = data.exclusionCriteria ?? source.analysis?.exclusionCriteria ?? [];
 
     // Update or create analysis
+    const facetIds = data.classifications.map((c) => c.facetId).filter(Boolean);
+    const hasClassifications = data.classifications.length > 0;
+    const classificationsUpdate = hasClassifications
+      ? {
+        deleteMany: { facetId: { in: facetIds } },
+        create: data.classifications.map((c) => ({
+          facetId: c.facetId,
+          categoryId: c.categoryId ?? null,
+          value: c.value ?? null,
+          confidence: c.confidence,
+          reasoning: c.reasoning,
+          isManualOverride: c.isManualOverride ?? true,
+        })),
+      }
+      : undefined;
+
     const analysis = source.analysis
       ? await prisma.sourceAnalysis.update({
         where: { id: source.analysis.id },
@@ -152,17 +173,7 @@ export async function PUT(
           exclusionCriteria,
           isUserEdited: true,
           editedFields,
-          classifications: {
-            deleteMany: {}, // Remove old classifications
-            create: data.classifications.map((c) => ({
-              facetId: c.facetId,
-              categoryId: c.categoryId ?? null,
-              value: c.value ?? null,
-              confidence: c.confidence,
-              reasoning: c.reasoning,
-              isManualOverride: c.isManualOverride ?? true,
-            })),
-          },
+          ...(classificationsUpdate ? { classifications: classificationsUpdate } : {}),
         },
         include: {
           classifications: {

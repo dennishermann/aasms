@@ -21,10 +21,44 @@ class ClassificationResult(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
     facet_name: str = Field(alias="facetName")
-    category: str
+    category: Optional[str] = None
+    keywords: Optional[List[str]] = None
     confidence: float
     reasoning: Optional[str] = None
     is_manual_override: Optional[bool] = Field(default=False, alias="isManualOverride")
+
+
+class VoteDetail(BaseModel):
+    """Single LLM's vote on a criterion."""
+    model_config = ConfigDict(populate_by_name=True)
+
+    provider: str
+    decision: bool
+    confidence: float
+    reasoning: Optional[str] = None
+    error: Optional[str] = None
+
+
+class VotingDetails(BaseModel):
+    """Voting details for a single criterion."""
+    model_config = ConfigDict(populate_by_name=True)
+
+    votes: List[VoteDetail]
+    agreement_ratio: float = Field(alias="agreementRatio")
+    vote_count: int = Field(alias="voteCount")
+    total_voters: int = Field(alias="totalVoters")
+
+
+class VotingSummary(BaseModel):
+    """Summary of voting across all criteria."""
+    model_config = ConfigDict(populate_by_name=True)
+
+    total_providers: int = Field(alias="totalProviders")
+    providers_used: List[str] = Field(alias="providersUsed")
+    overall_agreement_ratio: float = Field(alias="overallAgreementRatio")
+    total_criteria_evaluated: int = Field(alias="totalCriteriaEvaluated")
+    unanimous_decisions: int = Field(alias="unanimousDecisions")
+    split_decisions: int = Field(alias="splitDecisions")
 
 
 class CriterionEvaluation(BaseModel):
@@ -35,6 +69,7 @@ class CriterionEvaluation(BaseModel):
     decision: bool
     reasoning: str
     confidence: float
+    voting_details: Optional[VotingDetails] = Field(default=None, alias="votingDetails")
 
 
 class ClassificationResponse(BaseModel):
@@ -67,6 +102,9 @@ class InclusionAnalysisResponse(BaseModel):
     relevance_score: Optional[float] = Field(default=None, alias="relevanceScore")
     quality_notes: Optional[str] = Field(default=None, alias="qualityNotes")
     context_response_id: Optional[str] = Field(default=None, alias="contextResponseId")
+    # Voting-specific fields
+    voting_enabled: bool = Field(default=False, alias="votingEnabled")
+    voting_summary: Optional[VotingSummary] = Field(default=None, alias="votingSummary")
 
 
 class InclusionAnalysisTextRequest(BaseModel):
@@ -82,7 +120,7 @@ class InclusionAnalysisTextRequest(BaseModel):
 class FullAnalysisResponse(BaseModel):
     """Response model for combined analysis."""
     model_config = ConfigDict(populate_by_name=True)
-    
+
     recommendation: str
     inclusion_reasoning: str = Field(alias="inclusionReasoning")
     exclusion_reasoning: str = Field(alias="exclusionReasoning")
@@ -90,6 +128,9 @@ class FullAnalysisResponse(BaseModel):
     inclusion_criteria: List[CriterionEvaluation] = Field(alias="inclusionCriteria")
     exclusion_criteria: List[CriterionEvaluation] = Field(alias="exclusionCriteria")
     classifications: Optional[List[ClassificationResult]] = None
+    # Voting-specific fields
+    voting_enabled: bool = Field(default=False, alias="votingEnabled")
+    voting_summary: Optional[VotingSummary] = Field(default=None, alias="votingSummary")
 
 
 # Helpers
@@ -163,10 +204,16 @@ async def _run_inclusion_analysis(
     source_content: Dict[str, Any],
     previous_response_id: Optional[str] = None,
 ) -> InclusionAnalysisResponse:
-    """Shared logic for inclusion analysis."""
+    """Shared logic for inclusion analysis.
+
+    Automatically uses multi-LLM voting when multiple providers are configured.
+    """
     try:
+        # The service will auto-detect if voting is available
+        # If voting is available (2+ providers), it will use voting mode
+        # Otherwise it will use single-LLM mode with the configured provider
         provider = get_llm_provider()
-        inclusion_service = InclusionEvaluationService(provider)
+        inclusion_service = InclusionEvaluationService(llm_provider=provider)
     except Exception as e:
         logger.exception("analyze-inclusion: provider init failed")
         raise HTTPException(status_code=500, detail=f"LLM provider error: {str(e)}")
@@ -223,26 +270,56 @@ async def _run_inclusion_analysis(
         logger.exception("analyze-inclusion: failed")
         raise HTTPException(status_code=500, detail=f"Inclusion analysis failed: {str(e)}")
 
-    # Transform decision -> fulfilled for frontend compatibility
-    inclusion_criteria_transformed = []
-    for c in inclusion_results.get("inclusion_criteria", []):
-        criterion_data = {
-            "criterion": c.get("criterion", ""),
-            "decision": c.get("decision", False),
-            "reasoning": c.get("reasoning", ""),
-            "confidence": c.get("confidence", 0.5),
-        }
-        inclusion_criteria_transformed.append(CriterionEvaluation(**criterion_data))
-    
-    exclusion_criteria_transformed = []
-    for c in inclusion_results.get("exclusion_criteria", []):
-        criterion_data = {
-            "criterion": c.get("criterion", ""),
-            "decision": c.get("decision", False),
-            "reasoning": c.get("reasoning", ""),
-            "confidence": c.get("confidence", 0.5),
-        }
-        exclusion_criteria_transformed.append(CriterionEvaluation(**criterion_data))
+    # Transform criterion results, including voting details if present
+    def transform_criterion(c: Dict[str, Any]) -> CriterionEvaluation:
+        """Transform a criterion result dict to CriterionEvaluation model."""
+        voting_details = None
+        if c.get("voting_details"):
+            vd = c["voting_details"]
+            votes = [
+                VoteDetail(
+                    provider=v.get("provider", ""),
+                    decision=v.get("decision", False),
+                    confidence=v.get("confidence", 0.5),
+                    reasoning=v.get("reasoning"),
+                    error=v.get("error"),
+                )
+                for v in vd.get("votes", [])
+            ]
+            voting_details = VotingDetails(
+                votes=votes,
+                agreement_ratio=vd.get("agreement_ratio", 0.0),
+                vote_count=vd.get("vote_count", 0),
+                total_voters=vd.get("total_voters", 0),
+            )
+
+        return CriterionEvaluation(
+            criterion=c.get("criterion", ""),
+            decision=c.get("decision", False),
+            reasoning=c.get("reasoning", ""),
+            confidence=c.get("confidence", 0.5),
+            voting_details=voting_details,
+        )
+
+    inclusion_criteria_transformed = [
+        transform_criterion(c) for c in inclusion_results.get("inclusion_criteria", [])
+    ]
+    exclusion_criteria_transformed = [
+        transform_criterion(c) for c in inclusion_results.get("exclusion_criteria", [])
+    ]
+
+    # Transform voting summary if present
+    voting_summary = None
+    if inclusion_results.get("voting_summary"):
+        vs = inclusion_results["voting_summary"]
+        voting_summary = VotingSummary(
+            total_providers=vs.get("total_providers", 0),
+            providers_used=vs.get("providers_used", []),
+            overall_agreement_ratio=vs.get("overall_agreement_ratio", 0.0),
+            total_criteria_evaluated=vs.get("total_criteria_evaluated", 0),
+            unanimous_decisions=vs.get("unanimous_decisions", 0),
+            split_decisions=vs.get("split_decisions", 0),
+        )
 
     response = InclusionAnalysisResponse(
         analysis_id=str(uuid4()),
@@ -255,6 +332,8 @@ async def _run_inclusion_analysis(
         relevance_score=inclusion_results.get("relevance_score"),
         quality_notes=inclusion_results.get("quality_notes", "Automatically generated."),
         context_response_id=inclusion_results.get("context_response_id"),
+        voting_enabled=inclusion_results.get("voting_enabled", False),
+        voting_summary=voting_summary,
     )
     
     logger.info(
@@ -298,6 +377,7 @@ async def classify_source_file(
         "doi": source_content_ext.get("doi") or "",
         "publication_date": source_content_ext.get("publication_date") or "",
         "content_excerpt": source_content_ext.get("content_excerpt") or "",
+        "metadata_extension": source_content_ext.get("metadataExtension") or source_content_ext.get("metadata_extension") or {},
     }
 
     # Parse PDF (Required for this endpoint)
@@ -343,6 +423,7 @@ async def classify_source_text(request: ClassificationTextRequest):
         "doi": request.source_content.get("doi") or "",
         "publication_date": request.source_content.get("publication_date") or "",
         "content_excerpt": request.source_content.get("content_excerpt") or "",
+        "metadata_extension": request.source_content.get("metadataExtension") or request.source_content.get("metadata_extension") or {},
     }
     
     classifications = await _run_classification(
@@ -450,6 +531,7 @@ async def analyze_existing_source_pdf(
         "doi": source_content_ext.get("doi") or "",
         "publication_date": source_content_ext.get("publication_date") or "",
         "content_excerpt": "", # Will be filled by PDF
+        "metadata_extension": source_content_ext.get("metadataExtension") or source_content_ext.get("metadata_extension") or {},
     }
 
     if not file.filename.lower().endswith(".pdf"):
@@ -506,5 +588,7 @@ async def analyze_existing_source_pdf(
         confidence=inclusion_response.confidence,
         inclusion_criteria=inclusion_response.inclusion_criteria,
         exclusion_criteria=inclusion_response.exclusion_criteria,
-        classifications=classifications if inclusion_response.recommendation == "include" else None
+        classifications=classifications if inclusion_response.recommendation == "include" else None,
+        voting_enabled=inclusion_response.voting_enabled,
+        voting_summary=inclusion_response.voting_summary,
     )

@@ -235,6 +235,8 @@ export function SourceAnalysisPanel({
               confidenceScore,
               relevanceScore,
               qualityNotes,
+              votingEnabled: initialAnalysis.votingEnabled,
+              votingSummary: initialAnalysis.votingSummary,
             }}
             loading={loadingInclusion}
           />
@@ -291,7 +293,13 @@ export function SourceAnalysisPanel({
               loading={loadingClassifications}
             />
           ) : (
-            <ClassificationsView classifications={classifications} loading={loadingClassifications} />
+            <ClassificationsView
+              classifications={classifications}
+              facetKeywords={initialAnalysis.facetKeywords}
+              facets={facets}
+              classificationBasis={initialAnalysis.classificationBasis}
+              loading={loadingClassifications}
+            />
           )}
         </Card>
       )}
@@ -310,7 +318,5 @@ export function SourceAnalysisPanel({
     </div>
   );
 }
-
-
 
 

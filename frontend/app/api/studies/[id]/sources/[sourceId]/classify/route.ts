@@ -42,28 +42,29 @@ export async function POST(
       return NextResponse.json({ error: "Source not found" }, { status: 404 });
     }
 
-    // Check for either PDF or extracted text content
-    const hasTextContent = !!(
-      (source.metadataChosen as any)?.content_excerpt ||
-      (source.metadataParsed as any)?.content_excerpt ||
-      (source.metadataExtension as any)?.content_excerpt
-    );
+    const chosen: any = source.metadataChosen || source.metadataParsed || source.metadataExtension || {};
+    const hasTextContent = !!chosen.content_excerpt;
+    const hasAbstract = !!(chosen.abstract || source.abstract);
+    const allowMetadataOnly = source.allowMetadataOnlyClassification && hasAbstract;
 
-    if (!source.storagePath && !hasTextContent) {
+    if (!source.storagePath && !hasTextContent && !allowMetadataOnly) {
       return NextResponse.json(
-        { error: "Content is required for classification. Please upload a PDF or ensure website content is extracted." },
+        { error: "Content is required for classification. Please upload a PDF or enable metadata-only classification." },
         { status: 400 }
       );
     }
 
     // Gate by status
-    if (
-      !([
-        SourceStatus.ANALYZING_CLASSIFICATION,
-        SourceStatus.READY_FOR_ANALYSIS,
-        SourceStatus.CLASSIFIED,
-      ] as SourceStatus[]).includes(source.status)
-    ) {
+    const allowedStatuses: SourceStatus[] = [
+      SourceStatus.ANALYZING_CLASSIFICATION,
+      SourceStatus.READY_FOR_ANALYSIS,
+      SourceStatus.CLASSIFIED,
+    ];
+    if (allowMetadataOnly) {
+      allowedStatuses.push(SourceStatus.PENDING);
+    }
+
+    if (!allowedStatuses.includes(source.status)) {
       return NextResponse.json(
         {
           error: `Classification is only allowed when status is ANALYZING_CLASSIFICATION or READY_FOR_ANALYSIS. Current status: ${source.status}`,
@@ -131,7 +132,7 @@ export async function POST(
       id: facet.id,
       name: facet.name,
       description: facet.description,
-      type: facet.type.toLowerCase(), // CLOSED -> closed, OPEN -> open
+      type: facet.type === "OPEN_CODED" ? "open" : facet.type.toLowerCase(), // OPEN_CODED uses keyword extraction
       required: facet.required,
       categories: facet.categories.map((cat) => ({
         id: cat.id,
@@ -142,7 +143,6 @@ export async function POST(
     }));
 
     // Build source content payload preferring chosen/parsed metadata
-    const chosen: any = source.metadataChosen || source.metadataParsed || source.metadataExtension || {};
     const content = {
       title: chosen.title || source.title || "",
       authors: chosen.authors || source.authors || [],
@@ -265,11 +265,13 @@ export async function POST(
         classifications.length
         : source.analysis?.confidenceScore || 0.5;
 
-    // Build a map of facet name -> facet id for looking up
+    // Build lookup maps
     const facetNameToId = new Map(facetsToUse.map(f => [f.name, f.id]));
     const facetIdToCategoryMap = new Map(
       facetsToUse.map(f => [f.id, new Map(f.categories.map(c => [c.name, c.id]))])
     );
+    const facetById = new Map(facetsToUse.map(f => [f.id, f]));
+    const facetByName = new Map(facetsToUse.map(f => [f.name, f]));
 
     // Determine delete scope
     const deleteScope = facetId
@@ -278,31 +280,233 @@ export async function POST(
         ? { facetId: facetNameToId.get(facetName) }
         : {};
 
-    // Convert classifications to use facetId and categoryId
-    const createClassifications = classifications.map((c: any) => {
+    const createClassifications: Array<{
+      facetId: string;
+      categoryId: string | null;
+      value: string | null;
+      confidence: number;
+      reasoning: string;
+      isManualOverride: boolean;
+    }> = [];
+    const keywordCreates: Array<{
+      facetId: string;
+      keyword: string;
+      confidence: number | null;
+    }> = [];
+    const keywordDedup = new Set<string>();
+    const mappingCache = new Map<
+      string,
+      Map<string, { categoryId: string | null; status: string }>
+    >();
+
+    const getFacetMappings = async (facetId: string) => {
+      if (mappingCache.has(facetId)) {
+        return mappingCache.get(facetId)!;
+      }
+      const mappings = await prisma.facetKeywordMapping.findMany({
+        where: { facetId },
+        select: {
+          keyword: true,
+          categoryId: true,
+          status: true,
+        },
+      });
+      const map = new Map<string, { categoryId: string | null; status: string }>();
+      for (const mapping of mappings) {
+        map.set(mapping.keyword.toLowerCase(), {
+          categoryId: mapping.categoryId,
+          status: mapping.status,
+        });
+      }
+      mappingCache.set(facetId, map);
+      return map;
+    };
+
+    const suggestKeywordMapping = async (keyword: string, facet: typeof facetsToUse[number]) => {
+      const response = await fetch(`${PYTHON_SERVICE_URL}/api/coding/map-keyword`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          keyword,
+          categories: facet.categories.map((cat) => ({
+            id: cat.id,
+            name: cat.name,
+            description: cat.description,
+          })),
+          facet_name: facet.name,
+          facet_description: facet.description,
+        }),
+      });
+
+      if (!response.ok) {
+        return null;
+      }
+      return response.json();
+    };
+
+    for (const c of classifications) {
       const cFacetName = c.facetName || c.facet_name || "unknown";
       const cFacetId = c.facetId || facetNameToId.get(cFacetName);
-      const categoryMap = cFacetId ? facetIdToCategoryMap.get(cFacetId) : null;
+      const facet = cFacetId ? facetById.get(cFacetId) : facetByName.get(cFacetName);
+      if (!facet) {
+        continue;
+      }
+
+      if (facet.type === "OPEN") {
+        const keywords = Array.isArray(c.keywords) ? c.keywords : [];
+        if (keywords.length === 0) {
+          createClassifications.push({
+            facetId: facet.id,
+            categoryId: null,
+            value: null,
+            confidence: parseFloat(c.confidence || '0'),
+            reasoning: c.reasoning || "No matching values found",
+            isManualOverride: false,
+          });
+        }
+        for (const keyword of keywords) {
+          if (typeof keyword !== "string" || !keyword.trim()) {
+            continue;
+          }
+          const normalized = `${facet.id}:${keyword.trim().toLowerCase()}`;
+          if (keywordDedup.has(normalized)) {
+            continue;
+          }
+          keywordDedup.add(normalized);
+          keywordCreates.push({
+            facetId: facet.id,
+            keyword: keyword.trim(),
+            confidence: c.confidence !== undefined ? parseFloat(c.confidence) : null,
+          });
+          createClassifications.push({
+            facetId: facet.id,
+            categoryId: null,
+            value: keyword.trim(),
+            confidence: parseFloat(c.confidence || 0),
+            reasoning: c.reasoning || "",
+            isManualOverride: false,
+          });
+        }
+        continue;
+      }
+
+      if (facet.type === "OPEN_CODED") {
+        const keywords = Array.isArray(c.keywords) ? c.keywords : [];
+        if (keywords.length === 0) {
+          createClassifications.push({
+            facetId: facet.id,
+            categoryId: null,
+            value: null,
+            confidence: parseFloat(c.confidence || '0'),
+            reasoning: c.reasoning || "No matching values found",
+            isManualOverride: false,
+          });
+        }
+        const mappingMap = await getFacetMappings(facet.id);
+        for (const keyword of keywords) {
+          if (typeof keyword !== "string" || !keyword.trim()) {
+            continue;
+          }
+          const trimmed = keyword.trim();
+          const normalized = trimmed.toLowerCase();
+          const dedupKey = `${facet.id}:${normalized}`;
+          if (!keywordDedup.has(dedupKey)) {
+            keywordDedup.add(dedupKey);
+            keywordCreates.push({
+              facetId: facet.id,
+              keyword: trimmed,
+              confidence: c.confidence !== undefined ? parseFloat(c.confidence) : null,
+            });
+          }
+
+          const existing = mappingMap.get(normalized);
+          if (existing && existing.status === "APPROVED" && existing.categoryId) {
+            createClassifications.push({
+              facetId: facet.id,
+              categoryId: existing.categoryId,
+              value: null,
+              confidence: parseFloat(c.confidence || 0),
+              reasoning: c.reasoning || "Mapped from approved keyword",
+              isManualOverride: false,
+            });
+            continue;
+          }
+
+          if (!existing) {
+            const suggestion = await suggestKeywordMapping(trimmed, facet);
+            if (suggestion) {
+              const match = facet.categories.find(
+                (cat) => cat.name.toLowerCase() === (suggestion.category_name || "").toLowerCase()
+              );
+              await prisma.facetKeywordMapping.upsert({
+                where: {
+                  facetId_keyword: {
+                    facetId: facet.id,
+                    keyword: trimmed,
+                  },
+                },
+                create: {
+                  facetId: facet.id,
+                  keyword: trimmed,
+                  categoryId: match?.id || null,
+                  status: "PENDING",
+                  confidence: suggestion.confidence ?? null,
+                  source: "LLM",
+                  proposedCategoryName: suggestion.proposed_category_name || null,
+                  proposedCategoryDescription: suggestion.proposed_category_description || null,
+                },
+                update: {
+                  categoryId: match?.id || null,
+                  status: "PENDING",
+                  confidence: suggestion.confidence ?? null,
+                  source: "LLM",
+                  proposedCategoryName: suggestion.proposed_category_name || null,
+                  proposedCategoryDescription: suggestion.proposed_category_description || null,
+                },
+              });
+              mappingMap.set(normalized, { categoryId: match?.id || null, status: "PENDING" });
+            }
+          }
+        }
+        continue;
+      }
+
+      const categoryMap = facetIdToCategoryMap.get(facet.id) || null;
       const cCategoryId = categoryMap?.get(c.category) || null;
 
-      return {
-        facetId: cFacetId || facetsToUse[0]?.id, // Fallback to first facet if not found
+      createClassifications.push({
+        facetId: facet.id,
         categoryId: cCategoryId,
-        value: cCategoryId ? null : (c.category || c.value || null), // For OPEN facets
+        value: null,
         confidence: parseFloat(c.confidence || 0),
         reasoning: c.reasoning || "",
         isManualOverride: false,
-      };
-    });
+      });
+    }
+
+    const openFacetIds = facetsToUse.filter(f => f.type === "OPEN").map(f => f.id);
+    const facetKeywordUpdate =
+      openFacetIds.length > 0
+        ? {
+          deleteMany: { facetId: { in: openFacetIds } },
+          create: keywordCreates,
+        }
+        : keywordCreates.length > 0
+          ? { create: keywordCreates }
+          : undefined;
+
+    const hasFullText = !!content.content_excerpt || (!!pdfBuffer && pdfBuffer.length > 0);
+    const classificationBasis = hasFullText ? "FULL_TEXT" : "METADATA_ONLY";
 
     const analysis = await prisma.sourceAnalysis.upsert({
       where: { sourceId },
       update: {
-        confidenceScore: avgConfidence,
+        classificationBasis,
         classifications: {
           deleteMany: deleteScope,
           create: createClassifications,
         },
+        ...(facetKeywordUpdate ? { facetKeywords: facetKeywordUpdate } : {}),
       },
       create: {
         sourceId,
@@ -311,11 +515,13 @@ export async function POST(
         inclusionReasoning: source.analysis?.inclusionReasoning || "",
         exclusionReasoning: source.analysis?.exclusionReasoning || "",
         confidenceScore: avgConfidence,
+        classificationBasis,
         relevanceScore: source.analysis?.relevanceScore || null,
         qualityNotes: source.analysis?.qualityNotes || null,
         inclusionCriteria: source.analysis?.inclusionCriteria || [],
         exclusionCriteria: source.analysis?.exclusionCriteria || [],
         classifications: { create: createClassifications },
+        facetKeywords: { create: keywordCreates },
       },
       include: {
         classifications: {
@@ -324,6 +530,7 @@ export async function POST(
             category: true,
           },
         },
+        facetKeywords: true,
       },
     });
     console.log("[classify] analysis saved", {

@@ -13,16 +13,18 @@ class Settings(BaseSettings):
 
     # LLM Provider settings
     # "auto" will pick the first provider with a configured API key
-    llm_provider: str = "auto"  # Options: "auto", "claude", "openai"
+    llm_provider: str = "auto"  # Options: "auto", "claude", "openai", "gemini"
     anthropic_api_key: str = ""
     openai_api_key: str = ""
+    google_api_key: str = ""
 
     # Model configurations (big/small per provider)
-    # Model configurations (big/small per provider)
-    claude_model: str
-    claude_small_model: str
-    openai_model: str
-    openai_small_model: str
+    claude_model: str = "claude-sonnet-4-5-20250929"
+    claude_small_model: str = "claude-haiku-4-5-20251001"
+    openai_model: str = "gpt-5.2-2025-12-11"
+    openai_small_model: str = "gpt-5-mini-2025-08-07"
+    gemini_model: str = "gemini-3-flash-preview"
+    gemini_small_model: str = "gemini-3-flash-preview"
 
     # Analysis settings
     max_tokens: int = 8000

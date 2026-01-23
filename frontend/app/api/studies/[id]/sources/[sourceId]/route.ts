@@ -6,12 +6,15 @@ const updateSourceSchema = z.object({
   title: z.string().min(1).optional(),
   authors: z.array(z.string()).optional(),
   publicationDate: z.string().optional(),
+  year: z.string().optional(),
   venue: z.string().optional(),
   doi: z.string().optional(),
   abstract: z.string().optional(),
   keywords: z.array(z.string()).optional(),
   sourceCategory: z.enum(["FORMAL", "GREY"]).optional(),
   bibtex: z.string().optional(),
+  needsPdf: z.boolean().optional(),
+  allowMetadataOnlyClassification: z.boolean().optional(),
   status: z.enum([
     "PENDING",
     "ANALYZING",
@@ -113,8 +116,24 @@ export async function PATCH(
 
     const dataToUpdate: any = {
       ...validation.data,
+      ...validation.data,
       publicationDate,
     };
+
+    // Handle manual year update: Convert to Date(UTC year, 11, 31) sentinel
+    if (validation.data.year) {
+      try {
+        const yearNum = parseInt(validation.data.year);
+        if (!isNaN(yearNum)) {
+          // Create Dec 31st date in UTC
+          const sentinelDate = new Date(Date.UTC(yearNum, 11, 31));
+          dataToUpdate.publicationDate = sentinelDate;
+        }
+      } catch (e) {
+        // Ignore invalid year
+      }
+      delete dataToUpdate.year;
+    }
 
     // When metadataChosen is provided and status not explicitly set, move to READY_FOR_ANALYSIS
     if (validation.data.metadataChosen !== undefined && validation.data.status === undefined) {
@@ -173,4 +192,3 @@ export async function DELETE(
     return NextResponse.json({ error: "Failed to delete source" }, { status: 500 });
   }
 }
-

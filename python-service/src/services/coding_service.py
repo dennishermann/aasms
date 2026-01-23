@@ -23,12 +23,12 @@ class CodingService:
         max_categories: int = 10,
     ) -> Dict[str, Any]:
         """
-        Generate category suggestions from a list of OPEN facet values.
+        Generate category suggestions from a list of OPEN facet keywords.
 
         Uses LLM to cluster similar values and suggest meaningful category names.
 
         Args:
-            values: List of unique values extracted from sources
+            values: List of unique keywords/phrases extracted from sources
             facet_name: Name of the facet being coded
             facet_description: Optional description of what this facet captures
             min_categories: Minimum number of categories to suggest
@@ -45,9 +45,9 @@ class CodingService:
 
         prompt = f"""You are helping a researcher organize data from a systematic mapping study.
 
-The researcher has a facet called "{facet_name}" that collected free-text values from research papers.{description_text}
+The researcher has a facet called "{facet_name}" that collected keywords/phrases from research papers.{description_text}
 
-Here are all the unique values extracted:
+Here are all the unique keywords/phrases extracted:
 {values_list}
 
 Your task is to group these values into {min_categories}-{max_categories} meaningful categories.
@@ -199,4 +199,80 @@ If confidence is below 0.5, set category_name to null."""
 
         except Exception as e:
             logger.error(f"Error classifying value: {e}")
+            raise
+
+    async def map_keyword(
+        self,
+        keyword: str,
+        categories: List[Dict[str, Any]],
+        facet_name: str,
+        facet_description: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Map a keyword/phrase to an existing category or propose a new category.
+
+        Returns a suggested existing category or a proposed new category definition.
+        """
+        logger.info(f"Mapping keyword '{keyword}' for facet '{facet_name}'")
+
+        categories_desc = "\n".join(
+            f"- {cat.get('name', 'Unknown')}: {cat.get('description', 'No description')}"
+            for cat in categories
+        )
+        description_text = f"\nFacet description: {facet_description}" if facet_description else ""
+
+        prompt = f"""You are helping a researcher map keywords to coding categories.
+
+Facet: "{facet_name}"{description_text}
+
+Existing categories:
+{categories_desc}
+
+Keyword/phrase: "{keyword}"
+
+Task:
+1) If the keyword clearly fits one existing category, select that category.
+2) If no category fits well, propose a new category name and description.
+
+Respond with JSON:
+- category_name: name of the best existing category (or null if none fits)
+- confidence: 0.0-1.0
+- reasoning: brief justification grounded in the keyword meaning
+- propose_new: boolean
+- proposed_category_name: string (required if propose_new=true)
+- proposed_category_description: string (required if propose_new=true)
+"""
+
+        try:
+            response_schema = {
+                "category_name": "string",
+                "confidence": "number",
+                "reasoning": "string",
+                "propose_new": "boolean",
+                "proposed_category_name": "string",
+                "proposed_category_description": "string",
+            }
+
+            result = await self.llm_provider.generate_structured_output(
+                prompt=prompt,
+                response_schema=response_schema,
+                max_tokens=1000,
+            )
+
+            category_name = result.get("category_name")
+            propose_new = bool(result.get("propose_new"))
+
+            if propose_new:
+                category_name = None
+
+            return {
+                "category_name": category_name,
+                "confidence": float(result.get("confidence", 0.0)),
+                "reasoning": result.get("reasoning", ""),
+                "propose_new": propose_new,
+                "proposed_category_name": result.get("proposed_category_name"),
+                "proposed_category_description": result.get("proposed_category_description"),
+            }
+        except Exception as e:
+            logger.error(f"Error mapping keyword: {e}")
             raise

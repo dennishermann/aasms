@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import base64
 import json
 import logging
@@ -9,7 +10,7 @@ from typing import Any, Dict, Optional
 
 from src.core.config import settings
 from src.core.schemas.metadata import METADATA_JSON_SCHEMA, METADATA_RESPONSE_FORMAT
-from src.core.rate_limiter import get_rate_limiter
+from src.core.rate_limiter import get_openai_limiter, get_anthropic_limiter, get_gemini_limiter
 
 from tenacity import (
     retry,
@@ -33,10 +34,11 @@ logger.propagate = False
 
 _anthropic_client = None
 _openai_client = None
+_google_client = None
 
 
 def _get_anthropic_client():
-    """Return cached Anthropic client."""
+    """Return cached Anthropic client with built-in retry support."""
     global _anthropic_client
     if _anthropic_client:
         return _anthropic_client
@@ -44,7 +46,12 @@ def _get_anthropic_client():
         from anthropic import AsyncAnthropic
     except ImportError:
         raise RuntimeError("anthropic package not installed")
-    _anthropic_client = AsyncAnthropic(api_key=settings.anthropic_api_key)
+    # Anthropic SDK has built-in retry support for 429 errors
+    # Configure max_retries for automatic exponential backoff
+    _anthropic_client = AsyncAnthropic(
+        api_key=settings.anthropic_api_key,
+        max_retries=5,  # SDK handles 429s automatically with exponential backoff
+    )
     return _anthropic_client
 
 
@@ -59,6 +66,19 @@ def _get_openai_client():
         raise RuntimeError("openai package not installed")
     _openai_client = AsyncOpenAI(api_key=settings.openai_api_key)
     return _openai_client
+
+
+def _get_google_client():
+    """Return cached Google GenAI client."""
+    global _google_client
+    if _google_client:
+        return _google_client
+    try:
+        from google import genai
+    except ImportError:
+        raise RuntimeError("google-genai package not installed")
+    _google_client = genai.Client(api_key=settings.google_api_key)
+    return _google_client
 
 
 def strip_json_fences(text: str) -> str:
@@ -124,6 +144,37 @@ def _to_json_schema(response_schema: Optional[Dict[str, Any]] = None) -> Dict[st
     }
 
 
+def _to_gemini_schema(response_schema: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    """
+    Convert a schema to Gemini-compatible format.
+    Gemini doesn't support 'additionalProperties', so we strip it.
+    """
+    schema = _to_json_schema(response_schema)
+    return _strip_additional_properties(schema)
+
+
+def _strip_additional_properties(schema: Dict[str, Any]) -> Dict[str, Any]:
+    """Recursively remove 'additionalProperties' from a JSON schema for Gemini compatibility."""
+    if not isinstance(schema, dict):
+        return schema
+    
+    result = {}
+    for key, value in schema.items():
+        if key == "additionalProperties":
+            # Skip this key - Gemini doesn't support it
+            continue
+        elif key == "properties" and isinstance(value, dict):
+            # Recursively process nested properties
+            result[key] = {k: _strip_additional_properties(v) for k, v in value.items()}
+        elif key == "items" and isinstance(value, dict):
+            # Process array items schema
+            result[key] = _strip_additional_properties(value)
+        else:
+            result[key] = value
+    
+    return result
+
+
 async def generate_json(
     provider_name: str,
     model_name: str,
@@ -151,6 +202,15 @@ async def generate_json(
             previous_response_id,
         )
 
+    if provider_name == "gemini":
+        return await _generate_json_gemini_with_retry(
+            model_name,
+            prompt,
+            temperature,
+            max_tokens,
+            response_schema,
+        )
+
     raise RuntimeError(f"Unsupported provider: {provider_name}")
 
 
@@ -165,10 +225,10 @@ async def _generate_json_claude_with_retry(
     temperature: float,
     max_tokens: int,
 ) -> Dict[str, Any]:
-    # 1. Proactive Rate Limiting
+    # 1. Proactive Rate Limiting (Anthropic-specific)
     # Estimate tokens: prompt + max_tokens (conservative)
     estimated = (len(prompt) // 4) + max_tokens
-    await get_rate_limiter().acquire_permission(estimated)
+    await get_anthropic_limiter(model_name).acquire_permission(estimated)
     
     return await _generate_json_claude(model_name, prompt, temperature, max_tokens)
 
@@ -188,9 +248,9 @@ async def _generate_json_openai_with_retry(
     response_schema: Optional[Dict[str, Any]],
     previous_response_id: Optional[str] = None,
 ) -> Dict[str, Any]:
-    # 1. Proactive Rate Limiting
+    # 1. Proactive Rate Limiting (OpenAI-specific)
     estimated = (len(prompt) // 4) + max_tokens
-    await get_rate_limiter().acquire_permission(estimated)
+    await get_openai_limiter(model_name).acquire_permission(estimated)
 
     return await _generate_json_openai(
         model_name,
@@ -289,4 +349,86 @@ async def _generate_json_openai(
         return {}
 
 
+@retry(
+    wait=wait_random_exponential(min=1, max=60),
+    stop=stop_after_attempt(6),
+    retry=retry_if_exception_type((Exception)),
+)
+async def _generate_json_gemini_with_retry(
+    model_name: str,
+    prompt: str,
+    temperature: float,
+    max_tokens: int,
+    response_schema: Optional[Dict[str, Any]],
+) -> Dict[str, Any]:
+    # 1. Proactive Rate Limiting (Gemini-specific)
+    estimated = (len(prompt) // 4) + max_tokens
+    await get_gemini_limiter(model_name).acquire_permission(estimated)
+
+    return await _generate_json_gemini(
+        model_name,
+        prompt,
+        temperature,
+        max_tokens,
+        response_schema,
+    )
+
+
+async def _generate_json_gemini(
+    model_name: str,
+    prompt: str,
+    temperature: float,
+    max_tokens: int,
+    response_schema: Optional[Dict[str, Any]],
+) -> Dict[str, Any]:
+    """Generate structured JSON using Google Gemini."""
+    client = _get_google_client()
+    json_schema = _to_gemini_schema(response_schema)  # Use Gemini-specific schema without additionalProperties
+
+    logger.info(f"Gemini request: model={model_name}, prompt_length={len(prompt)}")
+
+    # Gemini SDK is synchronous, so we run it in a thread pool
+    def _sync_generate():
+        try:
+            from google.genai import types
+            config = types.GenerateContentConfig(
+                response_mime_type="application/json",
+                response_schema=json_schema,
+                temperature=temperature,
+                max_output_tokens=max_tokens,
+            )
+        except (ImportError, AttributeError):
+            # Fallback for older SDK versions
+            config = {
+                "response_mime_type": "application/json",
+                "response_schema": json_schema,
+                "temperature": temperature,
+                "max_output_tokens": max_tokens,
+            }
+        response = client.models.generate_content(
+            model=model_name,
+            contents=prompt,
+            config=config,
+        )
+        return response
+
+    try:
+        response = await asyncio.to_thread(_sync_generate)
+        text = response.text if hasattr(response, "text") else ""
+        logger.info(f"raw_llm_response_preview (gemini): {text[:500]}...")
+
+        if not text:
+            logger.warning(f"Gemini returned empty response for model={model_name}")
+            # Try to get more diagnostic info
+            if hasattr(response, 'prompt_feedback'):
+                logger.warning(f"Gemini prompt_feedback: {response.prompt_feedback}")
+            if hasattr(response, 'candidates') and response.candidates:
+                for i, candidate in enumerate(response.candidates):
+                    logger.warning(f"Gemini candidate[{i}] finish_reason: {getattr(candidate, 'finish_reason', 'unknown')}")
+            return {}
+
+        return json.loads(strip_json_fences(text))
+    except Exception as e:
+        logger.error(f"generate_json gemini failed: {e}", exc_info=True)
+        return {}
 

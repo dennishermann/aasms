@@ -31,6 +31,7 @@ const metadataSchema = z.object({
     title: z.string().min(1, "Title is required"),
     authors: z.array(z.string()).optional(),
     publicationDate: z.string().optional(),
+    year: z.string().optional(),
     venue: z.string().optional(),
     doi: z.string().optional(),
     abstract: z.string().optional(),
@@ -56,6 +57,7 @@ interface Source {
     status: string;
     originalUrl?: string | null;
     storagePath?: string | null;
+    metadataExtension?: any;
 }
 
 interface SourceMetadataEditorProps {
@@ -76,8 +78,27 @@ export function SourceMetadataEditor({ source, onCancel, onSaveSuccess }: Source
             title: source.title,
             authors: source.authors,
             publicationDate: source.publicationDate
-                ? new Date(source.publicationDate).toISOString().split('T')[0]
+                ? (() => {
+                    const d = new Date(source.publicationDate);
+                    // Check for sentinel: Dec 31st means year only
+                    if (d.getUTCMonth() === 11 && d.getUTCDate() === 31) {
+                        return ""; // Do not populate date picker
+                    }
+                    const year = d.getUTCFullYear();
+                    const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+                    const day = String(d.getUTCDate()).padStart(2, '0');
+                    return `${year}-${month}-${day}`;
+                })()
                 : "",
+            year: source.publicationDate
+                ? (() => {
+                    const d = new Date(source.publicationDate);
+                    if (d.getUTCMonth() === 11 && d.getUTCDate() === 31) {
+                        return String(d.getUTCFullYear());
+                    }
+                    return "";
+                })()
+                : (source.metadataExtension?.year ? String(source.metadataExtension.year) : ""),
             venue: source.venue || "",
             doi: source.doi || "",
             abstract: source.abstract || "",

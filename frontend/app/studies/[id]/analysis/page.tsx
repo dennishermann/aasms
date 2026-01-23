@@ -13,6 +13,7 @@ import {
   Grid3X3,
   AlertTriangle,
   Table2,
+  FlaskConical,
 } from "lucide-react";
 import {
   OverviewTab,
@@ -23,6 +24,7 @@ import {
   MappingTableTab,
 } from "@/components/analysis/tabs";
 import { SourceDrilldown } from "@/components/analysis";
+import { RqAnswersTab } from "@/components/analysis/rq-answers";
 import { CodingWizard } from "@/components/facets";
 import { useAnalysisPage, type Facet } from "@/hooks/use-analysis-page";
 
@@ -63,6 +65,12 @@ const TAB_CONFIG = {
     label: "Data Table",
     color: "bg-cyan-500",
     lightColor: "bg-cyan-100 text-cyan-700",
+  },
+  "rq-answers": {
+    icon: FlaskConical,
+    label: "RQ Answers",
+    color: "bg-indigo-500",
+    lightColor: "bg-indigo-100 text-indigo-700",
   },
 } as const;
 
@@ -223,6 +231,11 @@ export default function AnalysisPage() {
               onExportCSV={analysis.export.exportMappingTable}
               isExporting={analysis.export.isPending}
             />
+          </TabsContent>
+
+          {/* RQ Answers Tab */}
+          <TabsContent value="rq-answers" className="mt-0">
+            <RqAnswersTab studyId={studyId} />
           </TabsContent>
         </Tabs>
       </div>

@@ -60,7 +60,13 @@ export function StudySummaryStats({
         );
     }
 
-    const statItems = [
+    const statItems: Array<{
+        label: string;
+        value: number | string;
+        icon: typeof FileText;
+        color: string;
+        bgColor: string;
+    }> = [
         {
             label: "Total Sources",
             value: stats.total,

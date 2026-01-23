@@ -25,7 +25,7 @@ export function FacetList({
             case "CLOSED":
                 return { label: "Cat", className: "bg-blue-100 text-blue-700" };
             case "OPEN":
-                return { label: "Text", className: "bg-green-100 text-green-700" };
+                return { label: "Open", className: "bg-green-100 text-green-700" };
             case "OPEN_CODED":
                 return { label: "Coded", className: "bg-purple-100 text-purple-700" };
         }

@@ -123,6 +123,15 @@ export interface FrequencyResult {
   dimension: DimensionConfig;
   total: number;
   items: FrequencyItem[];
+  /** Metadata for multi-classification facets */
+  multiClassification?: {
+    /** True if this facet allows multiple categories per source */
+    isMultiClass: boolean;
+    /** Total number of classifications (can exceed total sources) */
+    totalClassifications: number;
+    /** Average categories per source */
+    avgCategoriesPerSource: number;
+  };
 }
 
 export interface CrossTabCell {
@@ -275,6 +284,47 @@ export interface ExportRequest {
   format: "csv" | "png";
   config: ChartConfig | TableConfig;
   filters?: Filter[];
+}
+
+// ============ Multi-LLM Voting Types ============
+
+export interface VoteDetail {
+  provider: string;
+  decision: boolean;
+  confidence: number;
+  reasoning?: string | null;
+  error?: string | null;
+}
+
+export interface VotingDetails {
+  votes: VoteDetail[];
+  agreementRatio: number;
+  voteCount: number;
+  totalVoters: number;
+}
+
+export interface VotingSummary {
+  totalProviders: number;
+  providersUsed: string[];
+  overallAgreementRatio: number;
+  totalCriteriaEvaluated: number;
+  unanimousDecisions: number;
+  splitDecisions: number;
+}
+
+export interface CriterionEvalWithVoting {
+  criterion: string;
+  decision: boolean;
+  reasoning: string;
+  confidence: number;
+  votingDetails?: VotingDetails | null;
+}
+
+export interface AnalysisWithVoting {
+  votingEnabled: boolean;
+  votingSummary?: VotingSummary | null;
+  inclusionCriteria?: CriterionEvalWithVoting[];
+  exclusionCriteria?: CriterionEvalWithVoting[];
 }
 
 // ============ API Response Types ============

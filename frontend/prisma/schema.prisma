@@ -24,6 +24,7 @@ model Study {
   importBatches           ImportBatch[]
   facets                  Facet[]
   analysisConfigurations  AnalysisConfiguration[]
+  recipes                 RqRecipe[]
 }
 
 model ResearchQuestion {
@@ -33,6 +34,7 @@ model ResearchQuestion {
   order    Int
   study    Study                   @relation(fields: [studyId], references: [id], onDelete: Cascade)
   facets   FacetResearchQuestion[]
+  recipes  RqRecipe[]
 
   @@index([studyId])
 }
@@ -113,10 +115,19 @@ model Facet {
   codingEnabled       Boolean                 @default(false)
   autoAssignThreshold Float?                  @default(0.8)
   codingCreatedAt     DateTime?
+  // Metadata binding fields
+  metadataField       String?                 // e.g., "publicationDate", "venue", "venueType"
+  metadataTransform   String?                 // e.g., "year", "month" for date extraction
   study               Study                   @relation(fields: [studyId], references: [id], onDelete: Cascade)
   categories          FacetCategory[]
   researchQuestions   FacetResearchQuestion[]
   classifications     Classification[]
+  facetKeywords       FacetKeyword[]
+  facetKeywordMappings FacetKeywordMapping[]
+  // Recipe relations
+  recipesAsX          RqRecipe[]              @relation("RecipeXFacet")
+  recipesAsY          RqRecipe[]              @relation("RecipeYFacet")
+  recipesAsGroupBy    RqRecipe[]              @relation("RecipeGroupByFacet")
 
   @@index([studyId])
 }
@@ -129,6 +140,7 @@ model FacetCategory {
   order           Int              @default(0)
   facet           Facet            @relation(fields: [facetId], references: [id], onDelete: Cascade)
   classifications Classification[]
+  keywordMappings FacetKeywordMapping[]
 
   @@unique([facetId, name])
   @@index([facetId])
@@ -177,6 +189,7 @@ model Source {
   sourceOrigins          String[]            @default([])
   importBatchId          String?
   needsPdf               Boolean             @default(false)
+  allowMetadataOnlyClassification Boolean     @default(false)
   status                 SourceStatus        @default(PENDING)
   greyLiteratureTier     GreyLiteratureTier?
   metadataExtension      Json?
@@ -219,8 +232,8 @@ enum VenueType {
 // ============ ANALYSIS & CLASSIFICATIONS ============
 
 model SourceAnalysis {
-  id                      String           @id @default(uuid())
-  sourceId                String           @unique
+  id                      String               @id @default(uuid())
+  sourceId                String               @unique
   extractedText           String
   inclusionRecommendation Boolean
   inclusionReasoning      String
@@ -228,16 +241,48 @@ model SourceAnalysis {
   confidenceScore         Float
   relevanceScore          Float?
   qualityNotes            String?
-  isUserEdited            Boolean          @default(false)
+  classificationBasis     ClassificationBasis?
+  isUserEdited            Boolean              @default(false)
   editedFields            String[]
-  analysisDate            DateTime         @default(now())
-  updatedAt               DateTime         @updatedAt
+  analysisDate            DateTime             @default(now())
+  updatedAt               DateTime             @updatedAt
   exclusionCriteria       Json?
   inclusionCriteria       Json?
+  // Voting fields
+  votingEnabled           Boolean              @default(false)
+  votingSummary           Json?                // VotingSummary as JSON
   classifications         Classification[]
-  source                  Source           @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  facetKeywords           FacetKeyword[]
+  votes                   AnalysisVote[]
+  source                  Source               @relation(fields: [sourceId], references: [id], onDelete: Cascade)
 
   @@index([sourceId])
+}
+
+// ============ MULTI-LLM VOTING ============
+
+model AnalysisVote {
+  id              String         @id @default(uuid())
+  analysisId      String
+  criterionType   CriterionType  // INCLUSION or EXCLUSION
+  criterionIndex  Int            // Index of criterion in the list
+  criterionText   String         // The criterion text being evaluated
+  provider        String         // "openai", "claude", "gemini"
+  decision        Boolean        // The LLM's decision
+  confidence      Float          // Confidence score (0-1)
+  reasoning       String?        // Reasoning for the decision
+  error           String?        // Error message if the vote failed
+  createdAt       DateTime       @default(now())
+  analysis        SourceAnalysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+
+  @@index([analysisId])
+  @@index([analysisId, criterionType])
+  @@index([provider])
+}
+
+enum CriterionType {
+  INCLUSION
+  EXCLUSION
 }
 
 model Classification {
@@ -261,6 +306,43 @@ model Classification {
   @@index([facetId])
   @@index([categoryId])
   @@index([needsReview])
+}
+
+model FacetKeyword {
+  id         String         @id @default(uuid())
+  analysisId String
+  facetId    String
+  keyword    String
+  confidence Float?
+  evidence   String?
+  createdAt  DateTime       @default(now())
+  analysis   SourceAnalysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  facet      Facet          @relation(fields: [facetId], references: [id], onDelete: Cascade)
+
+  @@unique([analysisId, facetId, keyword])
+  @@index([analysisId])
+  @@index([facetId])
+}
+
+model FacetKeywordMapping {
+  id                         String               @id @default(uuid())
+  facetId                    String
+  keyword                    String
+  categoryId                 String?
+  status                     KeywordMappingStatus @default(PENDING)
+  confidence                 Float?
+  source                     KeywordMappingSource @default(LLM)
+  proposedCategoryName       String?
+  proposedCategoryDescription String?
+  createdAt                  DateTime             @default(now())
+  updatedAt                  DateTime             @updatedAt
+  facet                      Facet                @relation(fields: [facetId], references: [id], onDelete: Cascade)
+  category                   FacetCategory?       @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  @@unique([facetId, keyword])
+  @@index([facetId])
+  @@index([categoryId])
+  @@index([status])
 }
 
 // ============ ANALYSIS CONFIGURATIONS ============
@@ -364,9 +446,138 @@ enum Decision {
   EXCLUDE
 }
 
+enum ClassificationBasis {
+  FULL_TEXT
+  METADATA_ONLY
+}
+
+enum KeywordMappingStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum KeywordMappingSource {
+  LLM
+  USER
+}
+
 enum ImportStatus {
   PROCESSING
   COMPLETED
   FAILED
   PARTIAL
+}
+
+// ============ RQ RECIPES & ANSWERS ============
+
+enum RecipeType {
+  DISTRIBUTION // Single facet frequency distribution
+  MAP          // Two-facet cross-tabulation (systematic map)
+  TREND        // Publication trends over time
+  GAP          // Research gap analysis
+}
+
+enum RecipeStatus {
+  DRAFT   // Being edited, missing required fields
+  VALID   // All required fields set, ready to run
+  BLOCKED // Referenced facet deleted or incomplete coding
+}
+
+enum RunStatus {
+  NOT_RUN    // Never executed
+  UP_TO_DATE // Results match current dataset state
+  STALE      // Dataset changed since last run
+  RUNNING    // Currently executing
+  ERROR      // Last run failed
+}
+
+model RqRecipe {
+  id                 String            @id @default(uuid())
+  studyId            String
+  name               String
+  description        String?
+
+  // Link to research question (optional but recommended)
+  researchQuestionId String?
+
+  // Recipe type
+  type               RecipeType
+
+  // Dimensions (type-specific usage)
+  // DISTRIBUTION: xFacetId only
+  // MAP: xFacetId (rows) + yFacetId (columns)
+  // TREND: groupByFacetId (optional grouping)
+  // GAP: facetIds[] stored in config
+  xFacetId           String?
+  yFacetId           String?
+  groupByFacetId     String?
+
+  // Configuration stored as JSON for flexibility
+  // Contains: filters[], metric, missingHandling, sortOrder, vizPreference, gapThreshold, gapFacetIds
+  config             Json              @default("{}")
+
+  // Versioning - increments on substantive changes
+  version            Int               @default(1)
+
+  // Status
+  status             RecipeStatus      @default(DRAFT)
+  statusReason       String?
+
+  // Order for display
+  order              Int               @default(0)
+
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  // Relations
+  study              Study             @relation(fields: [studyId], references: [id], onDelete: Cascade)
+  researchQuestion   ResearchQuestion? @relation(fields: [researchQuestionId], references: [id], onDelete: SetNull)
+  xFacet             Facet?            @relation("RecipeXFacet", fields: [xFacetId], references: [id], onDelete: SetNull)
+  yFacet             Facet?            @relation("RecipeYFacet", fields: [yFacetId], references: [id], onDelete: SetNull)
+  groupByFacet       Facet?            @relation("RecipeGroupByFacet", fields: [groupByFacetId], references: [id], onDelete: SetNull)
+  runs               RqRun[]
+
+  @@index([studyId])
+  @@index([researchQuestionId])
+}
+
+model RqRun {
+  id                  String    @id @default(uuid())
+  recipeId            String
+
+  // Version of recipe when this run was created
+  recipeVersion       Int
+
+  // Dataset state snapshot
+  datasetHash         String    // Hash of classified sources at run time
+  includedSourceCount Int       // Number of sources included
+
+  // Status
+  status              RunStatus @default(RUNNING)
+  errorMessage        String?
+
+  // Results stored as JSON
+  // Structure depends on recipe type:
+  // DISTRIBUTION: FrequencyResult
+  // MAP: CrossTabResult
+  // TREND: TimeSeriesResult
+  // GAP: GapAnalysis
+  resultData          Json?
+
+  // Computed findings (deterministic key insights)
+  keyFindings         Json?     // Array of finding strings
+
+  // Figure specification for rendering
+  figureSpec          Json?     // Chart configuration
+
+  // Timestamps
+  startedAt           DateTime  @default(now())
+  completedAt         DateTime?
+
+  // Relations
+  recipe              RqRecipe  @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@index([recipeId])
+  @@index([status])
 }

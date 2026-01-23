@@ -29,6 +29,8 @@ interface FrequencyTableProps {
   isLoading?: boolean;
   showPercentages?: boolean;
   showProgressBar?: boolean;
+  /** Show multi-classification info in the footer */
+  showMultiClassInfo?: boolean;
 }
 
 export function FrequencyTable({
@@ -37,6 +39,7 @@ export function FrequencyTable({
   isLoading = false,
   showPercentages = true,
   showProgressBar = true,
+  showMultiClassInfo = false,
 }: FrequencyTableProps) {
   const [sorting, setSorting] = useState<SortingState>([
     { id: "count", desc: true },
@@ -209,7 +212,9 @@ export function FrequencyTable({
               )}
               {/* Total row */}
               <TableRow className="bg-muted/50 font-semibold">
-                <TableCell>Total</TableCell>
+                <TableCell>
+                  {showMultiClassInfo ? "Unique Sources" : "Total"}
+                </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-3">
                     <span className="w-12 text-right font-mono">{data.total}</span>
@@ -221,6 +226,21 @@ export function FrequencyTable({
                   </div>
                 </TableCell>
               </TableRow>
+              {/* Multi-classification info row */}
+              {showMultiClassInfo && data.multiClassification && (
+                <TableRow className="bg-muted/30 text-sm">
+                  <TableCell className="text-muted-foreground">
+                    Avg. categories/source
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <span className="w-12 text-right font-mono">
+                        {data.multiClassification.avgCategoriesPerSource}
+                      </span>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </div>

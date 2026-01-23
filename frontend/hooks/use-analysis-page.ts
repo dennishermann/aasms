@@ -309,7 +309,16 @@ export function useAnalysisPage({ studyId }: UseAnalysisPageOptions) {
   // ============ Analysis Queries ============
 
   const summaryQuery = useSummaryStats(studyId);
-  const frequencyQuery = useFrequencyData(studyId, selectedDimension);
+
+  // Determine frequency mode: pie chart with facet dimension uses "combinations" for exclusive slices
+  const frequencyMode = useMemo(() => {
+    if (chartType === "pie" && selectedDimension?.type === "facet") {
+      return "combinations" as const;
+    }
+    return "coverage" as const;
+  }, [chartType, selectedDimension]);
+
+  const frequencyQuery = useFrequencyData(studyId, selectedDimension, undefined, frequencyMode);
   const baseTimeSeriesQuery = useTimeSeriesData(studyId);
   const groupedTimeSeriesQuery = useTimeSeriesData(studyId, trendsDimension ?? undefined);
   const crossTabQuery = useCrossTabData(studyId, rowDimension, colDimension);

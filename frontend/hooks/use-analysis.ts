@@ -34,15 +34,21 @@ export function useSummaryStats(studyId: string) {
 
 // ============ Frequency Data ============
 
+type FrequencyMode = "coverage" | "combinations";
+
 async function fetchFrequencyData(
   studyId: string,
   dimension: DimensionConfig,
-  filters?: Filter[]
+  filters?: Filter[],
+  mode?: FrequencyMode
 ): Promise<FrequencyResult> {
   const params = new URLSearchParams();
   params.set("dimension", JSON.stringify(dimension));
   if (filters && filters.length > 0) {
     params.set("filters", JSON.stringify(filters));
+  }
+  if (mode) {
+    params.set("mode", mode);
   }
 
   const response = await fetch(
@@ -59,11 +65,12 @@ async function fetchFrequencyData(
 export function useFrequencyData(
   studyId: string,
   dimension: DimensionConfig | null,
-  filters?: Filter[]
+  filters?: Filter[],
+  mode?: FrequencyMode
 ) {
   return useQuery({
-    queryKey: ["analysis", "frequency", studyId, dimension, filters],
-    queryFn: () => fetchFrequencyData(studyId, dimension!, filters),
+    queryKey: ["analysis", "frequency", studyId, dimension, filters, mode],
+    queryFn: () => fetchFrequencyData(studyId, dimension!, filters, mode),
     enabled: !!dimension,
     staleTime: 5 * 60 * 1000,
   });

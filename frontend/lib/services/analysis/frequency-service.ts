@@ -104,22 +104,32 @@ async function getFrequencyByFacet(
   classifications.forEach((c) => allSourceIds.add(c.analysis.sourceId));
   const total = allSourceIds.size;
 
-  // Build result items
+  // Build result items - use sourceIds.size for unique sources per category
   const items: FrequencyItem[] = Array.from(countMap.entries()).map(([id, data]) => ({
     id,
     label: data.label,
-    count: data.count,
-    percentage: total > 0 ? Math.round((data.count / total) * 1000) / 10 : 0,
+    count: data.sourceIds.size, // Use unique sources, not classification count
+    percentage: total > 0 ? Math.round((data.sourceIds.size / total) * 1000) / 10 : 0,
     sourceIds: Array.from(data.sourceIds),
   }));
 
   // Sort by count descending
   items.sort((a, b) => b.count - a.count);
 
+  // Calculate multi-classification metadata
+  const totalClassifications = items.reduce((sum, item) => sum + item.count, 0);
+  const isMultiClass = totalClassifications > total;
+  const avgCategoriesPerSource = total > 0 ? Math.round((totalClassifications / total) * 10) / 10 : 0;
+
   return {
     dimension: { type: "facet", facetId },
     total,
     items,
+    multiClassification: {
+      isMultiClass,
+      totalClassifications,
+      avgCategoriesPerSource,
+    },
   };
 }
 
@@ -182,6 +192,129 @@ async function getFrequencyByBuiltinDimension(
 
   return {
     dimension,
+    total,
+    items,
+  };
+}
+
+/**
+ * Get exclusive combination data for pie charts with multi-classification facets.
+ * Each source appears in exactly one "combination" slice.
+ */
+export async function getExclusiveCombinationData(
+  studyId: string,
+  facetId: string,
+  filters?: Filter[]
+): Promise<FrequencyResult> {
+  const baseWhere = buildBaseSourceWhere(studyId);
+  const where = applyFilters(baseWhere, filters);
+
+  const facet = await prisma.facet.findUnique({
+    where: { id: facetId },
+    include: {
+      categories: { orderBy: { order: "asc" } },
+    },
+  });
+
+  if (!facet) {
+    throw new Error(`Facet not found: ${facetId}`);
+  }
+
+  // Get all classifications for this facet
+  const classifications = await prisma.classification.findMany({
+    where: {
+      facetId,
+      analysis: {
+        source: where,
+      },
+    },
+    include: {
+      category: true,
+      analysis: {
+        select: { sourceId: true },
+      },
+    },
+  });
+
+  // Build a map of sourceId -> set of category names
+  const sourceCategories = new Map<string, Set<string>>();
+  const categoryIdToName = new Map<string, string>();
+
+  for (const cat of facet.categories) {
+    categoryIdToName.set(cat.id, cat.name);
+  }
+
+  for (const c of classifications) {
+    if (c.categoryId) {
+      const sourceId = c.analysis.sourceId;
+      const categoryName = categoryIdToName.get(c.categoryId) || c.categoryId;
+
+      if (!sourceCategories.has(sourceId)) {
+        sourceCategories.set(sourceId, new Set());
+      }
+      sourceCategories.get(sourceId)!.add(categoryName);
+    }
+  }
+
+  // Group sources by their unique combination of categories
+  const combinationCounts = new Map<string, { count: number; sourceIds: string[] }>();
+
+  for (const [sourceId, categories] of sourceCategories) {
+    // Sort category names alphabetically for consistent combination labels
+    const sortedCategories = Array.from(categories).sort();
+    const combinationKey = sortedCategories.length === 1
+      ? `${sortedCategories[0]} only`
+      : sortedCategories.join(" + ");
+
+    const existing = combinationCounts.get(combinationKey);
+    if (existing) {
+      existing.count++;
+      existing.sourceIds.push(sourceId);
+    } else {
+      combinationCounts.set(combinationKey, { count: 1, sourceIds: [sourceId] });
+    }
+  }
+
+  const total = sourceCategories.size;
+
+  // Build result items
+  const items: FrequencyItem[] = Array.from(combinationCounts.entries()).map(
+    ([label, data]) => ({
+      id: label,
+      label,
+      count: data.count,
+      percentage: total > 0 ? Math.round((data.count / total) * 1000) / 10 : 0,
+      sourceIds: data.sourceIds,
+    })
+  );
+
+  // Sort by count descending
+  items.sort((a, b) => b.count - a.count);
+
+  // If there are too many combinations (>10), group smaller ones as "Other"
+  if (items.length > 10) {
+    const topItems = items.slice(0, 9);
+    const otherItems = items.slice(9);
+    const otherCount = otherItems.reduce((sum, item) => sum + item.count, 0);
+    const otherSourceIds = otherItems.flatMap((item) => item.sourceIds);
+
+    topItems.push({
+      id: "Other combinations",
+      label: `Other (${otherItems.length} combinations)`,
+      count: otherCount,
+      percentage: total > 0 ? Math.round((otherCount / total) * 1000) / 10 : 0,
+      sourceIds: otherSourceIds,
+    });
+
+    return {
+      dimension: { type: "facet", facetId },
+      total,
+      items: topItems,
+    };
+  }
+
+  return {
+    dimension: { type: "facet", facetId },
     total,
     items,
   };

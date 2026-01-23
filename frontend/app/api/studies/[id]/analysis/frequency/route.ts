@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getFrequencyData } from "@/lib/services/analysis";
+import { getFrequencyData, getExclusiveCombinationData } from "@/lib/services/analysis";
 import type { DimensionConfig, Filter } from "@/types/analysis";
 
 export async function GET(
@@ -58,7 +58,16 @@ export async function GET(
       }
     }
 
-    const result = await getFrequencyData(studyId, dimension, filters);
+    // Check for mode parameter (default: "coverage", can be "combinations" for pie charts)
+    const mode = searchParams.get("mode") || "coverage";
+
+    let result;
+    if (mode === "combinations" && dimension.type === "facet" && dimension.facetId) {
+      // Use exclusive combinations for pie chart view
+      result = await getExclusiveCombinationData(studyId, dimension.facetId, filters);
+    } else {
+      result = await getFrequencyData(studyId, dimension, filters);
+    }
 
     return NextResponse.json({ data: result });
   } catch (error) {

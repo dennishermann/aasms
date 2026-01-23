@@ -3,6 +3,28 @@ import { prisma } from "@/lib/db";
 
 const PYTHON_SERVICE_URL = process.env.PYTHON_SERVICE_URL || "http://localhost:8000";
 
+/**
+ * Parse publication date from various formats.
+ * Handles ISO date strings (e.g., "2023-03-15") and year-only fallback.
+ */
+function parsePublicationDate(
+  publicationDate: string | undefined,
+  year: number | undefined
+): Date | null {
+  // First try the full publication_date string (e.g., "2023-03-15" from ACM)
+  if (publicationDate) {
+    const parsed = new Date(publicationDate);
+    if (!isNaN(parsed.getTime())) {
+      return parsed;
+    }
+  }
+  // Fallback to year-only (January 1st)
+  if (year && year > 1900 && year < 2100) {
+    return new Date(year, 0, 1);
+  }
+  return null;
+}
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -112,7 +134,7 @@ export async function POST(
             sourceCategory: "FORMAL",
             title: source.title,
             authors: source.authors,
-            publicationDate: source.year ? new Date(source.year, 0, 1) : null,
+            publicationDate: parsePublicationDate(source.publication_date, source.year),
             venue: source.venue,
             doi: source.doi,
             abstract: source.abstract,

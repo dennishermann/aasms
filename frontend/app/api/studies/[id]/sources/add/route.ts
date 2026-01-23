@@ -123,10 +123,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     // Parse publication date if provided
     let publicationDate: Date | null = null;
     if (metadata.publicationDate) {
-      try {
-        publicationDate = new Date(metadata.publicationDate);
-      } catch (e) {
-        // Ignore invalid dates
+      const parsed = new Date(metadata.publicationDate);
+      // Validate the date is actually valid (new Date() doesn't throw, returns Invalid Date)
+      if (!isNaN(parsed.getTime())) {
+        publicationDate = parsed;
       }
     }
 

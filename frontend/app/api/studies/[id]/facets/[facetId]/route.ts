@@ -69,6 +69,8 @@ export async function PUT(
             order,
             researchQuestionIds,
             categories,
+            metadataField,
+            metadataTransform,
         } = body;
 
         // Build update data
@@ -78,6 +80,8 @@ export async function PUT(
         if (type !== undefined) updateData.type = type;
         if (required !== undefined) updateData.required = required;
         if (order !== undefined) updateData.order = order;
+        if (metadataField !== undefined) updateData.metadataField = metadataField;
+        if (metadataTransform !== undefined) updateData.metadataTransform = metadataTransform;
 
         // Update facet basic fields
         await prisma.facet.update({

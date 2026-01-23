@@ -63,6 +63,8 @@ export async function POST(
             required = true,
             categories = [],
             researchQuestionIds = [],
+            metadataField = null,
+            metadataTransform = null,
         } = body;
 
         if (!name) {
@@ -88,6 +90,8 @@ export async function POST(
                 type,
                 required,
                 order: nextOrder,
+                metadataField,
+                metadataTransform,
                 categories: {
                     create: categories.map((cat: { name: string; description?: string }, index: number) => ({
                         name: typeof cat === "string" ? cat : cat.name,

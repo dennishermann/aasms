@@ -152,6 +152,8 @@ def format_classification_schema(schema: dict) -> str:
         for facet in schema:
             facet_name = facet.get("name") or facet.get("facet_name") or "Unknown facet"
             facet_type = facet.get("type", "closed")  # Default to closed for backward compatibility
+            if facet_type == "open_coded":
+                facet_type = "closed"
             categories = facet.get("categories", [])
             required = facet.get("required", False)
             
@@ -161,15 +163,15 @@ def format_classification_schema(schema: dict) -> str:
                 formatted.append(f"  Description: {facet['description']}")
             
             if facet_type == "open":
-                # Open-set: instruct LLM to generate category
-                formatted.append("  Type: OPEN-SET (Generate an appropriate category based on document content)")
+                # Open-set: instruct LLM to extract keywords
+                formatted.append("  Type: OPEN-SET (Extract keywords/phrases that appear in the document)")
                 if categories:  # If examples provided
                     cat_names = [_get_category_name(c) for c in categories]
                     formatted.append(f"  Example categories (for guidance): {', '.join(cat_names)}")
                 if required:
-                    formatted.append("  Instructions: You MUST analyze the document and create a category. Do not skip.")
+                    formatted.append("  Instructions: You MUST extract relevant keywords/phrases found in the document. Do not invent terms.")
                 else:
-                    formatted.append("  Instructions: Create a category if relevant information is present. If not, you MUST use 'Not Applicable' and provide reasoning.")
+                    formatted.append("  Instructions: Extract keywords/phrases if relevant info is present. If none, return an empty list.")
             else:
                 # Closed-set: must choose from list
                 formatted.append("  Type: CLOSED-SET (Must select ONE from the predefined list)")
@@ -189,6 +191,8 @@ def format_classification_schema(schema: dict) -> str:
             
             if isinstance(facet_data, dict):
                 facet_type = facet_data.get("type", "closed")
+                if facet_type == "open_coded":
+                    facet_type = "closed"
                 categories = facet_data.get("categories", [])
                 required = facet_data.get("required", False)
                 
@@ -199,14 +203,14 @@ def format_classification_schema(schema: dict) -> str:
                     formatted.append(f"  Description: {facet_data['description']}")
                 
                 if facet_type == "open":
-                    formatted.append("  Type: OPEN-SET (Generate an appropriate category based on document content)")
+                    formatted.append("  Type: OPEN-SET (Extract keywords/phrases that appear in the document)")
                     if categories:
                         cat_names = [_get_category_name(c) for c in categories]
                         formatted.append(f"  Example categories (for guidance): {', '.join(cat_names)}")
                     if required:
-                         formatted.append("  Instructions: You MUST analyze the document and create a category.")
+                         formatted.append("  Instructions: You MUST extract relevant keywords/phrases found in the document.")
                     else:
-                         formatted.append("  Instructions: Create a category if relevant information is present. If not, you MUST use 'Not Applicable' and provide reasoning.")
+                         formatted.append("  Instructions: Extract keywords/phrases if relevant info is present. If none, return an empty list.")
 
                 else:
                     formatted.append("  Type: CLOSED-SET (Must select ONE from the predefined list)")
@@ -336,6 +340,7 @@ def build_classification_prompt(
     rq_text = format_research_questions(research_questions)
     doc_context = format_document_context(source_content)
     schema_text = format_classification_schema(classification_schema)
+
     return f"""
 You are classifying a research document for a systematic mapping study.
 
@@ -353,14 +358,15 @@ Classify the document according to each facet in the schema above.
 
 IMPORTANT INSTRUCTIONS:
 - For CLOSED-SET facets: You MUST select exactly ONE category from the predefined list of allowed categories.
-- For OPEN-SET facets: Generate a concise, descriptive category name (1-4 words) that best characterizes this aspect of the document. Be specific and precise.
+- For OPEN-SET facets: Extract ALL relevant keywords/phrases that appear in the document. Do not invent terms.
 
 Return JSON with a list of classifications per facet:
 {{
   "classifications": [
     {{
       "facet_name": "exact facet name from schema",
-      "category": "selected category (from list for closed-set, or generated for open-set)",
+      "category": "selected category (closed-set facets only)",
+      "keywords": ["keyword1", "keyword2"],  // open-set facets only
       "confidence": 0.0-1.0,
       "reasoning": "brief evidence from the document"
     }}
@@ -383,6 +389,69 @@ def build_per_facet_prompt(
     # Format just this single facet's schema
     # We wrap it in a list to reuse the existing formatter's logic for a single item
     schema_text = format_classification_schema([facet_data])
+    facet_type = facet_data.get("type", "closed")
+    if facet_type == "open_coded":
+        facet_type = "closed"
+
+    # Build response schema based on facet type
+    facet_name = facet_data.get("name") or facet_data.get("facet_name") or "Unknown"
+    facet_description = facet_data.get("description", "")
+    
+    if facet_type == "open":
+        # For OPEN facets, emphasize answering the question in the description
+        open_instructions = ""
+        if facet_description:
+            open_instructions = f"""
+IMPORTANT: This facet asks "{facet_description}"
+Your keywords should be SPECIFIC ANSWERS to this question. Extract only the concrete concepts, techniques, or methods that directly answer what is being asked.
+Do NOT extract general related terms - only extract specific answers found in the document."""
+        else:
+            open_instructions = """
+Extract specific concepts, techniques, or methods mentioned in the document that are relevant to this facet.
+Be specific and precise - extract only terms that directly relate to the facet's purpose."""
+        
+        response_schema_text = f"""
+Return JSON:
+{{
+  "facet_name": "{facet_name}",
+  "keywords": ["specific_answer_1", "specific_answer_2"],
+  "confidence": 0.0-1.0,
+  "reasoning": "brief evidence from the document"
+}}"""
+        
+        task_instructions = f"""
+Task:
+Classify the document according to the target facet above.
+{open_instructions}
+
+IMPORTANT INSTRUCTIONS:
+- Extract SPECIFIC keywords/phrases that directly ANSWER the facet's question or purpose.
+- Keywords should be concise (1-4 words each) and specific.
+- Do not invent terms - only extract what appears or is clearly implied in the document.
+- If the facet is OPTIONAL and the document has no relevant info, return an empty keywords list.
+{response_schema_text}
+
+Respond ONLY with JSON, no additional text."""
+    else:
+        response_schema_text = f"""
+Return JSON:
+{{
+  "facet_name": "{facet_name}",
+  "category": "selected category",
+  "confidence": 0.0-1.0,
+  "reasoning": "brief evidence from the document"
+}}"""
+        
+        task_instructions = f"""
+Task:
+Classify the document according to the target facet above.
+
+IMPORTANT INSTRUCTIONS:
+- You MUST select exactly ONE category from the predefined list.
+- If the facet is OPTIONAL and the document has no relevant info, select 'Not Applicable'.
+{response_schema_text}
+
+Respond ONLY with JSON, no additional text."""
 
     return f"""
 You are classifying a research document for a systematic mapping study.
@@ -396,22 +465,6 @@ Document:
 Target Classification Facet:
 {schema_text}
 
-Task:
-Classify the document according to the target facet above.
-
-IMPORTANT INSTRUCTIONS:
-- For CLOSED-SET facets: You MUST select exactly ONE category from the predefined list.
-- For OPEN-SET facets: Generate a concise, descriptive category name (1-4 words).
-- If the facet is OPTIONAL and the document has no relevant info, you MUST select 'Not Applicable' and provide reasoning.
-
-Return JSON:
-{{
-  "facet_name": "{facet_data.get('name') or facet_data.get('facet_name')}",
-  "category": "selected category",
-  "confidence": 0.0-1.0,
-  "reasoning": "brief evidence from the document"
-}}
-
-Respond ONLY with JSON, no additional text.
+{task_instructions}
 """
 

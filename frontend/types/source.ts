@@ -27,4 +27,5 @@ export interface Source {
     finalDecision?: string | null;
     decisionRationale?: string | null;
     importBatchId?: string | null;
+    allowMetadataOnlyClassification?: boolean;
 }

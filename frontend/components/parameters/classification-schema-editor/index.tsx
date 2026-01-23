@@ -93,6 +93,7 @@ export function ClassificationSchemaEditor({
                     facetKey={selectedFacetKey!}
                     facetIndex={selectedFacetIndex}
                     researchQuestions={researchQuestions}
+                    studyId={studyId}
                     onUpdateFacet={handleUpdateFacet}
                     onRemoveFacet={(key) => {
                         handleRemoveFacet(key);

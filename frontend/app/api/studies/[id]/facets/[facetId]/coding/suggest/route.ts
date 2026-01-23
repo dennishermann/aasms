@@ -36,22 +36,16 @@ export async function POST(request: NextRequest, { params }: SuggestRouteParams)
             );
         }
 
-        // Get all unique values from classifications for this facet
-        // For OPEN_CODED facets, use rawValue (original extracted value) instead of value
-        const classifications = await prisma.classification.findMany({
-            where: {
-                facetId,
-            },
+        const keywords = await prisma.facetKeyword.findMany({
+            where: { facetId },
             select: {
-                value: true,
-                rawValue: true,
+                keyword: true,
             },
         });
 
-        // For regeneration of OPEN_CODED, prefer rawValue (original) over value
         const uniqueValues = [...new Set(
-            classifications
-                .map(c => c.rawValue || c.value)  // Prefer rawValue, fallback to value
+            keywords
+                .map(k => k.keyword)
                 .filter((v): v is string => v !== null && v !== undefined && v.trim() !== "")
         )];
 
@@ -88,9 +82,9 @@ export async function POST(request: NextRequest, { params }: SuggestRouteParams)
 
         // Enhance with source counts
         const valueCounts: Record<string, number> = {};
-        classifications.forEach(c => {
-            if (c.value) {
-                valueCounts[c.value] = (valueCounts[c.value] || 0) + 1;
+        keywords.forEach(k => {
+            if (k.keyword) {
+                valueCounts[k.keyword] = (valueCounts[k.keyword] || 0) + 1;
             }
         });
 
@@ -104,7 +98,7 @@ export async function POST(request: NextRequest, { params }: SuggestRouteParams)
             ...suggestions,
             categories: categoriesWithCounts,
             total_values: uniqueValues.length,
-            total_sources: classifications.length,
+            total_sources: keywords.length,
         });
 
     } catch (error) {

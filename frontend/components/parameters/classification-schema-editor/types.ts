@@ -15,6 +15,9 @@ export interface Facet {
     required: boolean;
     categories: FacetCategory[];
     researchQuestionIds: string[];
+    // Metadata binding
+    metadataField?: string | null;  // e.g., "publicationDate", "venue"
+    metadataTransform?: string | null;  // e.g., "year" for date extraction
 }
 
 export interface ResearchQuestion {

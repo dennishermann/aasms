@@ -24,6 +24,7 @@ interface Source {
     originalUrl?: string | null;
     storagePath?: string | null;
     bibtex?: string | null;
+    metadataExtension?: any;
 }
 
 // Human-readable labels for venue types
@@ -57,13 +58,19 @@ export function SourceMetadataView({ source }: SourceMetadataViewProps) {
     return (
         <CardContent className="space-y-6 pt-6">
             <div className="grid gap-6 md:grid-cols-2">
-                {source.publicationDate && (
+                {(source.publicationDate || source.metadataExtension?.year || source.metadataExtension?.database_specific?.year) && (
                     <div className="flex items-start gap-3">
                         <Calendar className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
                         <div>
                             <p className="text-sm font-medium">Publication Date</p>
                             <p className="text-sm text-muted-foreground">
-                                {new Date(source.publicationDate).toLocaleDateString()}
+                                {(() => {
+                                    if (source.publicationDate) {
+                                        const d = new Date(source.publicationDate);
+                                        return `${d.getUTCDate()}.${d.getUTCMonth() + 1}.${d.getUTCFullYear()}`;
+                                    }
+                                    return source.metadataExtension?.year || source.metadataExtension?.database_specific?.year || "";
+                                })()}
                             </p>
                         </div>
                     </div>

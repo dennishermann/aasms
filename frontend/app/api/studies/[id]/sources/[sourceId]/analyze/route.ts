@@ -46,16 +46,13 @@ export async function POST(
       return NextResponse.json({ error: "Source not found" }, { status: 404 });
     }
 
-    // Check for either PDF or extracted text content
-    const hasTextContent = !!(
-      (source.metadataChosen as any)?.content_excerpt ||
-      (source.metadataParsed as any)?.content_excerpt ||
-      (source.metadataExtension as any)?.content_excerpt
-    );
+    const chosen: any = source.metadataChosen || source.metadataParsed || source.metadataExtension || {};
+    const hasTextContent = !!chosen.content_excerpt;
+    const hasAbstract = !!(chosen.abstract || source.abstract);
 
-    if (!source.storagePath && !hasTextContent) {
+    if (!source.storagePath && !hasTextContent && !hasAbstract) {
       return NextResponse.json(
-        { error: "Content is required for classification. Please upload a PDF or ensure website content is extracted." },
+        { error: "Metadata and abstract are required for analysis. Please provide at least an abstract." },
         { status: 400 }
       );
     }
@@ -91,7 +88,6 @@ export async function POST(
     }));
 
     // Build source content from chosen metadata (or fallback)
-    const chosen: any = source.metadataChosen || source.metadataParsed || source.metadataExtension || {};
     const sourceContent = {
       title: chosen.title || source.title || "",
       authors: chosen.authors || source.authors || [],
@@ -222,6 +218,10 @@ export async function POST(
     const relevanceScore = analysisResult.relevanceScore ?? analysisResult.relevance_score ?? null;
     const qualityNotes = analysisResult.qualityNotes || analysisResult.quality_notes || null;
 
+    // Extract voting data if present
+    const votingEnabled = analysisResult.votingEnabled || analysisResult.voting_enabled || false;
+    const votingSummary = analysisResult.votingSummary || analysisResult.voting_summary || null;
+
     const analysis = await prisma.sourceAnalysis.upsert({
       where: { sourceId },
       update: {
@@ -234,6 +234,8 @@ export async function POST(
         qualityNotes,
         inclusionCriteria,
         exclusionCriteria,
+        votingEnabled,
+        votingSummary,
       },
       create: {
         sourceId,
@@ -246,8 +248,71 @@ export async function POST(
         qualityNotes,
         inclusionCriteria,
         exclusionCriteria,
+        votingEnabled,
+        votingSummary,
       },
     });
+
+    // Store individual votes if voting was used
+    if (votingEnabled) {
+      // Delete any existing votes for this analysis
+      await prisma.analysisVote.deleteMany({
+        where: { analysisId: analysis.id },
+      });
+
+      // Extract and store individual votes from inclusion criteria
+      const votesToCreate: any[] = [];
+
+      inclusionCriteria.forEach((criterion: any, index: number) => {
+        const votingDetails = criterion.votingDetails || criterion.voting_details;
+        if (votingDetails?.votes) {
+          votingDetails.votes.forEach((vote: any) => {
+            votesToCreate.push({
+              analysisId: analysis.id,
+              criterionType: "INCLUSION",
+              criterionIndex: index,
+              criterionText: criterion.criterion,
+              provider: vote.provider,
+              decision: vote.decision,
+              confidence: vote.confidence,
+              reasoning: vote.reasoning || null,
+              error: vote.error || null,
+            });
+          });
+        }
+      });
+
+      // Extract and store individual votes from exclusion criteria
+      exclusionCriteria.forEach((criterion: any, index: number) => {
+        const votingDetails = criterion.votingDetails || criterion.voting_details;
+        if (votingDetails?.votes) {
+          votingDetails.votes.forEach((vote: any) => {
+            votesToCreate.push({
+              analysisId: analysis.id,
+              criterionType: "EXCLUSION",
+              criterionIndex: index,
+              criterionText: criterion.criterion,
+              provider: vote.provider,
+              decision: vote.decision,
+              confidence: vote.confidence,
+              reasoning: vote.reasoning || null,
+              error: vote.error || null,
+            });
+          });
+        }
+      });
+
+      if (votesToCreate.length > 0) {
+        await prisma.analysisVote.createMany({
+          data: votesToCreate,
+        });
+        console.log("[analyze] voting data persisted", {
+          sourceId,
+          votesCount: votesToCreate.length,
+          providers: [...new Set(votesToCreate.map((v) => v.provider))],
+        });
+      }
+    }
     console.log("[analyze] analysis persisted to database", {
       sourceId,
       analysisId: analysis.id,

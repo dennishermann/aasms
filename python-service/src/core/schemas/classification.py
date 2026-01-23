@@ -11,10 +11,11 @@ CLASSIFICATION_JSON_SCHEMA = {
                 "properties": {
                     "facet_name": {"type": "string"},
                     "category": {"type": "string"},
+                    "keywords": {"type": "array", "items": {"type": "string"}},
                     "confidence": {"type": "number"},
                     "reasoning": {"type": "string"},
                 },
-                "required": ["facet_name", "category", "confidence", "reasoning"],
+                "required": ["facet_name", "confidence", "reasoning"],
                 "additionalProperties": False,
             },
             "minItems": 0,
@@ -30,7 +31,6 @@ CLASSIFICATION_RESPONSE_FORMAT = {
     "schema": CLASSIFICATION_JSON_SCHEMA,
     "strict": True,
 }
-
 
 
 

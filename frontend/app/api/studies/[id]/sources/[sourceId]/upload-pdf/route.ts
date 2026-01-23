@@ -79,7 +79,7 @@ export async function POST(
             id: facet.id,
             name: facet.name,
             description: facet.description,
-            type: facet.type.toLowerCase(),
+            type: facet.type === "OPEN_CODED" ? "open" : facet.type.toLowerCase(),
             required: facet.required,
             categories: facet.categories.map((cat) => ({
                 id: cat.id,
@@ -120,6 +120,7 @@ export async function POST(
                 storagePath: objectPath, // Save MinIO path
                 hasPdf: true,
                 needsPdf: false,
+                allowMetadataOnlyClassification: false,
             }
         });
 
@@ -145,23 +146,192 @@ export async function POST(
         const facetIdToCategoryMap = new Map(
             source.study.facets.map(f => [f.id, new Map(f.categories.map(c => [c.name, c.id]))])
         );
+        const facetById = new Map(source.study.facets.map(f => [f.id, f]));
+        const facetByName = new Map(source.study.facets.map(f => [f.name, f]));
 
-        // Convert classifications to use facetId and categoryId
-        const classificationCreates = (analysisResult.classifications || []).map((c: any) => {
+        const classificationCreates: Array<{
+            facetId: string;
+            categoryId: string | null;
+            value: string | null;
+            confidence: number;
+            reasoning: string;
+            isManualOverride: boolean;
+        }> = [];
+        const keywordCreates: Array<{
+            facetId: string;
+            keyword: string;
+            confidence: number | null;
+        }> = [];
+        const keywordDedup = new Set<string>();
+        const mappingCache = new Map<
+            string,
+            Map<string, { categoryId: string | null; status: string }>
+        >();
+
+        const getFacetMappings = async (facetId: string) => {
+            if (mappingCache.has(facetId)) {
+                return mappingCache.get(facetId)!;
+            }
+            const mappings = await prisma.facetKeywordMapping.findMany({
+                where: { facetId },
+                select: {
+                    keyword: true,
+                    categoryId: true,
+                    status: true,
+                },
+            });
+            const map = new Map<string, { categoryId: string | null; status: string }>();
+            for (const mapping of mappings) {
+                map.set(mapping.keyword.toLowerCase(), {
+                    categoryId: mapping.categoryId,
+                    status: mapping.status,
+                });
+            }
+            mappingCache.set(facetId, map);
+            return map;
+        };
+
+        const suggestKeywordMapping = async (keyword: string, facet: typeof source.study.facets[number]) => {
+            const response = await fetch(`${PYTHON_SERVICE_URL}/api/coding/map-keyword`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    keyword,
+                    categories: facet.categories.map((cat) => ({
+                        id: cat.id,
+                        name: cat.name,
+                        description: cat.description,
+                    })),
+                    facet_name: facet.name,
+                    facet_description: facet.description,
+                }),
+            });
+
+            if (!response.ok) {
+                return null;
+            }
+            return response.json();
+        };
+
+        for (const c of analysisResult.classifications || []) {
             const cFacetName = c.facetName || c.facet_name || "unknown";
             const cFacetId = c.facetId || facetNameToId.get(cFacetName);
-            const categoryMap = cFacetId ? facetIdToCategoryMap.get(cFacetId) : null;
+            const facet = cFacetId ? facetById.get(cFacetId) : facetByName.get(cFacetName);
+            if (!facet) {
+                continue;
+            }
+
+            if (facet.type === "OPEN") {
+                const keywords = Array.isArray(c.keywords) ? c.keywords : [];
+                for (const keyword of keywords) {
+                    if (typeof keyword !== "string" || !keyword.trim()) {
+                        continue;
+                    }
+                    const normalized = `${facet.id}:${keyword.trim().toLowerCase()}`;
+                    if (keywordDedup.has(normalized)) {
+                        continue;
+                    }
+                    keywordDedup.add(normalized);
+                    keywordCreates.push({
+                        facetId: facet.id,
+                        keyword: keyword.trim(),
+                        confidence: c.confidence !== undefined ? parseFloat(c.confidence) : null,
+                    });
+                    classificationCreates.push({
+                        facetId: facet.id,
+                        categoryId: null,
+                        value: keyword.trim(),
+                        confidence: parseFloat(c.confidence || 0),
+                        reasoning: c.reasoning || "",
+                        isManualOverride: false,
+                    });
+                }
+                continue;
+            }
+
+            if (facet.type === "OPEN_CODED") {
+                const keywords = Array.isArray(c.keywords) ? c.keywords : [];
+                const mappingMap = await getFacetMappings(facet.id);
+                for (const keyword of keywords) {
+                    if (typeof keyword !== "string" || !keyword.trim()) {
+                        continue;
+                    }
+                    const trimmed = keyword.trim();
+                    const normalized = trimmed.toLowerCase();
+                    const dedupKey = `${facet.id}:${normalized}`;
+                    if (!keywordDedup.has(dedupKey)) {
+                        keywordDedup.add(dedupKey);
+                        keywordCreates.push({
+                            facetId: facet.id,
+                            keyword: trimmed,
+                            confidence: c.confidence !== undefined ? parseFloat(c.confidence) : null,
+                        });
+                    }
+
+                    const existing = mappingMap.get(normalized);
+                    if (existing && existing.status === "APPROVED" && existing.categoryId) {
+                        classificationCreates.push({
+                            facetId: facet.id,
+                            categoryId: existing.categoryId,
+                            value: null,
+                            confidence: parseFloat(c.confidence || 0),
+                            reasoning: c.reasoning || "Mapped from approved keyword",
+                            isManualOverride: false,
+                        });
+                        continue;
+                    }
+
+                    if (!existing) {
+                        const suggestion = await suggestKeywordMapping(trimmed, facet);
+                        if (suggestion) {
+                            const match = facet.categories.find(
+                                (cat) => cat.name.toLowerCase() === (suggestion.category_name || "").toLowerCase()
+                            );
+                            await prisma.facetKeywordMapping.upsert({
+                                where: {
+                                    facetId_keyword: {
+                                        facetId: facet.id,
+                                        keyword: trimmed,
+                                    },
+                                },
+                                create: {
+                                    facetId: facet.id,
+                                    keyword: trimmed,
+                                    categoryId: match?.id || null,
+                                    status: "PENDING",
+                                    confidence: suggestion.confidence ?? null,
+                                    source: "LLM",
+                                    proposedCategoryName: suggestion.proposed_category_name || null,
+                                    proposedCategoryDescription: suggestion.proposed_category_description || null,
+                                },
+                                update: {
+                                    categoryId: match?.id || null,
+                                    status: "PENDING",
+                                    confidence: suggestion.confidence ?? null,
+                                    source: "LLM",
+                                    proposedCategoryName: suggestion.proposed_category_name || null,
+                                    proposedCategoryDescription: suggestion.proposed_category_description || null,
+                                },
+                            });
+                            mappingMap.set(normalized, { categoryId: match?.id || null, status: "PENDING" });
+                        }
+                    }
+                }
+                continue;
+            }
+
+            const categoryMap = facetIdToCategoryMap.get(facet.id) || null;
             const cCategoryId = categoryMap?.get(c.category) || null;
 
-            return {
-                facetId: cFacetId || source.study.facets[0]?.id,
+            classificationCreates.push({
+                facetId: facet.id,
                 categoryId: cCategoryId,
-                value: cCategoryId ? null : (c.category || c.value || null),
+                value: null,
                 confidence: c.confidence,
                 reasoning: c.reasoning,
                 isManualOverride: c.isManualOverride || false,
-            };
-        });
+            });
+        }
 
         // If skipped, use existing reasoning/criteria
         const inclusionReasoning = skipInclusion ? existingAnalysis?.inclusionReasoning : analysisResult.inclusionReasoning;
@@ -178,10 +348,14 @@ export async function POST(
                 inclusionReasoning: inclusionReasoning,
                 exclusionReasoning: exclusionReasoning,
                 confidenceScore: analysisResult.confidence,
+                classificationBasis: "FULL_TEXT",
                 inclusionCriteria: inclusionCriteria,
                 exclusionCriteria: exclusionCriteria,
                 classifications: {
                     create: classificationCreates
+                },
+                facetKeywords: {
+                    create: keywordCreates
                 },
             },
             update: {
@@ -189,11 +363,16 @@ export async function POST(
                 inclusionReasoning: inclusionReasoning,
                 exclusionReasoning: exclusionReasoning,
                 confidenceScore: analysisResult.confidence,
+                classificationBasis: "FULL_TEXT",
                 inclusionCriteria: inclusionCriteria,
                 exclusionCriteria: exclusionCriteria,
                 classifications: {
                     deleteMany: {},
                     create: classificationCreates
+                },
+                facetKeywords: {
+                    deleteMany: {},
+                    create: keywordCreates
                 },
             }
         });
