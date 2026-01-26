@@ -30,8 +30,10 @@ A Systematic Mapping Study is a structured methodology for categorizing and synt
 ### 🤖 AI-Powered Analysis
 - **Inclusion Evaluation**: LLM evaluates each source against your inclusion/exclusion criteria
 - **Classification**: Automatic categorization according to your facet schema
-- **Open Coding**: LLM suggests categories from free-text responses, with manual refinement
-- Supports both **Claude** (Anthropic) and **OpenAI GPT** models
+- **Open Coding**: LLM suggests categories from free-text responses.
+- **Coding Wizard**: Interactive interface to refine and organize open codes into a structured schema.
+- **Multi-LLM Voting**: Majority-vote consensus mechanism using multiple LLMs (Claude, OpenAI, Gemini) for robust inclusion/exclusion decisions.
+- Supports **Claude** (Anthropic), **OpenAI GPT**, and **Google Gemini** models.
 
 ### 📊 Analysis & Visualization
 - **Overview Dashboard**: Summary statistics and progress indicators
@@ -75,9 +77,9 @@ aasms/
 
 | Component | Technology |
 |-----------|------------|
-| Frontend | Next.js 14+, TypeScript, React, TanStack Query, shadcn/ui, Tailwind CSS |
+| Frontend | Next.js 16+, TypeScript, React 19, custom design with Tailwind CSS 4 |
 | Backend API | Next.js API Routes (source management, study CRUD) |
-| AI Service | Python FastAPI, Claude/OpenAI APIs, asyncio |
+| AI Service | Python FastAPI, Claude/OpenAI/Gemini APIs, asyncio |
 | Database | PostgreSQL 16 (Prisma ORM) |
 | File Storage | MinIO (S3-compatible) |
 | Visualization | Apache ECharts |
@@ -90,7 +92,7 @@ aasms/
 - **Python** 3.11+
 - **Docker** and Docker Compose
 - **uv** (Python package manager) - [Install uv](https://github.com/astral-sh/uv)
-- **API Keys**: Anthropic Claude API key and/or OpenAI API key
+- **API Keys**: Anthropic Claude, OpenAI, and/or Google Gemini API keys
 
 ---
 
@@ -144,6 +146,7 @@ cat > .env << 'EOF'
 DATABASE_URL="postgresql://sms_user:sms_password@localhost:5432/sms_db"
 ANTHROPIC_API_KEY="your-anthropic-key-here"
 OPENAI_API_KEY="your-openai-key-here"
+GOOGLE_API_KEY="your-google-key-here"
 LLM_PROVIDER="claude"
 EOF
 
@@ -183,7 +186,10 @@ Python service runs on **http://localhost:8000**
 | `DATABASE_URL` | PostgreSQL connection string | - |
 | `ANTHROPIC_API_KEY` | Anthropic API key for Claude | - |
 | `OPENAI_API_KEY` | OpenAI API key for GPT models | - |
-| `LLM_PROVIDER` | LLM to use: `claude` or `openai` | `claude` |
+| `GOOGLE_API_KEY` | Google API key for Gemini models | - |
+| `LLM_PROVIDER` | LLM to use: `claude`, `openai`, `gemini`, or `auto` | `claude` |
+| `GEMINI_MODEL` | Gemini model name | `gemini-1.5-pro-latest` |
+| `GEMINI_SMALL_MODEL` | Gemini small model name | `gemini-1.5-flash-latest` |
 
 ---
 
@@ -287,9 +293,9 @@ chrome-extension/
 1. **Create Study**: Define research questions, title, and motivation
 2. **Configure Parameters**: Set inclusion/exclusion criteria and classification schema
 3. **Import Sources**: Bulk import from databases or add via Chrome extension
-4. **AI Screening**: LLM evaluates each source against your criteria
+4. **AI Screening**: LLM evaluates each source against your criteria (can use multi-LLM voting)
 5. **AI Classification**: LLM categorizes sources according to your facets
-6. **Code Open Facets** (optional): Generate categories from open responses
+6. **Code Open Facets** (optional): use the **Coding Wizard** to refine and cluster open responses
 7. **Analyze Results**: Explore visualizations, export data
 
 ---
