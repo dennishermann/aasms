@@ -38,7 +38,3 @@ METADATA_RESPONSE_FORMAT = {
     "schema": METADATA_JSON_SCHEMA,
     "strict": True,
 }
-
-
-
-

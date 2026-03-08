@@ -1,10 +1,11 @@
 """LLM Provider abstraction layer supporting Claude and OpenAI."""
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional, Tuple, List
+from typing import Any
+
+from src.services.llm_client import generate_json
 
 from .config import settings
-from src.services.llm_client import generate_json
 
 
 class LLMProvider(ABC):
@@ -14,11 +15,11 @@ class LLMProvider(ABC):
     async def generate_structured_output(
         self,
         prompt: str,
-        system_prompt: Optional[str] = None,
-        response_schema: Optional[Dict[str, Any]] = None,
+        system_prompt: str | None = None,
+        response_schema: dict[str, Any] | None = None,
         max_tokens: int = 4000,
-        previous_response_id: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        previous_response_id: str | None = None,
+    ) -> dict[str, Any]:
         """Generate a structured JSON output from the LLM."""
         pass
 
@@ -32,11 +33,11 @@ class ClaudeProvider(LLMProvider):
     async def generate_structured_output(
         self,
         prompt: str,
-        system_prompt: Optional[str] = None,
-        response_schema: Optional[Dict[str, Any]] = None,
+        system_prompt: str | None = None,
+        response_schema: dict[str, Any] | None = None,
         max_tokens: int = 4000,
-        previous_response_id: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        previous_response_id: str | None = None,
+    ) -> dict[str, Any]:
         """Generate structured JSON output using Claude."""
         return await generate_json(
             "claude",
@@ -58,11 +59,11 @@ class OpenAIProvider(LLMProvider):
     async def generate_structured_output(
         self,
         prompt: str,
-        system_prompt: Optional[str] = None,
-        response_schema: Optional[Dict[str, Any]] = None,
+        system_prompt: str | None = None,
+        response_schema: dict[str, Any] | None = None,
         max_tokens: int = 4000,
-        previous_response_id: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        previous_response_id: str | None = None,
+    ) -> dict[str, Any]:
         """Generate structured JSON output using OpenAI."""
         return await generate_json(
             "openai",
@@ -84,11 +85,11 @@ class GeminiProvider(LLMProvider):
     async def generate_structured_output(
         self,
         prompt: str,
-        system_prompt: Optional[str] = None,
-        response_schema: Optional[Dict[str, Any]] = None,
+        system_prompt: str | None = None,
+        response_schema: dict[str, Any] | None = None,
         max_tokens: int = 4000,
-        previous_response_id: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        previous_response_id: str | None = None,
+    ) -> dict[str, Any]:
         """Generate structured JSON output using Google Gemini."""
         return await generate_json(
             "gemini",
@@ -101,7 +102,7 @@ class GeminiProvider(LLMProvider):
         )
 
 
-def available_providers() -> List[str]:
+def available_providers() -> list[str]:
     """Return a list of providers that have credentials configured."""
     providers = []
     if settings.anthropic_api_key:
@@ -113,7 +114,7 @@ def available_providers() -> List[str]:
     return providers
 
 
-def resolve_provider_name(prefer_small_model: bool = False) -> Tuple[str, str]:
+def resolve_provider_name(prefer_small_model: bool = False) -> tuple[str, str]:
     """
     Resolve the provider name and model to use.
 
@@ -126,17 +127,11 @@ def resolve_provider_name(prefer_small_model: bool = False) -> Tuple[str, str]:
     # Auto-pick based on available keys
     if provider_name == "auto":
         if settings.anthropic_api_key:
-            return "claude", (
-                settings.claude_small_model if small else settings.claude_model
-            )
+            return "claude", (settings.claude_small_model if small else settings.claude_model)
         if settings.openai_api_key:
-            return "openai", (
-                settings.openai_small_model if small else settings.openai_model
-            )
+            return "openai", (settings.openai_small_model if small else settings.openai_model)
         if settings.google_api_key:
-            return "gemini", (
-                settings.gemini_small_model if small else settings.gemini_model
-            )
+            return "gemini", (settings.gemini_small_model if small else settings.gemini_model)
         raise ValueError("No LLM provider credentials configured for auto mode")
 
     if provider_name == "claude":
@@ -173,7 +168,7 @@ def get_llm_provider(prefer_small_model: bool = False) -> LLMProvider:
     raise ValueError(f"Unknown LLM provider: {provider_name}")
 
 
-def get_voting_providers(prefer_small_model: bool = True) -> List[LLMProvider]:
+def get_voting_providers(prefer_small_model: bool = True) -> list[LLMProvider]:
     """
     Get list of providers for multi-LLM voting.
     Returns all configured providers (OpenAI, Claude, Gemini).
@@ -212,4 +207,3 @@ def voting_available() -> bool:
     if settings.google_api_key:
         count += 1
     return count >= 2
-

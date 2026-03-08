@@ -1,7 +1,9 @@
 from fastapi import APIRouter, HTTPException
-from src.core.llm_provider import get_llm_provider, available_providers, resolve_provider_name
+
+from src.core.llm_provider import available_providers, get_llm_provider, resolve_provider_name
 
 router = APIRouter()
+
 
 @router.get("/test-llm")
 async def test_llm():
@@ -20,4 +22,4 @@ async def test_llm():
             "available_providers": available_providers(),
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"LLM provider error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"LLM provider error: {str(e)}") from e

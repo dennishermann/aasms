@@ -121,14 +121,14 @@ def format_research_questions(questions: list) -> str:
     """Format research questions as a numbered list."""
     if not questions:
         return "No research questions specified"
-    return "\n".join([f"{i+1}. {q}" for i, q in enumerate(questions)])
+    return "\n".join([f"{i + 1}. {q}" for i, q in enumerate(questions)])
 
 
 def format_criteria(criteria: list) -> str:
     """Format criteria as a numbered list."""
     if not criteria:
         return "No criteria specified"
-    return "\n".join([f"{i+1}. {c}" for i, c in enumerate(criteria)])
+    return "\n".join([f"{i + 1}. {c}" for i, c in enumerate(criteria)])
 
 
 def _get_category_name(cat) -> str:
@@ -156,22 +156,28 @@ def format_classification_schema(schema: dict) -> str:
                 facet_type = "closed"
             categories = facet.get("categories", [])
             required = facet.get("required", False)
-            
+
             req_str = "REQUIRED" if required else "OPTIONAL"
             formatted.append(f"\n{facet_name}:\n  Status: {req_str}")
             if facet.get("description"):
                 formatted.append(f"  Description: {facet['description']}")
-            
+
             if facet_type == "open":
                 # Open-set: instruct LLM to extract keywords
-                formatted.append("  Type: OPEN-SET (Extract keywords/phrases that appear in the document)")
+                formatted.append(
+                    "  Type: OPEN-SET (Extract keywords/phrases that appear in the document)"
+                )
                 if categories:  # If examples provided
                     cat_names = [_get_category_name(c) for c in categories]
                     formatted.append(f"  Example categories (for guidance): {', '.join(cat_names)}")
                 if required:
-                    formatted.append("  Instructions: You MUST extract relevant keywords/phrases found in the document. Do not invent terms.")
+                    formatted.append(
+                        "  Instructions: You MUST extract relevant keywords/phrases found in the document. Do not invent terms."
+                    )
                 else:
-                    formatted.append("  Instructions: Extract keywords/phrases if relevant info is present. If none, return an empty list.")
+                    formatted.append(
+                        "  Instructions: Extract keywords/phrases if relevant info is present. If none, return an empty list."
+                    )
             else:
                 # Closed-set: must choose from list
                 formatted.append("  Type: CLOSED-SET (Must select ONE from the predefined list)")
@@ -181,46 +187,60 @@ def format_classification_schema(schema: dict) -> str:
                         formatted.append(f"    - {_get_category_name(cat)}")
                 else:
                     formatted.append("  ERROR: No categories defined for closed-set facet")
-                
+
                 if not required:
-                    formatted.append("  Note: This facet is optional. If the document does not contain enough information, you MUST select 'Not Applicable' and provide reasoning.")
+                    formatted.append(
+                        "  Note: This facet is optional. If the document does not contain enough information, you MUST select 'Not Applicable' and provide reasoning."
+                    )
     else:
         for facet_name, facet_data in schema.items():
             # Legacy dict support or new dict format
             formatted.append(f"\n{facet_name}:")
-            
+
             if isinstance(facet_data, dict):
                 facet_type = facet_data.get("type", "closed")
                 if facet_type == "open_coded":
                     facet_type = "closed"
                 categories = facet_data.get("categories", [])
                 required = facet_data.get("required", False)
-                
+
                 req_str = "REQUIRED" if required else "OPTIONAL"
                 formatted.append(f"  Status: {req_str}")
-                
+
                 if "description" in facet_data:
                     formatted.append(f"  Description: {facet_data['description']}")
-                
+
                 if facet_type == "open":
-                    formatted.append("  Type: OPEN-SET (Extract keywords/phrases that appear in the document)")
+                    formatted.append(
+                        "  Type: OPEN-SET (Extract keywords/phrases that appear in the document)"
+                    )
                     if categories:
                         cat_names = [_get_category_name(c) for c in categories]
-                        formatted.append(f"  Example categories (for guidance): {', '.join(cat_names)}")
+                        formatted.append(
+                            f"  Example categories (for guidance): {', '.join(cat_names)}"
+                        )
                     if required:
-                         formatted.append("  Instructions: You MUST extract relevant keywords/phrases found in the document.")
+                        formatted.append(
+                            "  Instructions: You MUST extract relevant keywords/phrases found in the document."
+                        )
                     else:
-                         formatted.append("  Instructions: Extract keywords/phrases if relevant info is present. If none, return an empty list.")
+                        formatted.append(
+                            "  Instructions: Extract keywords/phrases if relevant info is present. If none, return an empty list."
+                        )
 
                 else:
-                    formatted.append("  Type: CLOSED-SET (Must select ONE from the predefined list)")
+                    formatted.append(
+                        "  Type: CLOSED-SET (Must select ONE from the predefined list)"
+                    )
                     if categories:
                         formatted.append("  Allowed categories:")
                         for cat in categories:
                             formatted.append(f"    - {_get_category_name(cat)}")
-                        
+
                         if not required:
-                            formatted.append("  Note: This facet is optional. If not applicable, select 'Not Applicable'.")
+                            formatted.append(
+                                "  Note: This facet is optional. If not applicable, select 'Not Applicable'."
+                            )
             elif isinstance(facet_data, list):
                 # Old format: assume closed-set with list of categories
                 formatted.append("  Type: CLOSED-SET (Must select ONE from the predefined list)")
@@ -236,7 +256,9 @@ def format_document_context(source_content: dict) -> str:
     title = source_content.get("title") or "Unknown title"
     authors = source_content.get("authors") or "Unknown authors"
     abstract = source_content.get("abstract") or ""
-    publication_date = source_content.get("publication_date") or source_content.get("published_at") or ""
+    publication_date = (
+        source_content.get("publication_date") or source_content.get("published_at") or ""
+    )
     venue = source_content.get("venue") or source_content.get("publication") or ""
     excerpt = source_content.get("content_excerpt") or source_content.get("content") or ""
     return (
@@ -258,11 +280,7 @@ def build_metadata_extraction_prompt(
     pdf_meta_text = ""
     if pdf_metadata:
         pdf_meta_text = "\nPDF Metadata (may be incomplete):\n" + "\n".join(
-            [
-                f"- {k}: {v}"
-                for k, v in pdf_metadata.items()
-                if k != "raw" and v
-            ]
+            [f"- {k}: {v}" for k, v in pdf_metadata.items() if k != "raw" and v]
         )
 
     pdf_blob_text = ""
@@ -385,7 +403,7 @@ def build_per_facet_prompt(
     """Create a prompt for classifying a source against a SINGLE facet."""
     rq_text = format_research_questions(research_questions)
     doc_context = format_document_context(source_content)
-    
+
     # Format just this single facet's schema
     # We wrap it in a list to reuse the existing formatter's logic for a single item
     schema_text = format_classification_schema([facet_data])
@@ -396,7 +414,7 @@ def build_per_facet_prompt(
     # Build response schema based on facet type
     facet_name = facet_data.get("name") or facet_data.get("facet_name") or "Unknown"
     facet_description = facet_data.get("description", "")
-    
+
     if facet_type == "open":
         # For OPEN facets, emphasize answering the question in the description
         open_instructions = ""
@@ -409,7 +427,7 @@ Do NOT extract general related terms - only extract specific answers found in th
             open_instructions = """
 Extract specific concepts, techniques, or methods mentioned in the document that are relevant to this facet.
 Be specific and precise - extract only terms that directly relate to the facet's purpose."""
-        
+
         response_schema_text = f"""
 Return JSON:
 {{
@@ -418,7 +436,7 @@ Return JSON:
   "confidence": 0.0-1.0,
   "reasoning": "brief evidence from the document"
 }}"""
-        
+
         task_instructions = f"""
 Task:
 Classify the document according to the target facet above.
@@ -441,7 +459,7 @@ Return JSON:
   "confidence": 0.0-1.0,
   "reasoning": "brief evidence from the document"
 }}"""
-        
+
         task_instructions = f"""
 Task:
 Classify the document according to the target facet above.
@@ -467,4 +485,3 @@ Target Classification Facet:
 
 {task_instructions}
 """
-

@@ -6,11 +6,11 @@ The final decision is made by majority vote, mimicking traditional inter-rater
 reliability approaches in systematic mapping studies.
 """
 
-from typing import Dict, Any, List, Optional
-from dataclasses import dataclass, field, asdict
 import asyncio
 import logging
+from dataclasses import dataclass, field
 from statistics import mean
+from typing import Any
 
 from src.core.llm_provider import LLMProvider
 
@@ -25,9 +25,9 @@ class VoteResult:
     decision: bool
     confidence: float
     reasoning: str
-    error: Optional[str] = None
+    error: str | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
         return {
             "provider": self.provider,
@@ -47,11 +47,11 @@ class AggregatedVote:
     vote_count: int  # Number of votes for the winning decision
     total_voters: int  # Total number of voters
     agreement_ratio: float  # e.g., 0.67 for 2/3 agreement
-    individual_votes: List[VoteResult] = field(default_factory=list)
+    individual_votes: list[VoteResult] = field(default_factory=list)
     aggregated_confidence: float = 0.5
     aggregated_reasoning: str = ""
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
         return {
             "criterion": self.criterion,
@@ -70,13 +70,13 @@ class VotingSummary:
     """Summary of voting across all criteria."""
 
     total_providers: int
-    providers_used: List[str]
+    providers_used: list[str]
     overall_agreement_ratio: float
     total_criteria_evaluated: int
     unanimous_decisions: int
     split_decisions: int
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
         return {
             "total_providers": self.total_providers,
@@ -98,7 +98,7 @@ class MultiLLMVotingService:
     - Stores individual votes for audit trail
     """
 
-    def __init__(self, providers: List[LLMProvider]):
+    def __init__(self, providers: list[LLMProvider]):
         """Initialize with list of LLM providers.
 
         Args:
@@ -110,15 +110,13 @@ class MultiLLMVotingService:
                 f"MultiLLMVotingService requires at least 2 providers. Got {len(providers)}."
             )
         self.providers = providers
-        self.provider_names = [
-            type(p).__name__.replace("Provider", "").lower() for p in providers
-        ]
+        self.provider_names = [type(p).__name__.replace("Provider", "").lower() for p in providers]
 
     async def vote_on_criterion(
         self,
         prompt: str,
         criterion: str,
-        response_schema: Dict[str, Any],
+        response_schema: dict[str, Any],
     ) -> AggregatedVote:
         """
         Have all providers vote on a single criterion.
@@ -135,10 +133,10 @@ class MultiLLMVotingService:
         # Run all providers in parallel
         tasks = [
             self._get_single_vote(provider, name, prompt, response_schema)
-            for provider, name in zip(self.providers, self.provider_names)
+            for provider, name in zip(self.providers, self.provider_names, strict=True)
         ]
 
-        votes: List[VoteResult] = await asyncio.gather(*tasks)
+        votes: list[VoteResult] = await asyncio.gather(*tasks)
 
         # Filter out failed votes (but keep track of them)
         valid_votes = [v for v in votes if v.error is None]
@@ -208,7 +206,7 @@ class MultiLLMVotingService:
         provider: LLMProvider,
         provider_name: str,
         prompt: str,
-        response_schema: Dict[str, Any],
+        response_schema: dict[str, Any],
     ) -> VoteResult:
         """Get a single provider's vote.
 
@@ -245,9 +243,7 @@ class MultiLLMVotingService:
                 error=str(e),
             )
 
-    def compute_voting_summary(
-        self, aggregated_votes: List[AggregatedVote]
-    ) -> VotingSummary:
+    def compute_voting_summary(self, aggregated_votes: list[AggregatedVote]) -> VotingSummary:
         """Compute summary statistics across all voting results.
 
         Args:

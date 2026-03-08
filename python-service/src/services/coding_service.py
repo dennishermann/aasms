@@ -1,7 +1,7 @@
 """Coding service for generating categories from OPEN facet values."""
 
 import logging
-from typing import Dict, Any, List, Optional
+from typing import Any
 
 from src.core.llm_provider import LLMProvider
 
@@ -16,12 +16,12 @@ class CodingService:
 
     async def suggest_categories(
         self,
-        values: List[str],
+        values: list[str],
         facet_name: str,
-        facet_description: Optional[str] = None,
+        facet_description: str | None = None,
         min_categories: int = 3,
         max_categories: int = 10,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Generate category suggestions from a list of OPEN facet keywords.
 
@@ -61,7 +61,7 @@ Guidelines:
 
 Respond with a JSON object containing:
 - categories: array of objects with name (string), description (string), and values (array of strings that belong to this category)
-- uncategorized: array of values that don't fit any category  
+- uncategorized: array of values that don't fit any category
 - reasoning: brief explanation of the categorization approach
 
 Important: Include ALL values from the input in either a category or uncategorized. Do not miss any values."""
@@ -91,12 +91,14 @@ Important: Include ALL values from the input in either a category or uncategoriz
             formatted_categories = []
             for cat in categories:
                 if isinstance(cat, dict):
-                    formatted_categories.append({
-                        "name": cat.get("name", "Unknown"),
-                        "description": cat.get("description", ""),
-                        "values": cat.get("values", []),
-                        "source_count": len(cat.get("values", [])),
-                    })
+                    formatted_categories.append(
+                        {
+                            "name": cat.get("name", "Unknown"),
+                            "description": cat.get("description", ""),
+                            "values": cat.get("values", []),
+                            "source_count": len(cat.get("values", [])),
+                        }
+                    )
 
             return {
                 "categories": formatted_categories,
@@ -111,9 +113,9 @@ Important: Include ALL values from the input in either a category or uncategoriz
     async def classify_value(
         self,
         value: str,
-        categories: List[Dict[str, Any]],
+        categories: list[dict[str, Any]],
         facet_name: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Classify a single value into one of the existing categories.
 
@@ -184,7 +186,7 @@ If confidence is below 0.5, set category_name to null."""
                         break
 
             confidence = float(result.get("confidence", 0.0))
-            
+
             # If confidence is low, don't assign a category
             if confidence < 0.5:
                 category_id = None
@@ -204,10 +206,10 @@ If confidence is below 0.5, set category_name to null."""
     async def map_keyword(
         self,
         keyword: str,
-        categories: List[Dict[str, Any]],
+        categories: list[dict[str, Any]],
         facet_name: str,
-        facet_description: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        facet_description: str | None = None,
+    ) -> dict[str, Any]:
         """
         Map a keyword/phrase to an existing category or propose a new category.
 

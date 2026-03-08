@@ -1,14 +1,16 @@
-from typing import Dict, Any, List, Optional
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form
+import json
+import logging
+from typing import Any
+from uuid import uuid4
+
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from pydantic import BaseModel, Field
 from pydantic.config import ConfigDict
-from uuid import uuid4
-import logging
-import json
+
 from src.core.llm_provider import get_llm_provider
 from src.services.classification_service import ClassificationService
-from src.services.inclusion_evaluation_service import InclusionEvaluationService
 from src.services.document_parser import DocumentParser
+from src.services.inclusion_evaluation_service import InclusionEvaluationService
 
 logger = logging.getLogger(__name__)
 
@@ -16,34 +18,38 @@ router = APIRouter()
 
 # Request/Response models
 
+
 class ClassificationResult(BaseModel):
     """Classification result for a single facet."""
+
     model_config = ConfigDict(populate_by_name=True)
 
     facet_name: str = Field(alias="facetName")
-    category: Optional[str] = None
-    keywords: Optional[List[str]] = None
+    category: str | None = None
+    keywords: list[str] | None = None
     confidence: float
-    reasoning: Optional[str] = None
-    is_manual_override: Optional[bool] = Field(default=False, alias="isManualOverride")
+    reasoning: str | None = None
+    is_manual_override: bool | None = Field(default=False, alias="isManualOverride")
 
 
 class VoteDetail(BaseModel):
     """Single LLM's vote on a criterion."""
+
     model_config = ConfigDict(populate_by_name=True)
 
     provider: str
     decision: bool
     confidence: float
-    reasoning: Optional[str] = None
-    error: Optional[str] = None
+    reasoning: str | None = None
+    error: str | None = None
 
 
 class VotingDetails(BaseModel):
     """Voting details for a single criterion."""
+
     model_config = ConfigDict(populate_by_name=True)
 
-    votes: List[VoteDetail]
+    votes: list[VoteDetail]
     agreement_ratio: float = Field(alias="agreementRatio")
     vote_count: int = Field(alias="voteCount")
     total_voters: int = Field(alias="totalVoters")
@@ -51,10 +57,11 @@ class VotingDetails(BaseModel):
 
 class VotingSummary(BaseModel):
     """Summary of voting across all criteria."""
+
     model_config = ConfigDict(populate_by_name=True)
 
     total_providers: int = Field(alias="totalProviders")
-    providers_used: List[str] = Field(alias="providersUsed")
+    providers_used: list[str] = Field(alias="providersUsed")
     overall_agreement_ratio: float = Field(alias="overallAgreementRatio")
     total_criteria_evaluated: int = Field(alias="totalCriteriaEvaluated")
     unanimous_decisions: int = Field(alias="unanimousDecisions")
@@ -63,33 +70,37 @@ class VotingSummary(BaseModel):
 
 class CriterionEvaluation(BaseModel):
     """Evaluation result for a single criterion."""
+
     model_config = ConfigDict(populate_by_name=True)
 
     criterion: str
     decision: bool
     reasoning: str
     confidence: float
-    voting_details: Optional[VotingDetails] = Field(default=None, alias="votingDetails")
+    voting_details: VotingDetails | None = Field(default=None, alias="votingDetails")
 
 
 class ClassificationResponse(BaseModel):
     """Response model for classification-only invocation."""
+
     model_config = ConfigDict(populate_by_name=True)
-    classifications: List[ClassificationResult]
+    classifications: list[ClassificationResult]
 
 
 class ClassificationTextRequest(BaseModel):
     """Request model for text-based classification."""
+
     model_config = ConfigDict(populate_by_name=True)
 
-    source_id: Optional[str] = Field(default=None, alias="sourceId")
-    study_parameters: Dict[str, Any] = Field(alias="studyParameters")
-    source_content: Dict[str, Any] = Field(alias="sourceContent")
-    previous_response_id: Optional[str] = Field(default=None, alias="classificationThreadId")
+    source_id: str | None = Field(default=None, alias="sourceId")
+    study_parameters: dict[str, Any] = Field(alias="studyParameters")
+    source_content: dict[str, Any] = Field(alias="sourceContent")
+    previous_response_id: str | None = Field(default=None, alias="classificationThreadId")
 
 
 class InclusionAnalysisResponse(BaseModel):
     """Response model for inclusion/exclusion-only analysis."""
+
     model_config = ConfigDict(populate_by_name=True)
 
     analysis_id: str
@@ -97,73 +108,74 @@ class InclusionAnalysisResponse(BaseModel):
     inclusion_reasoning: str = Field(alias="inclusionReasoning")
     exclusion_reasoning: str = Field(alias="exclusionReasoning")
     confidence: float
-    inclusion_criteria: List[CriterionEvaluation] = Field(alias="inclusionCriteria")
-    exclusion_criteria: List[CriterionEvaluation] = Field(alias="exclusionCriteria")
-    relevance_score: Optional[float] = Field(default=None, alias="relevanceScore")
-    quality_notes: Optional[str] = Field(default=None, alias="qualityNotes")
-    context_response_id: Optional[str] = Field(default=None, alias="contextResponseId")
+    inclusion_criteria: list[CriterionEvaluation] = Field(alias="inclusionCriteria")
+    exclusion_criteria: list[CriterionEvaluation] = Field(alias="exclusionCriteria")
+    relevance_score: float | None = Field(default=None, alias="relevanceScore")
+    quality_notes: str | None = Field(default=None, alias="qualityNotes")
+    context_response_id: str | None = Field(default=None, alias="contextResponseId")
     # Voting-specific fields
     voting_enabled: bool = Field(default=False, alias="votingEnabled")
-    voting_summary: Optional[VotingSummary] = Field(default=None, alias="votingSummary")
+    voting_summary: VotingSummary | None = Field(default=None, alias="votingSummary")
 
 
 class InclusionAnalysisTextRequest(BaseModel):
     """Request model for text-based inclusion analysis."""
+
     model_config = ConfigDict(populate_by_name=True)
 
-    source_id: Optional[str] = Field(default=None, alias="sourceId")
-    study_parameters: Dict[str, Any] = Field(alias="studyParameters")
-    source_content: Dict[str, Any] = Field(alias="sourceContent")
-    previous_response_id: Optional[str] = Field(default=None, alias="classificationThreadId")
+    source_id: str | None = Field(default=None, alias="sourceId")
+    study_parameters: dict[str, Any] = Field(alias="studyParameters")
+    source_content: dict[str, Any] = Field(alias="sourceContent")
+    previous_response_id: str | None = Field(default=None, alias="classificationThreadId")
 
 
 class FullAnalysisResponse(BaseModel):
     """Response model for combined analysis."""
+
     model_config = ConfigDict(populate_by_name=True)
 
     recommendation: str
     inclusion_reasoning: str = Field(alias="inclusionReasoning")
     exclusion_reasoning: str = Field(alias="exclusionReasoning")
     confidence: float
-    inclusion_criteria: List[CriterionEvaluation] = Field(alias="inclusionCriteria")
-    exclusion_criteria: List[CriterionEvaluation] = Field(alias="exclusionCriteria")
-    classifications: Optional[List[ClassificationResult]] = None
+    inclusion_criteria: list[CriterionEvaluation] = Field(alias="inclusionCriteria")
+    exclusion_criteria: list[CriterionEvaluation] = Field(alias="exclusionCriteria")
+    classifications: list[ClassificationResult] | None = None
     # Voting-specific fields
     voting_enabled: bool = Field(default=False, alias="votingEnabled")
-    voting_summary: Optional[VotingSummary] = Field(default=None, alias="votingSummary")
+    voting_summary: VotingSummary | None = Field(default=None, alias="votingSummary")
 
 
 # Helpers
 
+
 async def _run_classification(
-    source_id: Optional[str],
-    study_params: Dict[str, Any],
-    source_content: Dict[str, Any],
-    previous_response_id: Optional[str] = None,
-) -> List[Dict[str, Any]]:
+    source_id: str | None,
+    study_params: dict[str, Any],
+    source_content: dict[str, Any],
+    previous_response_id: str | None = None,
+) -> list[dict[str, Any]]:
     """Shared logic for classification."""
     try:
         provider = get_llm_provider()
         classifier = ClassificationService(provider)
     except Exception as e:
         logger.exception("classify: provider init failed")
-        raise HTTPException(status_code=500, detail=f"LLM provider error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"LLM provider error: {str(e)}") from e
 
     research_questions = (
-        study_params.get("research_questions")
-        or study_params.get("researchQuestions")
-        or []
+        study_params.get("research_questions") or study_params.get("researchQuestions") or []
     )
     classification_schema = (
-        study_params.get("classification_schema")
-        or study_params.get("classificationSchema")
-        or {}
+        study_params.get("classification_schema") or study_params.get("classificationSchema") or {}
     )
 
     try:
         ClassificationService.validate_classification_schema(classification_schema)
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Invalid classification schema: {str(e)}")
+        raise HTTPException(
+            status_code=400, detail=f"Invalid classification schema: {str(e)}"
+        ) from e
 
     try:
         logger.info(
@@ -195,14 +207,14 @@ async def _run_classification(
         raise
     except Exception as e:
         logger.exception("classify: failed")
-        raise HTTPException(status_code=500, detail=f"Classification failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Classification failed: {str(e)}") from e
 
 
 async def _run_inclusion_analysis(
-    source_id: Optional[str],
-    study_params: Dict[str, Any],
-    source_content: Dict[str, Any],
-    previous_response_id: Optional[str] = None,
+    source_id: str | None,
+    study_params: dict[str, Any],
+    source_content: dict[str, Any],
+    previous_response_id: str | None = None,
 ) -> InclusionAnalysisResponse:
     """Shared logic for inclusion analysis.
 
@@ -216,22 +228,16 @@ async def _run_inclusion_analysis(
         inclusion_service = InclusionEvaluationService(llm_provider=provider)
     except Exception as e:
         logger.exception("analyze-inclusion: provider init failed")
-        raise HTTPException(status_code=500, detail=f"LLM provider error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"LLM provider error: {str(e)}") from e
 
     research_questions = (
-        study_params.get("research_questions")
-        or study_params.get("researchQuestions")
-        or []
+        study_params.get("research_questions") or study_params.get("researchQuestions") or []
     )
     inclusion_criteria = (
-        study_params.get("inclusion_criteria")
-        or study_params.get("inclusionCriteria")
-        or []
+        study_params.get("inclusion_criteria") or study_params.get("inclusionCriteria") or []
     )
     exclusion_criteria = (
-        study_params.get("exclusion_criteria")
-        or study_params.get("exclusionCriteria")
-        or []
+        study_params.get("exclusion_criteria") or study_params.get("exclusionCriteria") or []
     )
 
     try:
@@ -260,18 +266,24 @@ async def _run_inclusion_analysis(
             "analyze-inclusion: analysis complete",
             extra={
                 "source_id": source_id,
-                "recommendation": "include" if inclusion_results.get("recommendation") else "exclude",
+                "recommendation": "include"
+                if inclusion_results.get("recommendation")
+                else "exclude",
                 "confidence": round(inclusion_results.get("overall_confidence", 0.5), 3),
-                "inclusion_criteria_count": len(inclusion_results.get("inclusion_criteria", []) or []),
-                "exclusion_criteria_count": len(inclusion_results.get("exclusion_criteria", []) or []),
+                "inclusion_criteria_count": len(
+                    inclusion_results.get("inclusion_criteria", []) or []
+                ),
+                "exclusion_criteria_count": len(
+                    inclusion_results.get("exclusion_criteria", []) or []
+                ),
             },
         )
     except Exception as e:
         logger.exception("analyze-inclusion: failed")
-        raise HTTPException(status_code=500, detail=f"Inclusion analysis failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Inclusion analysis failed: {str(e)}") from e
 
     # Transform criterion results, including voting details if present
-    def transform_criterion(c: Dict[str, Any]) -> CriterionEvaluation:
+    def transform_criterion(c: dict[str, Any]) -> CriterionEvaluation:
         """Transform a criterion result dict to CriterionEvaluation model."""
         voting_details = None
         if c.get("voting_details"):
@@ -335,7 +347,7 @@ async def _run_inclusion_analysis(
         voting_enabled=inclusion_results.get("voting_enabled", False),
         voting_summary=voting_summary,
     )
-    
+
     logger.info(
         "analyze-inclusion: response",
         extra={
@@ -346,11 +358,12 @@ async def _run_inclusion_analysis(
             "excl_count": len(response.exclusion_criteria),
         },
     )
-    
+
     return response
 
 
 # Routes
+
 
 @router.post("/classify/file", response_model=ClassificationResponse, response_model_by_alias=True)
 async def classify_source_file(
@@ -362,12 +375,12 @@ async def classify_source_file(
     try:
         payload_data = json.loads(payload)
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Invalid payload JSON: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Invalid payload JSON: {str(e)}") from e
 
     source_id = payload_data.get("sourceId")
     study_params = payload_data.get("studyParameters") or {}
     source_content_ext = payload_data.get("sourceContent") or {}
-    
+
     # Build source content
     source_content = {
         "title": source_content_ext.get("title") or "",
@@ -377,12 +390,14 @@ async def classify_source_file(
         "doi": source_content_ext.get("doi") or "",
         "publication_date": source_content_ext.get("publication_date") or "",
         "content_excerpt": source_content_ext.get("content_excerpt") or "",
-        "metadata_extension": source_content_ext.get("metadataExtension") or source_content_ext.get("metadata_extension") or {},
+        "metadata_extension": source_content_ext.get("metadataExtension")
+        or source_content_ext.get("metadata_extension")
+        or {},
     }
 
     # Parse PDF (Required for this endpoint)
     if not file.filename.lower().endswith(".pdf"):
-         raise HTTPException(status_code=400, detail="File must be a PDF")
+        raise HTTPException(status_code=400, detail="File must be a PDF")
 
     try:
         pdf_bytes = await file.read()
@@ -395,7 +410,7 @@ async def classify_source_file(
         text_content = parsed.get("text", "")
         if text_content:
             source_content["content_excerpt"] = text_content
-            
+
         logger.info(
             "classify/file: PDF parsed",
             extra={
@@ -406,10 +421,12 @@ async def classify_source_file(
         )
     except Exception as e:
         logger.exception("classify/file: PDF parsing failed")
-        raise HTTPException(status_code=500, detail=f"PDF parsing failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"PDF parsing failed: {str(e)}") from e
 
     classifications = await _run_classification(source_id, study_params, source_content, None)
-    return ClassificationResponse(classifications=[ClassificationResult(**c) for c in classifications])
+    return ClassificationResponse(
+        classifications=[ClassificationResult(**c) for c in classifications]
+    )
 
 
 @router.post("/classify/text", response_model=ClassificationResponse, response_model_by_alias=True)
@@ -423,19 +440,24 @@ async def classify_source_text(request: ClassificationTextRequest):
         "doi": request.source_content.get("doi") or "",
         "publication_date": request.source_content.get("publication_date") or "",
         "content_excerpt": request.source_content.get("content_excerpt") or "",
-        "metadata_extension": request.source_content.get("metadataExtension") or request.source_content.get("metadata_extension") or {},
+        "metadata_extension": request.source_content.get("metadataExtension")
+        or request.source_content.get("metadata_extension")
+        or {},
     }
-    
+
     classifications = await _run_classification(
-        request.source_id, 
-        request.study_parameters, 
-        source_content, 
-        request.previous_response_id
+        request.source_id, request.study_parameters, source_content, request.previous_response_id
     )
-    return ClassificationResponse(classifications=[ClassificationResult(**c) for c in classifications])
+    return ClassificationResponse(
+        classifications=[ClassificationResult(**c) for c in classifications]
+    )
 
 
-@router.post("/analyze-inclusion/file", response_model=InclusionAnalysisResponse, response_model_by_alias=True)
+@router.post(
+    "/analyze-inclusion/file",
+    response_model=InclusionAnalysisResponse,
+    response_model_by_alias=True,
+)
 async def analyze_inclusion_file(
     payload: str = Form(...),
     file: UploadFile = File(...),
@@ -444,7 +466,7 @@ async def analyze_inclusion_file(
     try:
         payload_data = json.loads(payload)
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Invalid payload JSON: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Invalid payload JSON: {str(e)}") from e
 
     source_id = payload_data.get("source_id")
     study_params = payload_data.get("study_parameters") or {}
@@ -460,7 +482,7 @@ async def analyze_inclusion_file(
     }
 
     if not file.filename.lower().endswith(".pdf"):
-         raise HTTPException(status_code=400, detail="File must be a PDF")
+        raise HTTPException(status_code=400, detail="File must be a PDF")
 
     try:
         pdf_bytes = await file.read()
@@ -475,16 +497,20 @@ async def analyze_inclusion_file(
             source_content["content_excerpt"] = text_content
         logger.info(
             "analyze-inclusion/file: PDF parsed",
-            extra={"source_id": source_id, "pages": parsed.get("pages", 0)}
+            extra={"source_id": source_id, "pages": parsed.get("pages", 0)},
         )
     except Exception as e:
         logger.exception("analyze-inclusion/file: PDF parsing failed")
-        raise HTTPException(status_code=500, detail=f"PDF parsing failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"PDF parsing failed: {str(e)}") from e
 
     return await _run_inclusion_analysis(source_id, study_params, source_content, None)
 
 
-@router.post("/analyze-inclusion/text", response_model=InclusionAnalysisResponse, response_model_by_alias=True)
+@router.post(
+    "/analyze-inclusion/text",
+    response_model=InclusionAnalysisResponse,
+    response_model_by_alias=True,
+)
 async def analyze_inclusion_text(request: InclusionAnalysisTextRequest):
     """Analyze a research source from text content."""
     source_content = {
@@ -495,16 +521,17 @@ async def analyze_inclusion_text(request: InclusionAnalysisTextRequest):
         "doi": request.source_content.get("doi") or "",
         "content_excerpt": request.source_content.get("content_excerpt") or "",
     }
-    
+
     return await _run_inclusion_analysis(
-        request.source_id, 
-        request.study_parameters, 
-        source_content, 
-        request.previous_response_id
+        request.source_id, request.study_parameters, source_content, request.previous_response_id
     )
 
 
-@router.post("/analyze-existing-source-pdf", response_model=FullAnalysisResponse, response_model_by_alias=True)
+@router.post(
+    "/analyze-existing-source-pdf",
+    response_model=FullAnalysisResponse,
+    response_model_by_alias=True,
+)
 async def analyze_existing_source_pdf(
     payload: str = Form(...),
     file: UploadFile = File(...),
@@ -515,7 +542,7 @@ async def analyze_existing_source_pdf(
     try:
         payload_data = json.loads(payload)
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Invalid payload JSON: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Invalid payload JSON: {str(e)}") from e
 
     source_id = payload_data.get("sourceId")
     study_params = payload_data.get("studyParameters") or {}
@@ -530,12 +557,14 @@ async def analyze_existing_source_pdf(
         "venue": source_content_ext.get("venue") or "",
         "doi": source_content_ext.get("doi") or "",
         "publication_date": source_content_ext.get("publication_date") or "",
-        "content_excerpt": "", # Will be filled by PDF
-        "metadata_extension": source_content_ext.get("metadataExtension") or source_content_ext.get("metadata_extension") or {},
+        "content_excerpt": "",  # Will be filled by PDF
+        "metadata_extension": source_content_ext.get("metadataExtension")
+        or source_content_ext.get("metadata_extension")
+        or {},
     }
 
     if not file.filename.lower().endswith(".pdf"):
-         raise HTTPException(status_code=400, detail="File must be a PDF")
+        raise HTTPException(status_code=400, detail="File must be a PDF")
 
     # 1. Parse PDF
     try:
@@ -546,14 +575,14 @@ async def analyze_existing_source_pdf(
         text_content = parsed.get("text", "")
         if text_content:
             source_content["content_excerpt"] = text_content
-            
+
         logger.info(
             "analyze-existing-source-pdf: PDF parsed",
-            extra={"source_id": source_id, "pages": parsed.get("pages", 0)}
+            extra={"source_id": source_id, "pages": parsed.get("pages", 0)},
         )
     except Exception as e:
         logger.exception("analyze-existing-source-pdf: PDF parsing failed")
-        raise HTTPException(status_code=500, detail=f"PDF parsing failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"PDF parsing failed: {str(e)}") from e
 
     # 2. Run Inclusion Analysis (unless skipped)
     if skip_inclusion:
@@ -568,13 +597,17 @@ async def analyze_existing_source_pdf(
             exclusion_criteria=[],
         )
     else:
-        inclusion_response = await _run_inclusion_analysis(source_id, study_params, source_content, None)
-    
+        inclusion_response = await _run_inclusion_analysis(
+            source_id, study_params, source_content, None
+        )
+
     # 3. If included, Run Classification
     classifications = []
     if inclusion_response.recommendation == "include":
         try:
-            classifications_raw = await _run_classification(source_id, study_params, source_content, None)
+            classifications_raw = await _run_classification(
+                source_id, study_params, source_content, None
+            )
             classifications = [ClassificationResult(**c) for c in classifications_raw]
         except Exception as e:
             logger.error(f"Classification failed after inclusion info: {e}")

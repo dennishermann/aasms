@@ -1,7 +1,7 @@
 """Web scraping service for grey literature sources."""
 
-from typing import Dict, Any
-import httpx
+from typing import Any
+
 from bs4 import BeautifulSoup
 
 
@@ -9,7 +9,7 @@ class WebScraper:
     """Service for scraping web content from grey literature sources."""
 
     @staticmethod
-    async def scrape_url(url: str) -> Dict[str, Any]:
+    async def scrape_url(url: str) -> dict[str, Any]:
         """
         Scrape content from a URL.
 
@@ -32,7 +32,7 @@ class WebScraper:
         raise NotImplementedError("Web scraping not yet implemented")
 
     @staticmethod
-    def extract_metadata(soup: BeautifulSoup, url: str) -> Dict[str, Any]:
+    def extract_metadata(soup: BeautifulSoup, url: str) -> dict[str, Any]:
         """
         Extract metadata from parsed HTML.
 
@@ -53,4 +53,3 @@ class WebScraper:
         # 5. Return structured metadata
 
         raise NotImplementedError("Metadata extraction not yet implemented")
-

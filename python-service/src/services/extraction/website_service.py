@@ -1,8 +1,9 @@
 """
 Service for extracting metadata from website content.
 """
+
 import logging
-from typing import Dict, Any, Optional
+from typing import Any
 
 from src.core.llm_provider import LLMProvider
 from src.core.schemas.metadata import METADATA_JSON_SCHEMA
@@ -16,12 +17,13 @@ if not logger.handlers:
 logger.setLevel(logging.INFO)
 logger.propagate = False
 
+
 class WebsiteMetadataService:
     """
     Domain service for extracting metadata from websites/blogs.
     Encapsulates specific prompting strategies for non-academic content.
     """
-    
+
     def __init__(self, llm_provider: LLMProvider):
         self.llm_provider = llm_provider
 
@@ -29,39 +31,39 @@ class WebsiteMetadataService:
         self,
         text_content: str,
         url: str,
-        title_hint: Optional[str] = None,
-        model_name: Optional[str] = None # Deprecated, controlled by provider
-    ) -> Dict[str, Any]:
+        title_hint: str | None = None,
+        model_name: str | None = None,  # Deprecated, controlled by provider
+    ) -> dict[str, Any]:
         """
         Extract metadata from raw website text.
         """
         logger.info(f"WebsiteMetadataService: extraction requested for {url}")
         logger.info(f"Input text length: {len(text_content)} characters")
-        
+
         prompt = self._build_prompt(text_content, url, title_hint)
         logger.debug(f"Prompt constructed. Length: {len(prompt)}")
-        
+
         try:
             result = await self.llm_provider.generate_structured_output(
                 prompt=prompt,
                 response_schema=METADATA_JSON_SCHEMA,
                 max_tokens=16000,
             )
-            
+
             # Post-processing if needed
             result["confidence"] = result.get("confidence", 0.0)
             logger.info(f"Extraction result: {result}")
             return result
-            
+
         except Exception as e:
             logger.error(f"Website extraction failed: {e}")
             raise
 
-    def _build_prompt(self, text_content: str, url: str, title_hint: Optional[str]) -> str:
+    def _build_prompt(self, text_content: str, url: str, title_hint: str | None) -> str:
         """
         Construct a persona-based prompt for website analysis.
         """
-        
+
         return (
             "You are an expert Research Librarian and Technical Editor. "
             "Your goal is to extract structured bibliographic metadata from the provided web content.\n\n"

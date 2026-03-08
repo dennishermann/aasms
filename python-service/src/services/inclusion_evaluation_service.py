@@ -4,18 +4,17 @@ Supports both single-LLM and multi-LLM voting modes for inter-rater reliability.
 When multiple LLM providers are configured (3+), voting is automatically enabled.
 """
 
-from typing import Dict, Any, List, Optional
-import statistics
-import logging
-import time
 import asyncio
+import logging
+import statistics
+import time
+from typing import Any
 
-from src.core.llm_provider import LLMProvider, voting_available, get_voting_providers
+from src.core.llm_provider import LLMProvider, get_voting_providers, voting_available
 from src.core.prompts import build_per_criterion_prompt
 from src.services.multi_llm_voting_service import (
-    MultiLLMVotingService,
     AggregatedVote,
-    VotingSummary,
+    MultiLLMVotingService,
 )
 
 logger = logging.getLogger(__name__)
@@ -33,9 +32,9 @@ class InclusionEvaluationService:
 
     def __init__(
         self,
-        llm_provider: Optional[LLMProvider] = None,
-        voting_service: Optional[MultiLLMVotingService] = None,
-        use_voting: Optional[bool] = None,
+        llm_provider: LLMProvider | None = None,
+        voting_service: MultiLLMVotingService | None = None,
+        use_voting: bool | None = None,
     ):
         """Initialize the evaluation service.
 
@@ -74,10 +73,7 @@ class InclusionEvaluationService:
             )
 
     @staticmethod
-    def validate_criteria(
-        inclusion_criteria: List[Any],
-        exclusion_criteria: List[Any]
-    ) -> bool:
+    def validate_criteria(inclusion_criteria: list[Any], exclusion_criteria: list[Any]) -> bool:
         """
         Validate inclusion and exclusion criteria structure.
 
@@ -101,7 +97,10 @@ class InclusionEvaluationService:
                     raise ValueError(
                         f"Inclusion criterion at index {i} is a dict but missing 'criterion' field"
                     )
-                if not isinstance(criterion["criterion"], str) or not criterion["criterion"].strip():
+                if (
+                    not isinstance(criterion["criterion"], str)
+                    or not criterion["criterion"].strip()
+                ):
                     raise ValueError(
                         f"Inclusion criterion at index {i} has empty or invalid criterion text"
                     )
@@ -119,7 +118,10 @@ class InclusionEvaluationService:
                     raise ValueError(
                         f"Exclusion criterion at index {i} is a dict but missing 'criterion' field"
                     )
-                if not isinstance(criterion["criterion"], str) or not criterion["criterion"].strip():
+                if (
+                    not isinstance(criterion["criterion"], str)
+                    or not criterion["criterion"].strip()
+                ):
                     raise ValueError(
                         f"Exclusion criterion at index {i} has empty or invalid criterion text"
                     )
@@ -135,12 +137,12 @@ class InclusionEvaluationService:
 
     async def evaluate_inclusion(
         self,
-        source_content: Dict[str, Any],
-        inclusion_criteria: List[Any],
-        exclusion_criteria: List[Any],
-        research_questions: List[str] | None = None,
+        source_content: dict[str, Any],
+        inclusion_criteria: list[Any],
+        exclusion_criteria: list[Any],
+        research_questions: list[str] | None = None,
         previous_response_id: str | None = None,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Evaluate source against inclusion/exclusion criteria.
 
@@ -176,11 +178,11 @@ class InclusionEvaluationService:
 
     async def _evaluate_with_voting(
         self,
-        source_content: Dict[str, Any],
-        inclusion_criteria: List[Any],
-        exclusion_criteria: List[Any],
-        research_questions: List[str] | None = None,
-    ) -> Dict[str, Any]:
+        source_content: dict[str, Any],
+        inclusion_criteria: list[Any],
+        exclusion_criteria: list[Any],
+        research_questions: list[str] | None = None,
+    ) -> dict[str, Any]:
         """Evaluate using multi-LLM voting for improved reliability."""
         research_questions = research_questions or []
 
@@ -242,39 +244,43 @@ class InclusionEvaluationService:
             )
 
         # Execute all voting in parallel
-        inclusion_votes: List[AggregatedVote] = await asyncio.gather(*inclusion_tasks)
-        exclusion_votes: List[AggregatedVote] = await asyncio.gather(*exclusion_tasks)
+        inclusion_votes: list[AggregatedVote] = await asyncio.gather(*inclusion_tasks)
+        exclusion_votes: list[AggregatedVote] = await asyncio.gather(*exclusion_tasks)
 
         # Convert to result format with voting details
         inclusion_results = []
         for vote in inclusion_votes:
-            inclusion_results.append({
-                "criterion": vote.criterion,
-                "decision": vote.final_decision,
-                "confidence": vote.aggregated_confidence,
-                "reasoning": vote.aggregated_reasoning,
-                "voting_details": {
-                    "votes": [v.to_dict() for v in vote.individual_votes],
-                    "agreement_ratio": vote.agreement_ratio,
-                    "vote_count": vote.vote_count,
-                    "total_voters": vote.total_voters,
-                },
-            })
+            inclusion_results.append(
+                {
+                    "criterion": vote.criterion,
+                    "decision": vote.final_decision,
+                    "confidence": vote.aggregated_confidence,
+                    "reasoning": vote.aggregated_reasoning,
+                    "voting_details": {
+                        "votes": [v.to_dict() for v in vote.individual_votes],
+                        "agreement_ratio": vote.agreement_ratio,
+                        "vote_count": vote.vote_count,
+                        "total_voters": vote.total_voters,
+                    },
+                }
+            )
 
         exclusion_results = []
         for vote in exclusion_votes:
-            exclusion_results.append({
-                "criterion": vote.criterion,
-                "decision": vote.final_decision,
-                "confidence": vote.aggregated_confidence,
-                "reasoning": vote.aggregated_reasoning,
-                "voting_details": {
-                    "votes": [v.to_dict() for v in vote.individual_votes],
-                    "agreement_ratio": vote.agreement_ratio,
-                    "vote_count": vote.vote_count,
-                    "total_voters": vote.total_voters,
-                },
-            })
+            exclusion_results.append(
+                {
+                    "criterion": vote.criterion,
+                    "decision": vote.final_decision,
+                    "confidence": vote.aggregated_confidence,
+                    "reasoning": vote.aggregated_reasoning,
+                    "voting_details": {
+                        "votes": [v.to_dict() for v in vote.individual_votes],
+                        "agreement_ratio": vote.agreement_ratio,
+                        "vote_count": vote.vote_count,
+                        "total_voters": vote.total_voters,
+                    },
+                }
+            )
 
         # Deterministic recommendation logic (same as single-LLM)
         inclusion_decisions = [r["decision"] for r in inclusion_results]
@@ -326,8 +332,10 @@ class InclusionEvaluationService:
 
         return {
             "recommendation": recommendation,
-            "inclusion_reasoning": inclusion_reasoning or "Per-criterion inclusion analysis completed.",
-            "exclusion_reasoning": exclusion_reasoning or "Per-criterion exclusion analysis completed.",
+            "inclusion_reasoning": inclusion_reasoning
+            or "Per-criterion inclusion analysis completed.",
+            "exclusion_reasoning": exclusion_reasoning
+            or "Per-criterion exclusion analysis completed.",
             "overall_confidence": overall_confidence,
             "inclusion_criteria": inclusion_results,
             "exclusion_criteria": exclusion_results,
@@ -340,12 +348,12 @@ class InclusionEvaluationService:
 
     async def _evaluate_single_llm(
         self,
-        source_content: Dict[str, Any],
-        inclusion_criteria: List[Any],
-        exclusion_criteria: List[Any],
-        research_questions: List[str] | None = None,
+        source_content: dict[str, Any],
+        inclusion_criteria: list[Any],
+        exclusion_criteria: list[Any],
+        research_questions: list[str] | None = None,
         previous_response_id: str | None = None,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Evaluate using a single LLM (original implementation)."""
         research_questions = research_questions or []
 
@@ -379,7 +387,11 @@ class InclusionEvaluationService:
         context_id = previous_response_id
         reuse_context = False
 
-        if not context_id and hasattr(self.llm_provider, "model") and "gpt" in getattr(self.llm_provider, "model", ""):
+        if (
+            not context_id
+            and hasattr(self.llm_provider, "model")
+            and "gpt" in getattr(self.llm_provider, "model", "")
+        ):
             try:
                 logger.info("inclusion_evaluation: initializing context with OpenAI Responses API")
                 init_prompt = (
@@ -423,9 +435,11 @@ class InclusionEvaluationService:
                 research_questions=research_questions,
                 inclusion=True,
             )
-            inclusion_tasks.append(self._evaluate_single_criterion(
-                prompt, criterion, context_id if reuse_context else None
-            ))
+            inclusion_tasks.append(
+                self._evaluate_single_criterion(
+                    prompt, criterion, context_id if reuse_context else None
+                )
+            )
 
         exclusion_tasks = []
         for criterion in exclusion_list:
@@ -435,9 +449,11 @@ class InclusionEvaluationService:
                 research_questions=research_questions,
                 inclusion=False,
             )
-            exclusion_tasks.append(self._evaluate_single_criterion(
-                prompt, criterion, context_id if reuse_context else None
-            ))
+            exclusion_tasks.append(
+                self._evaluate_single_criterion(
+                    prompt, criterion, context_id if reuse_context else None
+                )
+            )
 
         inclusion_results = list(await asyncio.gather(*inclusion_tasks))
         exclusion_results = list(await asyncio.gather(*exclusion_tasks))
@@ -486,8 +502,10 @@ class InclusionEvaluationService:
 
         return {
             "recommendation": recommendation,
-            "inclusion_reasoning": inclusion_reasoning or "Per-criterion inclusion analysis completed.",
-            "exclusion_reasoning": exclusion_reasoning or "Per-criterion exclusion analysis completed.",
+            "inclusion_reasoning": inclusion_reasoning
+            or "Per-criterion inclusion analysis completed.",
+            "exclusion_reasoning": exclusion_reasoning
+            or "Per-criterion exclusion analysis completed.",
             "overall_confidence": overall_confidence,
             "inclusion_criteria": inclusion_results,
             "exclusion_criteria": exclusion_results,
@@ -499,11 +517,8 @@ class InclusionEvaluationService:
         }
 
     async def _evaluate_single_criterion(
-        self,
-        prompt: str,
-        criterion: str,
-        context_id: str | None
-    ) -> Dict[str, Any]:
+        self, prompt: str, criterion: str, context_id: str | None
+    ) -> dict[str, Any]:
         """Evaluate a single criterion (helper for parallel execution in single-LLM mode)."""
         try:
             result = await self.llm_provider.generate_structured_output(
@@ -514,7 +529,7 @@ class InclusionEvaluationService:
                     "confidence": "number",
                     "reasoning": "string",
                 },
-                previous_response_id=context_id
+                previous_response_id=context_id,
             )
             return {
                 "criterion": criterion,

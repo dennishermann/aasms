@@ -1,11 +1,12 @@
 """Export routes for generating study data exports."""
 
-from fastapi import APIRouter, HTTPException, Depends
+import logging
+
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from pydantic.config import ConfigDict
 from sqlalchemy.orm import Session
-import logging
 
 from src.core.database import SessionLocal
 from src.services.export_service import ExportService
@@ -52,9 +53,9 @@ def export_full_dataset(
 
         # Validate study exists
         from sqlalchemy import text
+
         study_check = db.execute(
-            text('SELECT id FROM "Study" WHERE id = :study_id'),
-            {"study_id": study_id}
+            text('SELECT id FROM "Study" WHERE id = :study_id'), {"study_id": study_id}
         ).fetchone()
 
         if not study_check:
@@ -68,14 +69,12 @@ def export_full_dataset(
         return StreamingResponse(
             iter([excel_bytes]),
             media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            headers={
-                "Content-Disposition": f'attachment; filename="study-export.xlsx"'
-            }
+            headers={"Content-Disposition": 'attachment; filename="study-export.xlsx"'},
         )
 
     except ValueError as e:
         logger.warning(f"Export validation error: {e}")
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
         logger.exception("export-full: failed")
-        raise HTTPException(status_code=500, detail=f"Export failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Export failed: {str(e)}") from e

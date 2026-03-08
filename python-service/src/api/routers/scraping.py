@@ -1,10 +1,12 @@
-from typing import Dict, Any, List
+from typing import Any
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 router = APIRouter()
 
 # Request/Response models
+
 
 class ScrapeUrlRequest(BaseModel):
     """Request model for URL scraping."""
@@ -19,7 +21,7 @@ class ScrapeUrlResponse(BaseModel):
     source_id: str
     title: str
     content: str
-    metadata: Dict[str, Any]
+    metadata: dict[str, Any]
 
 
 class ExtractAuthorsRequest(BaseModel):
@@ -33,11 +35,12 @@ class ExtractAuthorsRequest(BaseModel):
 class ExtractAuthorsResponse(BaseModel):
     """Response model for author extraction."""
 
-    authors: List[str]
+    authors: list[str]
     confidence: str  # 'high' or 'low'
 
 
 # Routes
+
 
 @router.post("/scrape-url", response_model=ScrapeUrlResponse)
 async def scrape_url(request: ScrapeUrlRequest):
@@ -67,16 +70,13 @@ async def scrape_url(request: ScrapeUrlRequest):
 async def extract_authors(request: ExtractAuthorsRequest):
     """
     Extract author names from grey literature using LLM.
-    
+
     **Status**: Dummy implementation - returns empty authors list.
     Full LLM implementation will be added later.
     """
     # TODO: Implement LLM-based author extraction
     # Will use the existing LLM provider to analyze page content
     # and extract author names with high accuracy
-    
+
     # For now, return empty result
-    return ExtractAuthorsResponse(
-        authors=[],
-        confidence="low"
-    )
+    return ExtractAuthorsResponse(authors=[], confidence="low")

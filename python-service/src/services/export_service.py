@@ -1,15 +1,15 @@
 """Export service for generating full dataset exports in Excel format."""
 
-from typing import Dict, List, Optional, Any
-from io import BytesIO
-from datetime import datetime
 import logging
+from datetime import datetime
+from io import BytesIO
+from typing import Any
 
 from openpyxl import Workbook
-from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
-from sqlalchemy.orm import Session
 from sqlalchemy import text
+from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +59,7 @@ class ExportService:
         output.seek(0)
         return output.getvalue()
 
-    def _fetch_study(self, study_id: str) -> Optional[Dict[str, Any]]:
+    def _fetch_study(self, study_id: str) -> dict[str, Any] | None:
         """Fetch study data with all relationships."""
         query = text("""
             SELECT
@@ -98,7 +98,7 @@ class ExportService:
             return None
         return dict(result._mapping)
 
-    def _fetch_facets(self, study_id: str) -> List[Dict[str, Any]]:
+    def _fetch_facets(self, study_id: str) -> list[dict[str, Any]]:
         """Fetch facets with categories for a study."""
         query = text("""
             SELECT
@@ -120,7 +120,7 @@ class ExportService:
         results = self.db.execute(query, {"study_id": study_id}).fetchall()
         return [dict(r._mapping) for r in results]
 
-    def _fetch_all_sources(self, study_id: str) -> List[Dict[str, Any]]:
+    def _fetch_all_sources(self, study_id: str) -> list[dict[str, Any]]:
         """Fetch all sources for a study."""
         query = text("""
             SELECT
@@ -136,7 +136,7 @@ class ExportService:
         results = self.db.execute(query, {"study_id": study_id}).fetchall()
         return [dict(r._mapping) for r in results]
 
-    def _fetch_included_sources(self, study_id: str) -> List[Dict[str, Any]]:
+    def _fetch_included_sources(self, study_id: str) -> list[dict[str, Any]]:
         """Fetch included sources with their classifications."""
         query = text("""
             SELECT
@@ -168,7 +168,7 @@ class ExportService:
         results = self.db.execute(query, {"study_id": study_id}).fetchall()
         return [dict(r._mapping) for r in results]
 
-    def _fetch_excluded_sources(self, study_id: str) -> List[Dict[str, Any]]:
+    def _fetch_excluded_sources(self, study_id: str) -> list[dict[str, Any]]:
         """Fetch excluded sources."""
         query = text("""
             SELECT
@@ -184,13 +184,13 @@ class ExportService:
         results = self.db.execute(query, {"study_id": study_id}).fetchall()
         return [dict(r._mapping) for r in results]
 
-    def _create_protocol_sheet(self, wb: Workbook, study: Dict[str, Any]) -> None:
+    def _create_protocol_sheet(self, wb: Workbook, study: dict[str, Any]) -> None:
         """Create Protocol sheet with study metadata."""
         ws = wb.create_sheet("Protocol", 0)
 
         # Set column widths
-        ws.column_dimensions['A'].width = 30
-        ws.column_dimensions['B'].width = 70
+        ws.column_dimensions["A"].width = 30
+        ws.column_dimensions["B"].width = 70
 
         row = 1
 
@@ -294,15 +294,26 @@ class ExportService:
         ws.cell(row, 1, "Date Generated")
         ws.cell(row, 2, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
-    def _create_all_sources_sheet(self, wb: Workbook, study: Dict[str, Any]) -> None:
+    def _create_all_sources_sheet(self, wb: Workbook, study: dict[str, Any]) -> None:
         """Create All Sources sheet with all sources."""
         ws = wb.create_sheet("All Sources", 1)
 
         # Headers
         headers = [
-            "ID", "Title", "Authors", "Year", "Venue", "Venue Type", "DOI", "URL",
-            "Source Category", "Grey Lit Tier", "Status", "Final Decision",
-            "Inclusion Confidence", "Exclusion Reasoning"
+            "ID",
+            "Title",
+            "Authors",
+            "Year",
+            "Venue",
+            "Venue Type",
+            "DOI",
+            "URL",
+            "Source Category",
+            "Grey Lit Tier",
+            "Status",
+            "Final Decision",
+            "Inclusion Confidence",
+            "Exclusion Reasoning",
         ]
 
         self._add_header_row(ws, headers)
@@ -318,7 +329,7 @@ class ExportService:
             year = None
             pub_date = source.get("publicationDate")
             if pub_date:
-                year = pub_date.year if hasattr(pub_date, 'year') else str(pub_date)[:4]
+                year = pub_date.year if hasattr(pub_date, "year") else str(pub_date)[:4]
             ws.cell(row_idx, 4, year or "")
 
             ws.cell(row_idx, 5, source.get("venue", "") or "")
@@ -333,10 +344,10 @@ class ExportService:
             ws.cell(row_idx, 14, source.get("exclusionReasoning", "") or "")
 
         # Format columns
-        for col_idx, header in enumerate(headers, 1):
+        for col_idx, _header in enumerate(headers, 1):
             ws.column_dimensions[get_column_letter(col_idx)].width = 15
 
-    def _create_included_sources_sheet(self, wb: Workbook, study: Dict[str, Any]) -> None:
+    def _create_included_sources_sheet(self, wb: Workbook, study: dict[str, Any]) -> None:
         """Create Included Sources sheet with facet classifications."""
         ws = wb.create_sheet("Included Sources", 2)
 
@@ -344,7 +355,9 @@ class ExportService:
         sources = self._fetch_included_sources(study["id"])
 
         # Headers: ID, Title, Authors, Year, Venue, DOI, then facets
-        headers = ["ID", "Title", "Authors", "Year", "Venue", "DOI"] + [f.get("name", "") for f in facets]
+        headers = ["ID", "Title", "Authors", "Year", "Venue", "DOI"] + [
+            f.get("name", "") for f in facets
+        ]
 
         self._add_header_row(ws, headers)
 
@@ -357,7 +370,7 @@ class ExportService:
             year = None
             pub_date = source.get("publicationDate")
             if pub_date:
-                year = pub_date.year if hasattr(pub_date, 'year') else str(pub_date)[:4]
+                year = pub_date.year if hasattr(pub_date, "year") else str(pub_date)[:4]
             ws.cell(row_idx, 4, year or "")
 
             ws.cell(row_idx, 5, source.get("venue", "") or "")
@@ -377,14 +390,16 @@ class ExportService:
                         ws.cell(row_idx, col_idx, "; ".join(values))
                     else:
                         # For CLOSED/OPEN_CODED, show category names
-                        cat_names = [c.get("categoryName", "") for c in class_list if c.get("categoryName")]
+                        cat_names = [
+                            c.get("categoryName", "") for c in class_list if c.get("categoryName")
+                        ]
                         ws.cell(row_idx, col_idx, "; ".join(cat_names))
 
         # Format columns
-        for col_idx, header in enumerate(headers, 1):
+        for col_idx, _header in enumerate(headers, 1):
             ws.column_dimensions[get_column_letter(col_idx)].width = 20
 
-    def _create_exclusion_log_sheet(self, wb: Workbook, study: Dict[str, Any]) -> None:
+    def _create_exclusion_log_sheet(self, wb: Workbook, study: dict[str, Any]) -> None:
         """Create Exclusion Log sheet."""
         ws = wb.create_sheet("Exclusion Log", 3)
 
@@ -401,7 +416,7 @@ class ExportService:
             year = None
             pub_date = source.get("publicationDate")
             if pub_date:
-                year = pub_date.year if hasattr(pub_date, 'year') else str(pub_date)[:4]
+                year = pub_date.year if hasattr(pub_date, "year") else str(pub_date)[:4]
             ws.cell(row_idx, 3, year or "")
 
             reason = source.get("exclusionReasoning") or source.get("inclusionReasoning") or ""
@@ -412,10 +427,10 @@ class ExportService:
                 ws.cell(row_idx, 5, f"{confidence:.0%}")
 
         # Format columns
-        for col_idx, header in enumerate(headers, 1):
+        for col_idx, _header in enumerate(headers, 1):
             ws.column_dimensions[get_column_letter(col_idx)].width = 25
 
-    def _create_classification_matrix_sheet(self, wb: Workbook, study: Dict[str, Any]) -> None:
+    def _create_classification_matrix_sheet(self, wb: Workbook, study: dict[str, Any]) -> None:
         """Create Classification Matrix sheet with 0/1 indicators."""
         ws = wb.create_sheet("Classification Matrix", 4)
 
@@ -469,7 +484,7 @@ class ExportService:
         for col_idx in range(1, len(headers) + 1):
             ws.column_dimensions[get_column_letter(col_idx)].width = 15
 
-    def _create_data_dictionary_sheet(self, wb: Workbook, study: Dict[str, Any]) -> None:
+    def _create_data_dictionary_sheet(self, wb: Workbook, study: dict[str, Any]) -> None:
         """Create Data Dictionary sheet."""
         ws = wb.create_sheet("Data Dictionary", 5)
 
@@ -512,12 +527,12 @@ class ExportService:
             row += 1
 
         # Format columns
-        ws.column_dimensions['A'].width = 25
-        ws.column_dimensions['B'].width = 40
-        ws.column_dimensions['C'].width = 20
-        ws.column_dimensions['D'].width = 50
+        ws.column_dimensions["A"].width = 25
+        ws.column_dimensions["B"].width = 40
+        ws.column_dimensions["C"].width = 20
+        ws.column_dimensions["D"].width = 50
 
-    def _add_header_row(self, ws, headers: List[str]) -> None:
+    def _add_header_row(self, ws, headers: list[str]) -> None:
         """Add a formatted header row."""
         fill = PatternFill(start_color="1F4E78", end_color="1F4E78", fill_type="solid")
         font = Font(color="FFFFFF", bold=True, size=11)
@@ -540,5 +555,5 @@ class ExportService:
         if bold:
             cell_value.font = Font(bold=True)
 
-        ws.column_dimensions['A'].width = 30
-        ws.column_dimensions['B'].width = 70
+        ws.column_dimensions["A"].width = 30
+        ws.column_dimensions["B"].width = 70

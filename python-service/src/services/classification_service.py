@@ -1,13 +1,12 @@
 """Classification service for organizing sources according to schema."""
 
 import asyncio
-import time
-from typing import Dict, Any, List, Optional
 import logging
+import time
+from typing import Any
 
 from src.core.llm_provider import LLMProvider
-from src.core.prompts import build_classification_prompt, build_per_facet_prompt
-from src.core.schemas.classification import CLASSIFICATION_JSON_SCHEMA
+from src.core.prompts import build_per_facet_prompt
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +18,7 @@ class ClassificationService:
         self.llm_provider = llm_provider
 
     @staticmethod
-    def validate_classification_schema(schema: Dict[str, Any] | List[Dict[str, Any]]) -> bool:
+    def validate_classification_schema(schema: dict[str, Any] | list[dict[str, Any]]) -> bool:
         """
         Validate classification schema structure.
 
@@ -46,7 +45,7 @@ class ClassificationService:
             if facet_type == "open_coded":
                 facet_type = "closed"
             categories = facet.get("categories", [])
-            
+
             # Validate facet type
             if facet_type not in ["closed", "open"]:
                 raise ValueError(
@@ -57,10 +56,10 @@ class ClassificationService:
             # Validate required flag (optional, defaults to False)
             required = facet.get("required", False)
             if not isinstance(required, bool):
-                 raise ValueError(
+                raise ValueError(
                     f"Facet '{name}' has invalid 'required' field. Must be a boolean (True/False)."
                 )
-            
+
             if facet_type == "closed":
                 # Closed-set: require predefined categories
                 if not categories:
@@ -86,18 +85,18 @@ class ClassificationService:
                             f"All categories for facet '{name}' must be strings or objects. "
                             f"Found: {type(cat).__name__}"
                         )
-            
+
             elif facet_type == "open":
                 # Open-set: categories can be empty (LLM will generate)
                 pass
-        
+
         return True
 
     @staticmethod
     def format_classifications(
-        raw_classifications: List[Dict[str, Any]],
-        schema: Dict[str, Any] | List[Dict[str, Any]],
-    ) -> List[Dict[str, Any]]:
+        raw_classifications: list[dict[str, Any]],
+        schema: dict[str, Any] | list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
         """
         Format and validate LLM classification results.
         Returns classifications with both name-based and ID-based fields for compatibility.
@@ -105,10 +104,10 @@ class ClassificationService:
         ClassificationService.validate_classification_schema(schema)
 
         # Normalize schema to dict for easier lookup, including ID mappings
-        normalized_schema: Dict[str, Dict[str, Any]] = {}
-        facet_name_to_id: Dict[str, str] = {}
-        category_name_to_id: Dict[str, Dict[str, str]] = {}  # facet_name -> {cat_name -> cat_id}
-        
+        normalized_schema: dict[str, dict[str, Any]] = {}
+        facet_name_to_id: dict[str, str] = {}
+        category_name_to_id: dict[str, dict[str, str]] = {}  # facet_name -> {cat_name -> cat_id}
+
         if isinstance(schema, list):
             for facet in schema:
                 name = facet.get("name") or facet.get("facet_name")
@@ -128,7 +127,7 @@ class ClassificationService:
         else:
             normalized_schema = schema
 
-        formatted: List[Dict[str, Any]] = []
+        formatted: list[dict[str, Any]] = []
         for raw in raw_classifications:
             facet_name = raw.get("facet_name") or raw.get("facet") or raw.get("name")
             category = raw.get("category")
@@ -146,7 +145,7 @@ class ClassificationService:
                 facet_type = "closed"
             categories = facet_config.get("categories", [])
             required = facet_config.get("required", False)
-            
+
             # Get category names for validation (handle both string and object categories)
             allowed_category_names = []
             for cat in categories:
@@ -154,30 +153,33 @@ class ClassificationService:
                     allowed_category_names.append(cat)
                 elif isinstance(cat, dict) and cat.get("name"):
                     allowed_category_names.append(cat["name"])
-            
+
             # Determine final category value
             final_category = category
             category_id = None
-            
+
             if facet_type == "closed":
                 # Validate against allowed categories for closed-set
                 if category not in allowed_category_names and category != "Not Applicable":
-                     # Support "Not Applicable" even if not in schema (LLM fallback)
-                     if required:
-                         logger.warning(
+                    # Support "Not Applicable" even if not in schema (LLM fallback)
+                    if required:
+                        logger.warning(
                             f"Invalid category '{category}' for required closed-set facet '{facet_name}'. "
                             f"Allowed: {allowed_category_names}. Using 'unknown'."
                         )
-                         final_category = "unknown"
-                     else:
-                         final_category = "Not Applicable"
-                
+                        final_category = "unknown"
+                    else:
+                        final_category = "Not Applicable"
+
                 # Look up category ID
-                if facet_name in category_name_to_id and final_category in category_name_to_id[facet_name]:
+                if (
+                    facet_name in category_name_to_id
+                    and final_category in category_name_to_id[facet_name]
+                ):
                     category_id = category_name_to_id[facet_name][final_category]
 
             elif facet_type == "open":
-                cleaned_keywords: List[str] = []
+                cleaned_keywords: list[str] = []
                 if isinstance(keywords, list):
                     for item in keywords:
                         if isinstance(item, str) and item.strip():
@@ -186,7 +188,7 @@ class ClassificationService:
                     cleaned_keywords.append(category.strip())
 
                 seen = set()
-                deduped: List[str] = []
+                deduped: list[str] = []
                 for item in cleaned_keywords:
                     key = item.lower()
                     if key in seen:
@@ -205,13 +207,13 @@ class ClassificationService:
                 "confidence": confidence,
                 "reasoning": reasoning,
             }
-            
+
             # Add IDs if available
             if facet_name in facet_name_to_id:
                 result["facetId"] = facet_name_to_id[facet_name]
             if category_id:
                 result["categoryId"] = category_id
-            
+
             # For open facets, include keywords list
             if facet_type == "open":
                 result["keywords"] = keywords or []
@@ -223,11 +225,11 @@ class ClassificationService:
 
     async def classify_source(
         self,
-        source_content: Dict[str, Any],
-        classification_schema: Dict[str, Any] | List[Dict[str, Any]],
-        research_questions: List[str] | None = None,
-        previous_response_id: Optional[str] = None,
-    ) -> List[Dict[str, Any]]:
+        source_content: dict[str, Any],
+        classification_schema: dict[str, Any] | list[dict[str, Any]],
+        research_questions: list[str] | None = None,
+        previous_response_id: str | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Classify a source according to the provided schema using the configured LLM.
         Uses parallel execution with context caching for performance.
@@ -235,7 +237,7 @@ class ClassificationService:
         """
         research_questions = research_questions or []
         self.validate_classification_schema(classification_schema)
-        
+
         # Normalize schema to list
         facets = []
         if isinstance(classification_schema, list):
@@ -249,17 +251,19 @@ class ClassificationService:
         # Separate facets by binding mode
         direct_facets = []  # metadataField + transform (e.g., year from date)
         hybrid_facets = []  # metadataField only (LLM maps value to category)
-        llm_facets = []     # No binding, full LLM classification
-        
+        llm_facets = []  # No binding, full LLM classification
+
         for facet in facets:
             metadata_field = facet.get("metadataField")
             metadata_transform = facet.get("metadataTransform")
-            
+
             if metadata_field:
                 # Check if direct extraction is possible
-                if metadata_field == "publicationDate" and metadata_transform in ("year", "month"):
-                    direct_facets.append(facet)
-                elif metadata_field == "venueType":
+                if (
+                    metadata_field == "publicationDate"
+                    and metadata_transform in ("year", "month")
+                    or metadata_field == "venueType"
+                ):
                     direct_facets.append(facet)
                 else:
                     # Hybrid: LLM maps metadata value to category
@@ -268,20 +272,24 @@ class ClassificationService:
                 llm_facets.append(facet)
 
         raw_results = []
-        
+
         # 1. Handle direct facets (no LLM needed)
         for facet in direct_facets:
             result = self._extract_from_metadata(facet, source_content)
             if result:
                 raw_results.append(result)
-        
+
         # 2. Handle hybrid and LLM facets with parallel execution
         if hybrid_facets or llm_facets:
             # Context caching strategy
             context_id = previous_response_id
             reuse_context = False
 
-            if not context_id and hasattr(self.llm_provider, "model") and "gpt" in getattr(self.llm_provider, "model", ""):
+            if (
+                not context_id
+                and hasattr(self.llm_provider, "model")
+                and "gpt" in getattr(self.llm_provider, "model", "")
+            ):
                 try:
                     logger.info("classification_service: initializing context")
                     init_prompt = (
@@ -315,16 +323,18 @@ class ClassificationService:
 
             # Create parallel tasks
             tasks = []
-            
+
             # Hybrid facets: use metadata value in prompt
             for facet in hybrid_facets:
                 metadata_field = facet.get("metadataField")
                 metadata_value = source_content.get(metadata_field, "")
                 prompt = self._build_hybrid_prompt(facet, metadata_value, research_questions)
-                tasks.append(self._classify_single_facet(
-                    prompt, facet, context_id if reuse_context else None
-                ))
-            
+                tasks.append(
+                    self._classify_single_facet(
+                        prompt, facet, context_id if reuse_context else None
+                    )
+                )
+
             # Regular LLM facets
             for facet in llm_facets:
                 prompt = build_per_facet_prompt(
@@ -332,15 +342,17 @@ class ClassificationService:
                     source_content=eval_source_content,
                     research_questions=research_questions,
                 )
-                tasks.append(self._classify_single_facet(
-                    prompt, facet, context_id if reuse_context else None
-                ))
+                tasks.append(
+                    self._classify_single_facet(
+                        prompt, facet, context_id if reuse_context else None
+                    )
+                )
 
             if tasks:
                 start_time = time.perf_counter()
                 llm_results = await asyncio.gather(*tasks)
                 duration = time.perf_counter() - start_time
-                
+
                 logger.info(
                     "classification_service.classify success",
                     extra={
@@ -355,13 +367,15 @@ class ClassificationService:
                 raw_results.extend(llm_results)
 
         return self.format_classifications(raw_results, classification_schema)
-    
-    def _extract_from_metadata(self, facet: Dict[str, Any], source_content: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+
+    def _extract_from_metadata(
+        self, facet: dict[str, Any], source_content: dict[str, Any]
+    ) -> dict[str, Any] | None:
         """Extract classification directly from source metadata."""
         facet_name = facet.get("name") or facet.get("facet_name")
         metadata_field = facet.get("metadataField")
         metadata_transform = facet.get("metadataTransform")
-        
+
         value = source_content.get(metadata_field)
         if not value:
             return {
@@ -370,7 +384,7 @@ class ClassificationService:
                 "confidence": 1.0,
                 "reasoning": f"No {metadata_field} in source metadata",
             }
-        
+
         # Apply transform
         extracted_value = str(value)
         if metadata_field == "publicationDate" and metadata_transform == "year":
@@ -390,10 +404,10 @@ class ClassificationService:
                         }
                 except Exception:
                     pass
-            
+
             # 2. Try metadata_extension fallback (year, or database_specific.year)
             ext = source_content.get("metadata_extension") or {}
-            
+
             # Direct year field
             if ext.get("year"):
                 return {
@@ -402,11 +416,11 @@ class ClassificationService:
                     "confidence": 1.0,
                     "reasoning": "Extracted from metadata extension (year)",
                 }
-                
+
             # Database specific year
             db_spec = ext.get("database_specific") or {}
             if db_spec.get("year"):
-                 return {
+                return {
                     "facet_name": facet_name,
                     "category": str(db_spec["year"]),
                     "confidence": 1.0,
@@ -415,39 +429,45 @@ class ClassificationService:
 
         # Generic extraction for other fields
         extracted_value = str(value) if value else None
-        
-        if metadata_field == "publicationDate" and metadata_transform == "month":
-             if isinstance(value, str) and "-" in value:
-                parts = value.split("-")
-                extracted_value = parts[1] if len(parts) > 1 else "01"
+
+        if (
+            metadata_field == "publicationDate"
+            and metadata_transform == "month"
+            and isinstance(value, str)
+            and "-" in value
+        ):
+            parts = value.split("-")
+            extracted_value = parts[1] if len(parts) > 1 else "01"
 
         if not extracted_value:
-             return {
+            return {
                 "facet_name": facet_name,
                 "category": "Not Applicable",
                 "confidence": 1.0,
                 "reasoning": f"No {metadata_field} in source metadata",
             }
-        
+
         return {
             "facet_name": facet_name,
             "category": extracted_value,
             "confidence": 1.0,
             "reasoning": f"Extracted from source metadata ({metadata_field})",
         }
-    
-    def _build_hybrid_prompt(self, facet: Dict[str, Any], metadata_value: str, research_questions: List[str]) -> str:
+
+    def _build_hybrid_prompt(
+        self, facet: dict[str, Any], metadata_value: str, research_questions: list[str]
+    ) -> str:
         """Build prompt for hybrid classification (LLM maps metadata value to category)."""
         facet_name = facet.get("name") or facet.get("facet_name")
         categories = facet.get("categories", [])
-        
+
         cat_names = []
         for cat in categories:
             if isinstance(cat, str):
                 cat_names.append(cat)
             elif isinstance(cat, dict) and cat.get("name"):
                 cat_names.append(cat["name"])
-        
+
         return f"""
 You are classifying a metadata value into a predefined category.
 
@@ -472,11 +492,8 @@ Respond ONLY with JSON, no additional text.
 """
 
     async def _classify_single_facet(
-        self,
-        prompt: str,
-        facet: Dict[str, Any],
-        context_id: Optional[str]
-    ) -> Dict[str, Any]:
+        self, prompt: str, facet: dict[str, Any], context_id: str | None
+    ) -> dict[str, Any]:
         """Classify a single facet (helper for parallel execution)."""
         facet_name = facet.get("name") or facet.get("facet_name")
         facet_type = facet.get("type", "closed")
@@ -494,9 +511,7 @@ Respond ONLY with JSON, no additional text.
                 response_schema["category"] = "string"
 
             result = await self.llm_provider.generate_structured_output(
-                prompt=prompt,
-                response_schema=response_schema,
-                previous_response_id=context_id
+                prompt=prompt, response_schema=response_schema, previous_response_id=context_id
             )
             if facet_type == "open":
                 return {

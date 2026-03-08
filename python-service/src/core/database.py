@@ -1,9 +1,11 @@
 """Database connection and utilities for SMS AI Service."""
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session
-from src.core.config import settings
 import logging
+
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session, sessionmaker
+
+from src.core.config import settings
 
 logger = logging.getLogger(__name__)
 

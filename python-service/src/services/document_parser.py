@@ -1,10 +1,10 @@
 """Document parsing service for extracting text from PDFs and other formats."""
 
-from typing import Dict, Any, Optional
 import io
+import logging
+from typing import Any
 
 import fitz  # PyMuPDF
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +18,7 @@ class DocumentParser:
         max_pages: int | None = None,
         max_chars: int | None = None,
         return_pdf_excerpt: bool = True,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Parse PDF file and extract text content.
 
@@ -34,10 +34,10 @@ class DocumentParser:
         """
         doc = fitz.open(stream=file_content, filetype="pdf")
         text_parts = []
-        
+
         # Determine page range
         pages_to_parse = len(doc) if max_pages is None else min(max_pages, len(doc))
-        
+
         for page_index in range(pages_to_parse):
             page = doc.load_page(page_index)
             text_parts.append(page.get_text("text"))
@@ -52,7 +52,7 @@ class DocumentParser:
 
         meta = doc.metadata or {}
 
-        pdf_excerpt_bytes: Optional[bytes] = None
+        pdf_excerpt_bytes: bytes | None = None
         if return_pdf_excerpt:
             # Write first max_pages pages to an in-memory PDF
             # If max_pages is None, include all pages
@@ -91,7 +91,7 @@ class DocumentParser:
         return result
 
     @staticmethod
-    async def parse_webpage(html_content: str, url: str) -> Dict[str, Any]:
+    async def parse_webpage(html_content: str, url: str) -> dict[str, Any]:
         """
         Parse webpage HTML and extract main content.
 
@@ -112,4 +112,3 @@ class DocumentParser:
         # 5. Return structured data
 
         raise NotImplementedError("Webpage parsing not yet implemented")
-

@@ -1,14 +1,14 @@
 """Shared structured schemas for LLM responses."""
 
-from .metadata import (
-    METADATA_SCHEMA_NAME,
-    METADATA_JSON_SCHEMA,
-    METADATA_RESPONSE_FORMAT,
-)
 from .classification import (
-    CLASSIFICATION_SCHEMA_NAME,
     CLASSIFICATION_JSON_SCHEMA,
     CLASSIFICATION_RESPONSE_FORMAT,
+    CLASSIFICATION_SCHEMA_NAME,
+)
+from .metadata import (
+    METADATA_JSON_SCHEMA,
+    METADATA_RESPONSE_FORMAT,
+    METADATA_SCHEMA_NAME,
 )
 
 __all__ = [
@@ -19,7 +19,3 @@ __all__ = [
     "CLASSIFICATION_JSON_SCHEMA",
     "CLASSIFICATION_RESPONSE_FORMAT",
 ]
-
-
-
-

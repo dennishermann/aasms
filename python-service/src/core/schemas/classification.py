@@ -31,6 +31,3 @@ CLASSIFICATION_RESPONSE_FORMAT = {
     "schema": CLASSIFICATION_JSON_SCHEMA,
     "strict": True,
 }
-
-
-

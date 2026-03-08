@@ -1,8 +1,9 @@
 """LLM-based analysis service for source evaluation and classification."""
 
-from typing import Dict, Any, List
-import uuid
 import logging
+import uuid
+from typing import Any
+
 from src.core.llm_provider import LLMProvider
 from src.services.classification_service import ClassificationService
 from src.services.inclusion_evaluation_service import InclusionEvaluationService
@@ -17,10 +18,11 @@ if not logger.handlers:
 logger.setLevel(logging.INFO)
 logger.propagate = False
 
+
 class LLMAnalyzer:
     """
     Orchestrator service for analyzing research sources using LLM.
-    
+
     This service coordinates between InclusionEvaluationService and ClassificationService
     to provide a complete analysis workflow.
     """
@@ -32,12 +34,12 @@ class LLMAnalyzer:
 
     async def analyze_source(
         self,
-        source_content: Dict[str, Any],
-        study_parameters: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        source_content: dict[str, Any],
+        study_parameters: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Analyze a source against study criteria and classify it.
-        
+
         This orchestrates the full analysis workflow:
         1. Evaluate inclusion/exclusion criteria
         2. If included and schema exists, classify the source
@@ -51,7 +53,7 @@ class LLMAnalyzer:
 
         recommendation = inclusion_results["recommendation"]
         overall_confidence = inclusion_results.get("overall_confidence", 0.5)
-        classification_results: List[Dict[str, Any]] = []
+        classification_results: list[dict[str, Any]] = []
 
         classification_schema = study_parameters.get("classification_schema", {})
         has_schema = bool(classification_schema)
@@ -84,5 +86,3 @@ class LLMAnalyzer:
             "classifications": classification_results,
             "relevance_score": inclusion_results.get("relevance_score"),
         }
-
-

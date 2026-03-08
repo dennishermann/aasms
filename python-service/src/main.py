@@ -1,17 +1,18 @@
 """Main FastAPI application for SMS AI Service."""
 
+import logging
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from src.api.routers import analysis, parsing, scraping, imports, system, coding, export
+from src.api.routers import analysis, coding, export, imports, parsing, scraping, system
 from src.core.config import settings
-import logging
 
 # Configure global logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(levelname)s %(name)s %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S"
+    datefmt="%Y-%m-%d %H:%M:%S",
 )
 
 app = FastAPI(
@@ -25,7 +26,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3000",  # Next.js frontend
-        "chrome-extension://*"     # Chrome extension (any ID)
+        "chrome-extension://*",  # Chrome extension (any ID)
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -57,4 +58,3 @@ async def root():
 async def health():
     """Health check endpoint."""
     return {"status": "healthy"}
-
