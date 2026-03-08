@@ -261,7 +261,7 @@ async def _generate_json_claude(
     logger.info(f"raw_llm_response_preview: {content[:500]}...")
     try:
         return json.loads(strip_json_fences(content))
-    except Exception:
+    except json.JSONDecodeError:
         logger.warning("generate_json claude parse failed; returning {}")
         return {}
 
@@ -324,7 +324,7 @@ async def _generate_json_openai(
         if hasattr(resp, "id"):
             data["_response_id"] = resp.id
         return data
-    except Exception as e:
+    except json.JSONDecodeError as e:
         logger.warning(f"generate_json openai parse failed: {e}; returning {{}}")
         logger.warning(f"Response text was: {text}")
         return {}
@@ -414,6 +414,6 @@ async def _generate_json_gemini(
             return {}
 
         return json.loads(strip_json_fences(text))
-    except Exception as e:
+    except json.JSONDecodeError as e:
         logger.error(f"generate_json gemini failed: {e}", exc_info=True)
         return {}
