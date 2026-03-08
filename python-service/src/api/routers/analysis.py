@@ -26,6 +26,10 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+# PDF parsing limits
+PDF_MAX_PAGES = 50
+PDF_MAX_CHARS = 100_000
+
 
 # Helpers
 
@@ -286,7 +290,7 @@ async def classify_source_file(
             raise HTTPException(status_code=400, detail="Empty PDF file uploaded")
 
         parsed = await DocumentParser.parse_pdf(
-            pdf_bytes, max_pages=50, max_chars=100000, return_pdf_excerpt=False
+            pdf_bytes, max_pages=PDF_MAX_PAGES, max_chars=PDF_MAX_CHARS, return_pdf_excerpt=False
         )
         text_content = parsed.get("text", "")
         if text_content:
@@ -371,7 +375,7 @@ async def analyze_inclusion_file(
             raise HTTPException(status_code=400, detail="Empty PDF file uploaded")
 
         parsed = await DocumentParser.parse_pdf(
-            pdf_bytes, max_pages=50, max_chars=100000, return_pdf_excerpt=False
+            pdf_bytes, max_pages=PDF_MAX_PAGES, max_chars=PDF_MAX_CHARS, return_pdf_excerpt=False
         )
         text_content = parsed.get("text", "")
         if text_content:
@@ -451,7 +455,7 @@ async def analyze_existing_source_pdf(
     try:
         pdf_bytes = await file.read()
         parsed = await DocumentParser.parse_pdf(
-            pdf_bytes, max_pages=50, max_chars=100000, return_pdf_excerpt=False
+            pdf_bytes, max_pages=PDF_MAX_PAGES, max_chars=PDF_MAX_CHARS, return_pdf_excerpt=False
         )
         text_content = parsed.get("text", "")
         if text_content:
