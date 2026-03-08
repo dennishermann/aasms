@@ -372,8 +372,8 @@ class ClassificationService:
                             "confidence": 1.0,
                             "reasoning": f"Extracted from publicationDate ({value})",
                         }
-                except Exception:
-                    pass
+                except (ValueError, TypeError, IndexError) as e:
+                    logger.debug("Date parsing fallback for '%s': %s", value, e)
 
             # 2. Try metadata_extension fallback (year, or database_specific.year)
             ext = source_content.get("metadata_extension") or {}
