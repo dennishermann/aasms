@@ -89,9 +89,10 @@ export default function SourceDetailPage() {
 
   // Parse classification schema from study parameters
   let facets: any[] = [];
-  if (source.study?.parameters?.classificationSchema) {
-    if (Array.isArray(source.study.parameters.classificationSchema)) {
-      facets = source.study.parameters.classificationSchema;
+  const studyParams = source.study?.parameters as Record<string, unknown> | undefined;
+  if (studyParams?.classificationSchema) {
+    if (Array.isArray(studyParams.classificationSchema)) {
+      facets = studyParams.classificationSchema;
     }
   }
 
