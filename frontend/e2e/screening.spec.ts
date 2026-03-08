@@ -60,6 +60,58 @@ test.describe("Screening", () => {
     await expect(page.getByRole("tab", { name: /All/ })).toBeVisible();
   });
 
+  test("source table supports search filtering", async ({ page, request }) => {
+    const study = await createStudyWithCriteria(request, "Search Filter Test");
+
+    await addSourceViaAPI(request, study.id, {
+      title: "Machine Learning Approaches",
+      authors: ["Johnson, M."],
+      abstract: "ML approaches to classification.",
+    });
+    await addSourceViaAPI(request, study.id, {
+      title: "Software Architecture Patterns",
+      authors: ["Williams, K."],
+      abstract: "Architecture patterns review.",
+    });
+
+    await page.goto(`/studies/${study.id}/sources`);
+
+    // Both should be visible initially
+    await expect(page.getByText("Machine Learning Approaches")).toBeVisible();
+    await expect(page.getByText("Software Architecture Patterns")).toBeVisible();
+
+    // Search by title
+    await page.getByPlaceholder("Search by title or author...").fill("Machine");
+    await expect(page.getByText("Machine Learning Approaches")).toBeVisible();
+    await expect(page.getByText("Software Architecture Patterns")).not.toBeVisible();
+
+    // Clear and search by author
+    await page.getByPlaceholder("Search by title or author...").fill("Williams");
+    await expect(page.getByText("Software Architecture Patterns")).toBeVisible();
+    await expect(page.getByText("Machine Learning Approaches")).not.toBeVisible();
+  });
+
+  test("source table renders sortable columns", async ({ page, request }) => {
+    const study = await createStudyWithCriteria(request, "Table Columns Test");
+
+    await addSourceViaAPI(request, study.id, {
+      title: "Test Paper for Columns",
+      authors: ["Author, A."],
+      venue: "ICSE 2024",
+      publicationDate: "2024-01-15",
+      abstract: "Abstract.",
+    });
+
+    await page.goto(`/studies/${study.id}/sources`);
+
+    // Verify column headers are present
+    await expect(page.getByRole("button", { name: /Title/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Authors/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Year/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Venue/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Status/ })).toBeVisible();
+  });
+
   test("manual inclusion decision can be set", async ({ page, request }) => {
     const study = await createStudyWithCriteria(
       request,

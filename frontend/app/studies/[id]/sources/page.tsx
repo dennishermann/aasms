@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { StudyLayout } from "@/components/layout/study-layout";
-import { Plus, Pencil, Trash2, CheckCircle2, Zap, Download } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Plus, Pencil, Trash2, CheckCircle2, Zap, Download, Search } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -19,7 +20,7 @@ import {
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { useSourcesPage } from "@/hooks/use-sources-page";
-import { SourceList } from "@/components/source/source-list";
+import { SourceTable } from "@/components/source/source-table";
 import {
   DeleteSourceDialog,
   BulkDeleteSourceDialog,
@@ -36,6 +37,10 @@ export default function SourcesPage() {
     error,
     tab,
     filteredSources,
+    searchQuery,
+    setSearchQuery,
+    sorting,
+    setSorting,
     counts,
     batchIdParam,
     isEditMode,
@@ -54,7 +59,6 @@ export default function SourcesPage() {
     applySuggestions,
     suggestions,
     loadingMap,
-    sourceRefs,
   } = useSourcesPage();
 
   const [batchModalState, setBatchModalState] = useState<{
@@ -115,7 +119,6 @@ export default function SourcesPage() {
     if (tab !== "all") {
       params.set("filter", tab);
     }
-    params.set("sourceId", sourceId);
     return `/studies/${studyId}/sources/${sourceId}?${params.toString()}`;
   };
 
@@ -323,6 +326,17 @@ export default function SourcesPage() {
                 )}
               </div>
 
+              {/* Search */}
+              <div className="relative mb-4">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by title or author..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+
               {/* Import Review Mode Banner */}
               {tab === "new_import" && batchIdParam && (
                 <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg flex items-center justify-between border border-blue-100 dark:border-blue-900">
@@ -351,7 +365,7 @@ export default function SourcesPage() {
                 `excluded`,
               ].map((tabValue) => (
                 <TabsContent key={tabValue} value={tabValue}>
-                  <SourceList
+                  <SourceTable
                     sources={filteredSources}
                     tab={tabValue}
                     isEditMode={isEditMode}
@@ -362,8 +376,9 @@ export default function SourcesPage() {
                     loadingMap={loadingMap}
                     onReparse={handleReparse}
                     onApplySuggestions={applySuggestions}
-                    sourceRefs={sourceRefs}
                     getSourceUrl={getSourceUrl}
+                    sorting={sorting}
+                    onSortingChange={setSorting}
                   />
                 </TabsContent>
               ))}

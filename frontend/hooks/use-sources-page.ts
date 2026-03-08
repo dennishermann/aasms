@@ -2,7 +2,8 @@
 
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { type SortingState } from "@tanstack/react-table";
 import { toast } from "sonner";
 import { Source } from "@/types/source";
 
@@ -31,13 +32,14 @@ export function useSourcesPage() {
   const sourceIdParam = searchParams.get("sourceId");
 
   const [tab, setTab] = useState<string>(filterParam || "all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sorting, setSorting] = useState<SortingState>([]);
   const [suggestions, setSuggestions] = useState<Record<string, any>>({});
   const [loadingMap, setLoadingMap] = useState<Record<string, boolean>>({});
   const [deleteTarget, setDeleteTarget] = useState<Source | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
-  const sourceRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   // Fetch study data
   const {
@@ -71,21 +73,10 @@ export function useSourcesPage() {
     router.push(`/studies/${studyId}/sources?${newParams.toString()}`, { scroll: false });
   };
 
-  // Scroll to source logic
+  // Reset search when tab changes
   useEffect(() => {
-    if (sourceIdParam && study && sourceRefs.current[sourceIdParam]) {
-      const timeoutId = setTimeout(() => {
-        const element = sourceRefs.current[sourceIdParam];
-        if (element) {
-          element.scrollIntoView({ behavior: "smooth", block: "center" });
-          const newParams = new URLSearchParams(searchParams.toString());
-          newParams.delete("sourceId");
-          router.replace(`/studies/${studyId}/sources?${newParams.toString()}`, { scroll: false });
-        }
-      }, 200);
-      return () => clearTimeout(timeoutId);
-    }
-  }, [sourceIdParam, study, tab, studyId, router, searchParams]);
+    setSearchQuery("");
+  }, [tab]);
 
   // Filter logic
   const filterSources = (sources: Source[], activeTab: string) => {
@@ -130,6 +121,29 @@ export function useSourcesPage() {
   };
 
   const filteredSources = study ? filterSources(study.sources, tab) : [];
+
+  // Search logic
+  const searchedSources = useMemo(() => {
+    if (!searchQuery.trim()) return filteredSources;
+    const q = searchQuery.toLowerCase();
+    return filteredSources.filter(
+      (s) =>
+        s.title.toLowerCase().includes(q) ||
+        s.authors?.some((a) => a.toLowerCase().includes(q)),
+    );
+  }, [filteredSources, searchQuery]);
+
+  // Store source IDs in sessionStorage for prev/next navigation
+  const navKey = `sources-nav-${studyId}-${tab}`;
+  useEffect(() => {
+    if (searchedSources.length > 0) {
+      try {
+        sessionStorage.setItem(navKey, JSON.stringify(searchedSources.map((s) => s.id)));
+      } catch {
+        // sessionStorage might be full or unavailable
+      }
+    }
+  }, [searchedSources, navKey]);
 
   // Mutations
   const deleteMutation = useMutation({
@@ -228,7 +242,7 @@ export function useSourcesPage() {
 
   const toggleSelectAll = (checked: boolean) => {
     if (checked) {
-      const ids = filteredSources.map((s) => s.id);
+      const ids = searchedSources.map((s) => s.id);
       setSelectedIds(new Set(ids));
     } else {
       setSelectedIds(new Set());
@@ -241,7 +255,12 @@ export function useSourcesPage() {
     isLoading,
     error,
     tab,
-    filteredSources,
+    filteredSources: searchedSources,
+    searchQuery,
+    setSearchQuery,
+    sorting,
+    setSorting,
+    navKey,
     counts: study
       ? {
           all: study.sources.length,
@@ -294,6 +313,5 @@ export function useSourcesPage() {
     applySuggestions,
     suggestions,
     loadingMap,
-    sourceRefs,
   };
 }

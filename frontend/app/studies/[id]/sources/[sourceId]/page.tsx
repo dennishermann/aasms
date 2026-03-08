@@ -2,7 +2,8 @@
 
 import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -23,6 +24,7 @@ import { SourceWebsiteViewer } from "@/components/source/website/website-viewer"
 import { SourceMetadataEditor } from "@/components/source/common/source-metadata-editor";
 import { WebsiteMetadataEditor } from "@/components/source/website/website-metadata-editor";
 import { useSourceDetails } from "@/hooks/use-source-details";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { PdfUploadCard } from "@/components/source/pdf/pdf-upload-card";
 import { SourceHeader } from "@/components/source/detail/source-header";
 import { SourceMetadataReviewSection } from "@/components/source/detail/source-metadata-review-section";
@@ -31,9 +33,49 @@ import { useMetadataReview } from "@/hooks/use-metadata-review";
 export default function SourceDetailPage() {
   const params = useParams();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const studyId = params.id as string;
   const sourceId = params.sourceId as string;
   const tabParam = searchParams.get("filter") || "all";
+
+  // Prev/next navigation from sessionStorage
+  const navKey = `sources-nav-${studyId}-${tabParam}`;
+  const [navIds, setNavIds] = useState<string[]>([]);
+  useEffect(() => {
+    try {
+      const stored = sessionStorage.getItem(navKey);
+      if (stored) setNavIds(JSON.parse(stored));
+    } catch {
+      // sessionStorage unavailable
+    }
+  }, [navKey]);
+
+  const currentIndex = navIds.indexOf(sourceId);
+  const prevId = currentIndex > 0 ? navIds[currentIndex - 1] : null;
+  const nextId = currentIndex >= 0 && currentIndex < navIds.length - 1 ? navIds[currentIndex + 1] : null;
+
+  const makeNavUrl = useCallback((id: string) => {
+    const p = new URLSearchParams();
+    if (tabParam !== "all") p.set("filter", tabParam);
+    return `/studies/${studyId}/sources/${id}?${p.toString()}`;
+  }, [tabParam, studyId]);
+
+  // Keyboard shortcuts for prev/next
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      if (e.key === "ArrowLeft" && prevId) {
+        e.preventDefault();
+        router.push(makeNavUrl(prevId));
+      } else if (e.key === "ArrowRight" && nextId) {
+        e.preventDefault();
+        router.push(makeNavUrl(nextId));
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [prevId, nextId, router, makeNavUrl]);
 
   const [isMetadataEditing, setIsMetadataEditing] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -137,7 +179,6 @@ export default function SourceDetailPage() {
     new URLSearchParams({
       ...(tabParam !== "all" && { filter: tabParam }),
       ...(batchId && { batchId }),
-      sourceId: sourceId,
     }).toString();
 
   return (
@@ -154,10 +195,37 @@ export default function SourceDetailPage() {
             </div>
           )}
 
-          {/* Main Source Card */}
-          <Button asChild variant="ghost" size="sm" className="-ml-2 mb-2 w-fit">
-            <Link href={backUrl}>← Back to Sources</Link>
-          </Button>
+          {/* Navigation */}
+          <div className="flex items-center justify-between -mb-2">
+            <Button asChild variant="ghost" size="sm" className="-ml-2">
+              <Link href={backUrl}>← Back to Sources</Link>
+            </Button>
+            {navIds.length > 1 && currentIndex >= 0 && (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={!prevId}
+                  onClick={() => prevId && router.push(makeNavUrl(prevId))}
+                >
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  Prev
+                </Button>
+                <span className="text-sm text-muted-foreground tabular-nums">
+                  {currentIndex + 1} of {navIds.length}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={!nextId}
+                  onClick={() => nextId && router.push(makeNavUrl(nextId))}
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
+            )}
+          </div>
           <Card>
             {isMetadataEditing ? (
               source.type === "WEBPAGE" || source.type === "BLOG_POST" ? (
