@@ -22,7 +22,7 @@ class ScopusImporter(BaseImporter):
             # SCOPUS has these specific columns
             scopus_headers = {"Title", "Authors", "DOI", "Source title", "EID"}
             return scopus_headers.issubset(set(df.columns))
-        except Exception:
+        except (pd.errors.ParserError, pd.errors.EmptyDataError, KeyError, ValueError, UnicodeDecodeError):
             return False
 
     async def parse(self, file_content: bytes, filename: str) -> list[ParsedSource]:

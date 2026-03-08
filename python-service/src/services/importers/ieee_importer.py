@@ -22,7 +22,7 @@ class IEEEImporter(BaseImporter):
             # IEEE has these specific columns
             ieee_headers = {"Document Title", "Authors", "DOI", "Publication Title"}
             return ieee_headers.issubset(set(df.columns))
-        except Exception:
+        except (pd.errors.ParserError, pd.errors.EmptyDataError, KeyError, ValueError, UnicodeDecodeError):
             return False
 
     async def parse(self, file_content: bytes, filename: str) -> list[ParsedSource]:

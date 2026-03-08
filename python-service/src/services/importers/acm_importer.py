@@ -46,7 +46,7 @@ class ACMImporter(BaseImporter):
         try:
             content = file_content.decode("utf-8")
             return "@" in content and "author" in content.lower()
-        except Exception:
+        except (UnicodeDecodeError, ValueError):
             return False
 
     async def parse(self, file_content: bytes, filename: str) -> list[ParsedSource]:
