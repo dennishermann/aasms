@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { PYTHON_SERVICE_URL } from "@/lib/python-service";
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -10,14 +11,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ error: "File and database source are required" }, { status: 400 });
     }
 
-    const pythonServiceUrl = process.env.PYTHON_SERVICE_URL || "http://localhost:8000";
-
     // Forward to Python service for parsing ONLY
     const pythonFormData = new FormData();
     pythonFormData.append("file", file);
     pythonFormData.append("database_source", databaseSource);
 
-    const response = await fetch(`${pythonServiceUrl}/api/import/parse`, {
+    const response = await fetch(`${PYTHON_SERVICE_URL}/api/import/parse`, {
       method: "POST",
       body: pythonFormData,
     });

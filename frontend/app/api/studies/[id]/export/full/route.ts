@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { PYTHON_SERVICE_URL } from "@/lib/python-service";
 
 export const runtime = "nodejs";
 
@@ -11,9 +12,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
     }
 
     // Call Python service export endpoint
-    const pythonServiceUrl = process.env.PYTHON_SERVICE_URL || "http://localhost:8000";
-
-    const response = await fetch(`${pythonServiceUrl}/api/export/full`, {
+    const response = await fetch(`${PYTHON_SERVICE_URL}/api/export/full`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

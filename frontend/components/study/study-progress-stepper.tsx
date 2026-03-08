@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Check, Circle, Database, Filter, Tags, BarChart3 } from "lucide-react";
-import type { StudyProgress } from "@/lib/services/study/progress-service";
+import type { StudyProgress, PhaseProgress } from "@/lib/services/study/progress-service";
 
 interface StudyProgressStepperProps {
   progress: StudyProgress;
@@ -73,7 +73,7 @@ function PhaseNode({
   total,
   studyId,
 }: {
-  phase: typeof StudyProgress.prototype.collection;
+  phase: PhaseProgress;
   phaseKey: keyof typeof PHASE_LINKS;
   index: number;
   total: number;

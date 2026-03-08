@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { PYTHON_SERVICE_URL } from "@/lib/python-service";
 
-const PYTHON_SERVICE_URL = process.env.PYTHON_SERVICE_URL || "http://localhost:8000";
 
 export async function POST(req: NextRequest) {
   try {

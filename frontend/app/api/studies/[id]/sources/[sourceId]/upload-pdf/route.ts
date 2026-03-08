@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { uploadFile, generateStoragePath, initializeBucket } from "@/lib/minio";
 import { SourceStatus } from "@prisma/client";
+import { PYTHON_SERVICE_URL } from "@/lib/python-service";
 
-const PYTHON_SERVICE_URL = process.env.PYTHON_SERVICE_URL || "http://localhost:8000";
 
 export async function POST(
   request: NextRequest,

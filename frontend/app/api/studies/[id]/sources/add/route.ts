@@ -3,8 +3,8 @@ import { SourceStatus } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { uploadFile, generateStoragePath, initializeBucket } from "@/lib/minio";
 import { z } from "zod";
+import { PYTHON_SERVICE_URL } from "@/lib/python-service";
 
-const PYTHON_SERVICE_URL = process.env.PYTHON_SERVICE_URL || "http://localhost:8000";
 
 const addSourceSchema = z.object({
   sourceType: z.enum(["pdf", "url"]),
