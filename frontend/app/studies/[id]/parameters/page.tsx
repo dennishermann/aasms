@@ -171,17 +171,12 @@ export default function ParametersPage() {
                 const hasChanges = tabChanges[key];
 
                 return (
-                  <TabsTrigger key={key} value={key} className="gap-2 px-4 relative">
-                    <span
-                      className={`absolute left-1 top-1/2 -translate-y-1/2 w-1 h-4 rounded-full ${config.color} opacity-50`}
-                    />
-                    <Icon className="h-4 w-4 ml-1" />
+                  <TabsTrigger key={key} value={key} className="gap-2 px-4">
+                    <Icon className="h-4 w-4" />
                     {config.label}
-                    {hasChanges ? (
-                      <span className="w-2 h-2 rounded-full bg-amber-500" />
-                    ) : hasContent ? (
-                      <span className={`w-1.5 h-1.5 rounded-full ${config.color}`} />
-                    ) : null}
+                    {hasChanges && (
+                      <span className="w-2 h-2 rounded-full bg-amber-500" title="Unsaved changes" />
+                    )}
                   </TabsTrigger>
                 );
               },

@@ -32,7 +32,7 @@ export function FacetList({
   };
 
   return (
-    <div className="w-48 shrink-0 border-r bg-muted/30">
+    <div className="w-56 shrink-0 border-r bg-muted/30">
       <div className="p-3 border-b">
         <h3 className="text-sm font-semibold text-muted-foreground">Facets</h3>
       </div>
@@ -55,7 +55,7 @@ export function FacetList({
               )}
             >
               <span className="text-xs font-mono text-muted-foreground shrink-0">F{index + 1}</span>
-              <span className="truncate flex-1">{facet.name || "Untitled"}</span>
+              <span className="truncate flex-1" title={facet.name || "Untitled"}>{facet.name || "Untitled"}</span>
               <span
                 className={cn(
                   "text-[10px] px-1.5 py-0.5 rounded font-medium shrink-0",
