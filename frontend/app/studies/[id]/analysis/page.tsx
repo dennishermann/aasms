@@ -14,6 +14,7 @@ import {
   AlertTriangle,
   Table2,
   Download,
+  MessageSquareText,
 } from "lucide-react";
 import {
   OverviewTab,
@@ -22,6 +23,7 @@ import {
   SystematicMapTab,
   GapAnalysisTab,
   MappingTableTab,
+  RqAnswersTab,
 } from "@/components/analysis/tabs";
 import { SourceDrilldown } from "@/components/analysis";
 
@@ -66,6 +68,12 @@ const TAB_CONFIG = {
     label: "Data Table",
     color: "bg-cyan-500",
     lightColor: "bg-cyan-100 text-cyan-700",
+  },
+  "rq-answers": {
+    icon: MessageSquareText,
+    label: "RQ Answers",
+    color: "bg-indigo-500",
+    lightColor: "bg-indigo-100 text-indigo-700",
   },
 } as const;
 
@@ -242,6 +250,17 @@ export default function AnalysisPage() {
               isLoading={analysis.mappingTable.isLoading}
               onExportCSV={analysis.export.exportMappingTable}
               isExporting={analysis.export.isPending}
+            />
+          </TabsContent>
+
+          {/* RQ Answers Tab */}
+          <TabsContent value="rq-answers" className="mt-0">
+            <RqAnswersTab
+              studyId={studyId}
+              data={analysis.rqSummaries.data}
+              isGenerating={analysis.rqSummaries.isGenerating}
+              onGenerate={analysis.rqSummaries.generate}
+              hasClassifiedSources={analysis.rqSummaries.hasClassifiedSources}
             />
           </TabsContent>
 

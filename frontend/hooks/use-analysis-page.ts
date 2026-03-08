@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import {
   useSummaryStats,
   useFrequencyData,
@@ -94,6 +94,30 @@ async function fetchStudy(id: string): Promise<Study> {
 async function fetchFacets(studyId: string): Promise<Facet[]> {
   const response = await fetch(`/api/studies/${studyId}/facets`);
   if (!response.ok) throw new Error("Failed to fetch facets");
+  const data = await response.json();
+  return data.data;
+}
+
+// ============ RQ Summary Types ============
+
+export interface RQSummaryItem {
+  rq_id: string;
+  question: string;
+  summary: string;
+  key_findings: string[];
+  evidence_quality: "strong" | "moderate" | "limited";
+  gaps: string[];
+}
+
+export interface RQSummaryData {
+  summaries: RQSummaryItem[];
+}
+
+async function generateRQSummaries(studyId: string): Promise<RQSummaryData> {
+  const response = await fetch(`/api/studies/${studyId}/rq-summaries`, {
+    method: "POST",
+  });
+  if (!response.ok) throw new Error("Failed to generate RQ summaries");
   const data = await response.json();
   return data.data;
 }
@@ -386,6 +410,21 @@ export function useAnalysisPage({ studyId }: UseAnalysisPageOptions) {
     });
   }, [mappingFacetIds, exportMutation]);
 
+  // ============ RQ Summaries State ============
+
+  const [rqSummaryData, setRqSummaryData] = useState<RQSummaryData | undefined>(undefined);
+
+  const rqSummaryMutation = useMutation({
+    mutationFn: () => generateRQSummaries(studyId),
+    onSuccess: (data) => {
+      setRqSummaryData(data);
+    },
+  });
+
+  const generateSummaries = useCallback(() => {
+    rqSummaryMutation.mutate();
+  }, [rqSummaryMutation]);
+
   // ============ Return ============
 
   return {
@@ -500,6 +539,14 @@ export function useAnalysisPage({ studyId }: UseAnalysisPageOptions) {
       exportCrossTab,
       exportMappingTable,
       isPending: exportMutation.isPending,
+    },
+
+    // RQ Summaries
+    rqSummaries: {
+      data: rqSummaryData,
+      isGenerating: rqSummaryMutation.isPending,
+      generate: generateSummaries,
+      hasClassifiedSources: (summaryQuery.data?.classifiedSources ?? 0) > 0,
     },
 
     // Global actions

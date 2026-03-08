@@ -45,7 +45,7 @@ class FakeProvider(LLMProvider):
         if self._responses:
             return self._responses.pop(0)
 
-        # Detect classification vs inclusion based on schema
+        # Detect response type based on schema
         is_classification = isinstance(response_schema, dict) and (
             "classifications" in response_schema
             or (
@@ -53,6 +53,23 @@ class FakeProvider(LLMProvider):
                 and "classifications" in response_schema["properties"]
             )
         )
+
+        is_rq_summary = isinstance(response_schema, dict) and (
+            "summary" in response_schema and "key_findings" in response_schema
+        )
+
+        if is_rq_summary:
+            return {
+                "summary": "Based on the analysis of included sources, this research question "
+                "is addressed by multiple studies with varying approaches.",
+                "key_findings": [
+                    "Finding 1: Multiple approaches were identified.",
+                    "Finding 2: Results show consistent patterns across studies.",
+                    "Finding 3: Some areas remain under-explored.",
+                ],
+                "evidence_quality": "moderate",
+                "gaps": ["Limited coverage of emerging techniques."],
+            }
 
         if is_classification:
             return {

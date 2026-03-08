@@ -14,6 +14,9 @@ from src.core.schemas.analysis import (
     FullAnalysisResponse,
     InclusionAnalysisResponse,
     InclusionAnalysisTextRequest,
+    RQSummaryItem,
+    RQSummaryRequest,
+    RQSummaryResponse,
     VoteDetail,
     VotingDetails,
     VotingSummary,
@@ -21,6 +24,7 @@ from src.core.schemas.analysis import (
 from src.services.classification_service import ClassificationService
 from src.services.document_parser import DocumentParser
 from src.services.inclusion_evaluation_service import InclusionEvaluationService
+from src.services.rq_summary_service import RQSummaryService
 
 logger = logging.getLogger(__name__)
 
@@ -510,3 +514,47 @@ async def analyze_existing_source_pdf(
         voting_enabled=inclusion_response.voting_enabled,
         voting_summary=inclusion_response.voting_summary,
     )
+
+
+@router.post("/rq-summaries", response_model=RQSummaryResponse)
+async def generate_rq_summaries(request: RQSummaryRequest):
+    """Generate LLM-powered narrative summaries for research questions."""
+    if not request.research_questions:
+        return RQSummaryResponse(summaries=[])
+
+    try:
+        provider = get_llm_provider()
+        service = RQSummaryService(provider)
+    except Exception as e:
+        logger.exception("rq-summaries: provider init failed")
+        raise HTTPException(status_code=500, detail=f"LLM provider error: {str(e)}") from e
+
+    try:
+        logger.info(
+            "rq-summaries: generating",
+            extra={
+                "rq_count": len(request.research_questions),
+                "facet_count": len(request.facet_data),
+                "source_count": len(request.source_evidence),
+            },
+        )
+
+        facet_data = [f.model_dump() for f in request.facet_data]
+        source_evidence = [s.model_dump() for s in request.source_evidence]
+        rq_data = [rq.model_dump() for rq in request.research_questions]
+
+        summaries = await service.generate_all_summaries(rq_data, facet_data, source_evidence)
+
+        logger.info(
+            "rq-summaries: done",
+            extra={"summary_count": len(summaries)},
+        )
+
+        return RQSummaryResponse(
+            summaries=[RQSummaryItem(**s) for s in summaries]
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("rq-summaries: failed")
+        raise HTTPException(status_code=500, detail=f"RQ summary generation failed: {str(e)}") from e

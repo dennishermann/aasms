@@ -41,6 +41,9 @@ test.describe("Analysis Dashboard", () => {
     await expect(
       page.getByRole("tab", { name: /Data Table/ }),
     ).toBeVisible();
+    await expect(
+      page.getByRole("tab", { name: /RQ Answers/ }),
+    ).toBeVisible();
   });
 
   test("can switch between analysis tabs", async ({ page, request }) => {
@@ -57,6 +60,11 @@ test.describe("Analysis Dashboard", () => {
 
     // Switch to Data Table tab
     await page.getByRole("tab", { name: /Data Table/ }).click();
+
+    // Switch to RQ Answers tab
+    await page.getByRole("tab", { name: /RQ Answers/ }).click();
+    // Should show empty state since no classified sources
+    await expect(page.getByText(/No classified sources yet/)).toBeVisible();
   });
 
   test("studies list page shows study cards", async ({ page, request }) => {

@@ -131,3 +131,64 @@ class FullAnalysisResponse(BaseModel):
     # Voting-specific fields
     voting_enabled: bool = Field(default=False, alias="votingEnabled")
     voting_summary: VotingSummary | None = Field(default=None, alias="votingSummary")
+
+
+# ============ RQ Summary Models ============
+
+
+class CategoryCount(BaseModel):
+    """Category distribution count."""
+
+    name: str
+    count: int
+    percentage: float
+
+
+class FacetSummaryData(BaseModel):
+    """Facet data with classification distributions for RQ summary generation."""
+
+    id: str
+    name: str
+    type: str
+    research_question_ids: list[str]
+    categories: list[CategoryCount]
+
+
+class SourceEvidence(BaseModel):
+    """Source evidence for RQ summary generation."""
+
+    title: str
+    abstract: str = ""
+    classifications: dict[str, str] = {}
+
+
+class RQData(BaseModel):
+    """Research question data."""
+
+    id: str
+    question: str
+
+
+class RQSummaryRequest(BaseModel):
+    """Request model for generating RQ summaries."""
+
+    research_questions: list[RQData]
+    facet_data: list[FacetSummaryData]
+    source_evidence: list[SourceEvidence]
+
+
+class RQSummaryItem(BaseModel):
+    """Summary for a single research question."""
+
+    rq_id: str
+    question: str
+    summary: str
+    key_findings: list[str]
+    evidence_quality: str
+    gaps: list[str]
+
+
+class RQSummaryResponse(BaseModel):
+    """Response model for RQ summaries."""
+
+    summaries: list[RQSummaryItem]
