@@ -30,5 +30,8 @@ class Settings(BaseSettings):
     max_tokens: int = 8000
     temperature: float = 0.1
 
+    # E2E test mode — uses FakeProvider instead of real LLM APIs
+    e2e_test_mode: bool = False
+
 
 settings = Settings()

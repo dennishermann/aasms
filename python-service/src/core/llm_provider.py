@@ -104,6 +104,8 @@ class GeminiProvider(LLMProvider):
 
 def available_providers() -> list[str]:
     """Return a list of providers that have credentials configured."""
+    if settings.e2e_test_mode:
+        return ["fake"]
     providers = []
     if settings.anthropic_api_key:
         providers.append("claude")
@@ -154,6 +156,11 @@ def resolve_provider_name(prefer_small_model: bool = False) -> tuple[str, str]:
 
 def get_llm_provider(prefer_small_model: bool = False) -> LLMProvider:
     """Factory function to get the configured LLM provider instance."""
+    if settings.e2e_test_mode:
+        from src.core.fake_provider import FakeProvider
+
+        return FakeProvider()
+
     provider_name, model_name = resolve_provider_name(prefer_small_model)
 
     if provider_name == "claude":
@@ -174,6 +181,11 @@ def get_voting_providers(prefer_small_model: bool = True) -> list[LLMProvider]:
     Returns all configured providers (OpenAI, Claude, Gemini).
     For voting to work properly, at least 2 providers must be configured.
     """
+    if settings.e2e_test_mode:
+        from src.core.fake_provider import FakeProvider
+
+        return [FakeProvider(), FakeProvider(), FakeProvider()]
+
     providers = []
 
     if settings.openai_api_key:
@@ -199,6 +211,8 @@ def get_voting_providers(prefer_small_model: bool = True) -> list[LLMProvider]:
 
 def voting_available() -> bool:
     """Check if multi-LLM voting is available (at least 2 providers configured)."""
+    if settings.e2e_test_mode:
+        return True
     count = 0
     if settings.openai_api_key:
         count += 1
