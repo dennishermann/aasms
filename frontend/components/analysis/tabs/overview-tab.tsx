@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { SummaryStatsCard } from "../summary-stats-card";
+import { PrismaFlowDiagram } from "../charts";
 import type { SummaryStats } from "@/types/analysis";
 import type { Facet } from "@/hooks/use-analysis-page";
 
@@ -21,6 +22,25 @@ export function OverviewTab({ stats, isLoading, facets, onFacetClick }: Overview
         <h2 className="text-lg font-semibold mb-4">Summary Statistics</h2>
         <SummaryStatsCard stats={stats} isLoading={isLoading} />
       </div>
+
+      {/* PRISMA Flow Diagram */}
+      {stats && stats.totalSources > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">PRISMA Flow Diagram</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <PrismaFlowDiagram
+              totalRecordsIdentified={stats.prismaFlow.totalRecordsIdentified}
+              duplicatesRemoved={stats.prismaFlow.duplicatesRemoved}
+              totalSources={stats.totalSources}
+              includedSources={stats.includedSources}
+              excludedSources={stats.excludedSources}
+              classifiedSources={stats.classifiedSources}
+            />
+          </CardContent>
+        </Card>
+      )}
 
       {/* Available Classification Facets */}
       {facets.length > 0 && (

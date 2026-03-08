@@ -6,3 +6,5 @@ export { BubblePlot } from "./bubble-plot";
 export { Heatmap } from "./heatmap";
 export type { CellClickData } from "./heatmap";
 export { exportChartAsPNG, exportChartAsSVG } from "./chart-export";
+export { PrismaFlowDiagram } from "./prisma-flow-diagram";
+export { exportSvgAsPng } from "./svg-export";

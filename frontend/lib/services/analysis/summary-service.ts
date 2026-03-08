@@ -14,6 +14,7 @@ export async function getSummaryStats(studyId: string): Promise<SummaryStats> {
     classifiedSources,
     formalSources,
     greySources,
+    importBatchAgg,
   ] = await Promise.all([
     prisma.source.count({ where: { studyId } }),
     prisma.source.count({
@@ -38,6 +39,10 @@ export async function getSummaryStats(studyId: string): Promise<SummaryStats> {
         sourceCategory: SourceCategory.GREY,
         finalDecision: Decision.INCLUDE,
       },
+    }),
+    prisma.importBatch.aggregate({
+      where: { studyId },
+      _sum: { totalRecords: true, duplicates: true },
     }),
   ]);
 
@@ -129,6 +134,9 @@ export async function getSummaryStats(studyId: string): Promise<SummaryStats> {
     }),
   );
 
+  const totalRecordsIdentified = importBatchAgg._sum.totalRecords ?? totalSources;
+  const duplicatesRemoved = importBatchAgg._sum.duplicates ?? 0;
+
   return {
     totalSources,
     includedSources,
@@ -140,5 +148,9 @@ export async function getSummaryStats(studyId: string): Promise<SummaryStats> {
     uniqueVenues: uniqueVenues.length,
     topVenues,
     facetCoverage,
+    prismaFlow: {
+      totalRecordsIdentified,
+      duplicatesRemoved,
+    },
   };
 }

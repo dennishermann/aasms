@@ -182,6 +182,11 @@ export interface VenueCount {
   count: number;
 }
 
+export interface PrismaFlowData {
+  totalRecordsIdentified: number;
+  duplicatesRemoved: number;
+}
+
 export interface SummaryStats {
   totalSources: number;
   includedSources: number;
@@ -193,6 +198,7 @@ export interface SummaryStats {
   uniqueVenues: number;
   topVenues: VenueCount[];
   facetCoverage: FacetCoverage[];
+  prismaFlow: PrismaFlowData;
 }
 
 export interface GapCategory {

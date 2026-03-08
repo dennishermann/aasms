@@ -67,6 +67,31 @@ test.describe("Analysis Dashboard", () => {
     await expect(page.getByText(/No classified sources yet/)).toBeVisible();
   });
 
+  test("PRISMA flow diagram renders on overview tab", async ({ page, request }) => {
+    const study = await createStudyWithFacets(request, "PRISMA Diagram Test");
+
+    await addSourceViaAPI(request, study.id, {
+      title: "Paper One",
+      abstract: "Abstract one.",
+      publicationDate: "2023-06-01",
+    });
+    await addSourceViaAPI(request, study.id, {
+      title: "Paper Two",
+      abstract: "Abstract two.",
+      publicationDate: "2024-02-10",
+    });
+
+    await page.goto(`/studies/${study.id}/analysis`);
+
+    // Verify PRISMA diagram card renders
+    await expect(page.getByText("PRISMA Flow Diagram")).toBeVisible();
+
+    // Verify key flow labels are present in the SVG
+    await expect(page.getByText(/Records identified/)).toBeVisible();
+    await expect(page.getByText(/Records screened/)).toBeVisible();
+    await expect(page.getByText(/Studies with classifications/)).toBeVisible();
+  });
+
   test("studies list page shows study cards", async ({ page, request }) => {
     // Create a couple of studies
     await createStudyWithFacets(request, "Study Alpha for List");
