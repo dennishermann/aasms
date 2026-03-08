@@ -10,6 +10,7 @@ import statistics
 import time
 from typing import Any
 
+from src.core.context_cache import initialize_context, normalize_criteria
 from src.core.llm_provider import LLMProvider, get_voting_providers, voting_available
 from src.core.prompts import build_per_criterion_prompt
 from src.services.multi_llm_voting_service import (
@@ -186,15 +187,8 @@ class InclusionEvaluationService:
         """Evaluate using multi-LLM voting for improved reliability."""
         research_questions = research_questions or []
 
-        # Normalize criteria to strings
-        inclusion_list = [
-            c["criterion"] if isinstance(c, dict) and "criterion" in c else str(c)
-            for c in inclusion_criteria
-        ]
-        exclusion_list = [
-            c["criterion"] if isinstance(c, dict) and "criterion" in c else str(c)
-            for c in exclusion_criteria
-        ]
+        inclusion_list = normalize_criteria(inclusion_criteria)
+        exclusion_list = normalize_criteria(exclusion_criteria)
 
         start_time = time.perf_counter()
 
@@ -357,15 +351,8 @@ class InclusionEvaluationService:
         """Evaluate using a single LLM (original implementation)."""
         research_questions = research_questions or []
 
-        # Normalize criteria to strings
-        inclusion_list = [
-            c["criterion"] if isinstance(c, dict) and "criterion" in c else str(c)
-            for c in inclusion_criteria
-        ]
-        exclusion_list = [
-            c["criterion"] if isinstance(c, dict) and "criterion" in c else str(c)
-            for c in exclusion_criteria
-        ]
+        inclusion_list = normalize_criteria(inclusion_criteria)
+        exclusion_list = normalize_criteria(exclusion_criteria)
 
         start_time = time.perf_counter()
 
@@ -383,48 +370,11 @@ class InclusionEvaluationService:
             },
         )
 
-        # Context Management Strategy
-        context_id = previous_response_id
-        reuse_context = False
-
-        if (
-            not context_id
-            and hasattr(self.llm_provider, "model")
-            and "gpt" in getattr(self.llm_provider, "model", "")
-        ):
-            try:
-                logger.info("inclusion_evaluation: initializing context with OpenAI Responses API")
-                init_prompt = (
-                    "You are a research assistant. I will provide a research source. "
-                    "Please read and analyze it. I will ask you specific questions about it next.\n\n"
-                    "Source Content:\n"
-                    f"Title: {source_content.get('title', 'Unknown')}\n"
-                    f"Abstract: {source_content.get('abstract', '')}\n"
-                    f"Full Text: {source_content.get('content_excerpt', '')[:50000]}\n"
-                )
-                init_result = await self.llm_provider.generate_structured_output(
-                    prompt=init_prompt,
-                    response_schema={"status": "string"},
-                )
-                context_id = init_result.get("_response_id")
-                if context_id:
-                    logger.info(f"inclusion_evaluation: context initialized, id={context_id}")
-                    reuse_context = True
-            except Exception as e:
-                logger.warning(f"inclusion_evaluation: context init failed: {e}")
-
-        if context_id:
-            reuse_context = True
-
-        eval_source_content = source_content
-        if reuse_context:
-            eval_source_content = {
-                "title": source_content.get("title"),
-                "abstract": "[Refer to context]",
-                "content_excerpt": "[Refer to context]",
-                "venue": source_content.get("venue"),
-                "publication_date": source_content.get("publication_date"),
-            }
+        # Context caching for OpenAI
+        context_id, eval_source_content = await initialize_context(
+            self.llm_provider, source_content, previous_response_id, purpose="questions about it"
+        )
+        reuse_context = context_id is not None
 
         # Create tasks for parallel execution
         inclusion_tasks = []

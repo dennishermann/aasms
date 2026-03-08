@@ -5,6 +5,7 @@ import logging
 import time
 from typing import Any
 
+from src.core.context_cache import initialize_context
 from src.core.llm_provider import LLMProvider
 from src.core.prompts import build_per_facet_prompt
 
@@ -281,45 +282,14 @@ class ClassificationService:
 
         # 2. Handle hybrid and LLM facets with parallel execution
         if hybrid_facets or llm_facets:
-            # Context caching strategy
-            context_id = previous_response_id
-            reuse_context = False
-
-            if (
-                not context_id
-                and hasattr(self.llm_provider, "model")
-                and "gpt" in getattr(self.llm_provider, "model", "")
-            ):
-                try:
-                    logger.info("classification_service: initializing context")
-                    init_prompt = (
-                        "You are a research assistant. I will provide a research source. "
-                        "Please read and analyze it. I will ask you specific classification questions next.\n\n"
-                        "Source Content:\n"
-                        f"Title: {source_content.get('title', 'Unknown')}\n"
-                        f"Abstract: {source_content.get('abstract', '')}\n"
-                        f"Full Text: {source_content.get('content_excerpt', '')[:50000]}\n"
-                    )
-                    init_result = await self.llm_provider.generate_structured_output(
-                        prompt=init_prompt,
-                        response_schema={"status": "string"},
-                    )
-                    context_id = init_result.get("_response_id")
-                    if context_id:
-                        reuse_context = True
-                except Exception as e:
-                    logger.warning(f"classification_service: context init failed: {e}")
-
-            if context_id:
-                reuse_context = True
-
-            eval_source_content = source_content
-            if reuse_context:
-                eval_source_content = {
-                    "title": source_content.get("title"),
-                    "abstract": "[Refer to context]",
-                    "content_excerpt": "[Refer to context]",
-                }
+            # Context caching for OpenAI
+            context_id, eval_source_content = await initialize_context(
+                self.llm_provider,
+                source_content,
+                previous_response_id,
+                purpose="classification questions",
+            )
+            reuse_context = context_id is not None
 
             # Create parallel tasks
             tasks = []
