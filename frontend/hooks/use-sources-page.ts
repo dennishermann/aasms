@@ -3,7 +3,7 @@
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Source } from "@/types/source";
 
 interface Study {
@@ -24,7 +24,6 @@ export function useSourcesPage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { toast } = useToast();
   const studyId = params.id as string;
   const queryClient = useQueryClient();
   const filterParam = searchParams.get("filter");
@@ -145,7 +144,7 @@ export function useSourcesPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["study", studyId] });
       setDeleteTarget(null);
-      toast({ title: "Source deleted" });
+      toast.success("Source deleted");
     },
   });
 
@@ -167,7 +166,7 @@ export function useSourcesPage() {
       setSelectedIds(new Set());
       setIsEditMode(false);
       setShowBulkDeleteConfirm(false);
-      toast({ title: `Deleted ${data.count} sources` });
+      toast.success(`Deleted ${data.count} sources`);
     },
   });
 
@@ -182,7 +181,7 @@ export function useSourcesPage() {
       setSuggestions((s) => ({ ...s, [sourceId]: payload.data }));
     } catch (e) {
       console.error(e);
-      toast({ title: "Failed to re-parse", variant: "destructive" });
+      toast.error("Failed to re-parse");
     } finally {
       setLoadingMap((m) => ({ ...m, [sourceId]: false }));
     }
@@ -214,7 +213,7 @@ export function useSourcesPage() {
       queryClient.invalidateQueries({ queryKey: ["study", studyId] });
     } catch (e) {
       console.error(e);
-      toast({ title: "Failed to apply suggestions", variant: "destructive" });
+      toast.error("Failed to apply suggestions");
     } finally {
       setLoadingMap((m) => ({ ...m, [sourceId]: false }));
     }

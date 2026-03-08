@@ -25,7 +25,7 @@ import {
   BulkDeleteSourceDialog,
 } from "@/components/source/delete-source-dialogs";
 import { BatchProgressModal } from "@/components/source/batch-progress-modal";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 export default function SourcesPage() {
   const queryClient = useQueryClient();
@@ -63,8 +63,6 @@ export default function SourcesPage() {
   }>({ isOpen: false, type: null });
 
   const [isExporting, setIsExporting] = useState(false);
-  const { toast } = useToast();
-
   const handleExport = async (format: "bibtex" | "ris", filter: "included" | "all") => {
     try {
       setIsExporting(true);
@@ -74,10 +72,8 @@ export default function SourcesPage() {
 
       if (!response.ok) {
         const error = await response.json();
-        toast({
-          title: "Export failed",
+        toast.error("Export failed", {
           description: error.error || "Failed to export sources",
-          variant: "destructive",
         });
         return;
       }
@@ -101,16 +97,13 @@ export default function SourcesPage() {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
 
-      toast({
-        title: "Export successful",
+      toast.success("Export successful", {
         description: `${format.toUpperCase()} file downloaded successfully`,
       });
     } catch (error) {
       console.error("Export error:", error);
-      toast({
-        title: "Export failed",
+      toast.error("Export failed", {
         description: error instanceof Error ? error.message : "An error occurred during export",
-        variant: "destructive",
       });
     } finally {
       setIsExporting(false);

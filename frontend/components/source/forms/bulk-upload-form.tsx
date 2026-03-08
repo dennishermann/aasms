@@ -23,7 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Loader2, Info, CheckCircle2, FileText, ArrowRight, ArrowLeft } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { useImport } from "@/context/import-context";
@@ -45,7 +45,6 @@ type UploadStep = "upload" | "review" | "importing" | "complete";
 
 export function BulkUploadForm({ studyId, onSuccess }: BulkUploadFormProps) {
   const router = useRouter();
-  const { toast } = useToast();
   const { startImport, isImporting, status, progress, batchId } = useImport();
 
   const [file, setFile] = useState<File | null>(null);
@@ -83,10 +82,8 @@ export function BulkUploadForm({ studyId, onSuccess }: BulkUploadFormProps) {
       setPreviewData(data.sources || []);
       setStep("review");
     } catch (error) {
-      toast({
-        title: "Preview Failed",
+      toast.error("Preview Failed", {
         description: error instanceof Error ? error.message : "Could not parse file.",
-        variant: "destructive",
       });
     } finally {
       setLoading(false);
