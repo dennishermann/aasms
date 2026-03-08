@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getGapAnalysis } from "@/lib/services/analysis";
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id: studyId } = await params;
     const searchParams = request.nextUrl.searchParams;
@@ -16,7 +13,7 @@ export async function GET(
     if (isNaN(threshold) || threshold < 0) {
       return NextResponse.json(
         { error: "Invalid threshold parameter (must be a non-negative integer)" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -34,7 +31,7 @@ export async function GET(
         error: "Failed to get gap analysis",
         details: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

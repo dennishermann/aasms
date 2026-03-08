@@ -1,10 +1,6 @@
 import { prisma } from "@/lib/db";
 import { FacetType, RecipeStatus, RecipeType } from "@prisma/client";
-import type {
-  RecipeValidationResult,
-  RecipeValidationWarning,
-  RecipeConfig,
-} from "@/types/recipe";
+import type { RecipeValidationResult, RecipeValidationWarning, RecipeConfig } from "@/types/recipe";
 
 interface RecipeToValidate {
   type: RecipeType;
@@ -23,11 +19,9 @@ interface RecipeToValidate {
  * - BLOCKED: Referenced facet deleted, or OPEN facet used for aggregation
  * - VALID: All required fields present and facets are valid
  */
-export async function validateRecipe(
-  recipe: RecipeToValidate
-): Promise<RecipeValidationResult> {
+export async function validateRecipe(recipe: RecipeToValidate): Promise<RecipeValidationResult> {
   const warnings: RecipeValidationWarning[] = [];
-  let status: RecipeStatus = RecipeStatus.VALID;
+  const status: RecipeStatus = RecipeStatus.VALID;
   let reason: string | undefined;
 
   // Check type-specific required fields
@@ -127,10 +121,7 @@ function getMissingFields(recipe: RecipeToValidate): string[] {
       break;
 
     case RecipeType.GAP:
-      if (
-        !recipe.config.gapFacetIds ||
-        recipe.config.gapFacetIds.length === 0
-      ) {
+      if (!recipe.config.gapFacetIds || recipe.config.gapFacetIds.length === 0) {
         missing.push("gapFacetIds (facets to analyze)");
       }
       break;
@@ -152,8 +143,13 @@ function validateFacetTypes(
   recipe: RecipeToValidate,
   facetMap: Map<
     string,
-    { id: string; name: string; type: FacetType; _count: { classifications: number; categories: number } }
-  >
+    {
+      id: string;
+      name: string;
+      type: FacetType;
+      _count: { classifications: number; categories: number };
+    }
+  >,
 ): FacetTypeValidationResult {
   const warnings: RecipeValidationWarning[] = [];
 
@@ -173,7 +169,7 @@ function validateFacetTypes(
         return {
           blocked: true,
           reason: `Cannot create distribution for OPEN facet "${getFacetName(
-            recipe.xFacetId
+            recipe.xFacetId,
           )}". Please code the facet first.`,
           warnings: [],
         };
@@ -185,7 +181,7 @@ function validateFacetTypes(
         return {
           blocked: true,
           reason: `Cannot use OPEN facet "${getFacetName(
-            recipe.xFacetId
+            recipe.xFacetId,
           )}" as row dimension. Please code the facet first.`,
           warnings: [],
         };
@@ -194,7 +190,7 @@ function validateFacetTypes(
         return {
           blocked: true,
           reason: `Cannot use OPEN facet "${getFacetName(
-            recipe.yFacetId
+            recipe.yFacetId,
           )}" as column dimension. Please code the facet first.`,
           warnings: [],
         };
@@ -207,7 +203,7 @@ function validateFacetTypes(
         return {
           blocked: true,
           reason: `Cannot group by OPEN facet "${getFacetName(
-            recipe.groupByFacetId
+            recipe.groupByFacetId,
           )}". Please code the facet first.`,
           warnings: [],
         };
@@ -222,7 +218,7 @@ function validateFacetTypes(
           return {
             blocked: true,
             reason: `Gap analysis requires CLOSED facets only. "${getFacetName(
-              facetId
+              facetId,
             )}" is ${facet?.type ?? "unknown"}.`,
             warnings: [],
           };
@@ -243,7 +239,7 @@ async function checkCoverageWarnings(
     id: string;
     name: string;
     _count: { classifications: number; categories: number };
-  }>
+  }>,
 ): Promise<RecipeValidationWarning[]> {
   const warnings: RecipeValidationWarning[] = [];
 
@@ -272,7 +268,7 @@ async function checkCoverageWarnings(
       warnings.push({
         type: "low_coverage",
         message: `"${facet.name}" has low coverage (${Math.round(
-          coverage * 100
+          coverage * 100,
         )}%). Results may be incomplete.`,
         facetId: facet.id,
       });
@@ -294,7 +290,7 @@ async function checkCoverageWarnings(
  * Quick check if a recipe can be executed (status is VALID).
  */
 export async function canExecuteRecipe(
-  recipe: RecipeToValidate
+  recipe: RecipeToValidate,
 ): Promise<{ canExecute: boolean; reason?: string }> {
   const validation = await validateRecipe(recipe);
 

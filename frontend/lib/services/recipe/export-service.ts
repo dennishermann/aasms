@@ -39,7 +39,7 @@ const DEFAULT_OPTIONS: ExportOptions = {
  */
 export async function exportRecipeBundle(
   recipeId: string,
-  options: ExportOptions = DEFAULT_OPTIONS
+  options: ExportOptions = DEFAULT_OPTIONS,
 ): Promise<{ data: Buffer; filename: string }> {
   // Get recipe with relations
   const recipe = await prisma.rqRecipe.findUnique({
@@ -128,11 +128,7 @@ export async function exportRecipeBundle(
 
   // Add sources.csv
   if (options.includeSources && latestRun.resultData) {
-    const sourcesCsv = await generateSourcesCsv(
-      recipe.studyId,
-      recipe.type,
-      latestRun.resultData
-    );
+    const sourcesCsv = await generateSourcesCsv(recipe.studyId, recipe.type, latestRun.resultData);
     if (sourcesCsv) {
       zip.file("sources.csv", sourcesCsv);
     }
@@ -143,7 +139,7 @@ export async function exportRecipeBundle(
     const reportMd = generateReportMarkdown(
       recipe,
       latestRun,
-      latestRun.keyFindings as string[] | null
+      latestRun.keyFindings as string[] | null,
     );
     zip.file("report.md", reportMd);
   }
@@ -286,7 +282,7 @@ function generateGapCsv(data: GapAnalysis): string {
 async function generateSourcesCsv(
   studyId: string,
   type: string,
-  resultData: unknown
+  resultData: unknown,
 ): Promise<string | null> {
   // Collect all unique source IDs from result data
   const sourceIds = collectSourceIds(type, resultData);
@@ -320,9 +316,7 @@ async function generateSourcesCsv(
     if (source) {
       const title = escapeCsvValue(source.title ?? "");
       const authors = escapeCsvValue((source.authors as string[])?.join("; ") ?? "");
-      const year = source.publicationDate
-        ? new Date(source.publicationDate).getFullYear()
-        : "";
+      const year = source.publicationDate ? new Date(source.publicationDate).getFullYear() : "";
       const venue = escapeCsvValue(source.venue ?? "");
       const category = source.sourceCategory ?? "";
       rows.push(`${id},${title},${authors},${year},${venue},${category}`);
@@ -382,7 +376,7 @@ function generateReportMarkdown(
     includedSourceCount: number;
     completedAt: Date | null;
   },
-  keyFindings: string[] | null
+  keyFindings: string[] | null,
 ): string {
   const lines: string[] = [];
 

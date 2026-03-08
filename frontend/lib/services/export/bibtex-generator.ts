@@ -5,11 +5,7 @@ import type { Source } from "@prisma/client";
  */
 function escapeBibTeX(text: string | null | undefined): string {
   if (!text) return "";
-  return text
-    .replace(/&/g, "\\&")
-    .replace(/%/g, "\\%")
-    .replace(/#/g, "\\#")
-    .replace(/\$/g, "\\$");
+  return text.replace(/&/g, "\\&").replace(/%/g, "\\%").replace(/#/g, "\\#").replace(/\$/g, "\\$");
 }
 
 /**

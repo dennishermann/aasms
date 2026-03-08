@@ -11,7 +11,7 @@ export const createStudySchema = z.object({
       z.object({
         question: z.string().min(1, "Question is required"),
         order: z.number().int().min(0),
-      })
+      }),
     )
     .optional(),
 });
@@ -37,7 +37,7 @@ export const studyParametersSchema = z.object({
             end: z.string().optional(),
           })
           .optional(),
-      })
+      }),
     )
     .optional(),
   greySources: z
@@ -55,7 +55,7 @@ export const studyParametersSchema = z.object({
         ]),
         url: z.string().url().optional(),
         searchStrategy: z.string().optional(),
-      })
+      }),
     )
     .optional(),
   inclusionCriteria: z
@@ -63,7 +63,7 @@ export const studyParametersSchema = z.object({
       z.object({
         criterion: z.string().min(1, "Criterion is required"),
         order: z.number().int().min(0),
-      })
+      }),
     )
     .optional(),
   exclusionCriteria: z
@@ -71,7 +71,7 @@ export const studyParametersSchema = z.object({
       z.object({
         criterion: z.string().min(1, "Criterion is required"),
         order: z.number().int().min(0),
-      })
+      }),
     )
     .optional(),
   classificationSchema: z.any().optional(), // Can be array or object
@@ -95,4 +95,3 @@ export type CreateStudyInput = z.infer<typeof createStudySchema>;
 export type UpdateStudyInput = z.infer<typeof updateStudySchema>;
 export type StudyParametersInput = z.infer<typeof studyParametersSchema>;
 export type UploadSourceInput = z.infer<typeof uploadSourceSchema>;
-

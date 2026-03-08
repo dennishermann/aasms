@@ -42,11 +42,7 @@ const RECIPE_TYPES: Array<{
   },
 ];
 
-export function RecipeTypeSelector({
-  value,
-  onChange,
-  disabled = false,
-}: RecipeTypeSelectorProps) {
+export function RecipeTypeSelector({ value, onChange, disabled = false }: RecipeTypeSelectorProps) {
   return (
     <div className="space-y-2">
       <label className="text-sm font-medium">Recipe Type</label>
@@ -62,10 +58,8 @@ export function RecipeTypeSelector({
               disabled={disabled}
               className={cn(
                 "p-3 rounded-lg border-2 text-left transition-all",
-                isSelected
-                  ? color
-                  : "border-border bg-background hover:border-muted-foreground/30",
-                disabled && "opacity-50 cursor-not-allowed"
+                isSelected ? color : "border-border bg-background hover:border-muted-foreground/30",
+                disabled && "opacity-50 cursor-not-allowed",
               )}
             >
               <div className="flex items-center gap-2 mb-1">

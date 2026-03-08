@@ -12,10 +12,7 @@ import type {
  * These are simple, factual observations that can be reproduced
  * from the data without any LLM involvement.
  */
-export function generateKeyFindings(
-  recipeType: RecipeType,
-  resultData: any
-): string[] {
+export function generateKeyFindings(recipeType: RecipeType, resultData: any): string[] {
   switch (recipeType) {
     case RecipeType.DISTRIBUTION:
       return generateDistributionFindings(resultData as FrequencyResult);
@@ -49,9 +46,7 @@ function generateDistributionFindings(data: FrequencyResult): string[] {
   // Finding 1: Most common category
   if (sortedItems.length > 0 && sortedItems[0].count > 0) {
     const top = sortedItems[0];
-    findings.push(
-      `Most common: "${top.label}" with ${top.count} sources (${top.percentage}%)`
-    );
+    findings.push(`Most common: "${top.label}" with ${top.count} sources (${top.percentage}%)`);
   }
 
   // Finding 2: Empty categories
@@ -63,7 +58,7 @@ function generateDistributionFindings(data: FrequencyResult): string[] {
       findings.push(
         `${emptyCategories.length} categories have no sources: ${emptyCategories
           .map((c) => `"${c.label}"`)
-          .join(", ")}`
+          .join(", ")}`,
       );
     } else {
       findings.push(`${emptyCategories.length} categories have no sources`);
@@ -89,7 +84,7 @@ function generateDistributionFindings(data: FrequencyResult): string[] {
       findings.push(
         `Least common: "${least.label}" with only ${least.count} source${
           least.count === 1 ? "" : "s"
-        }`
+        }`,
       );
     }
   }
@@ -103,8 +98,8 @@ function generateDistributionFindings(data: FrequencyResult): string[] {
     if (ratio > 10) {
       findings.push(
         `Highly uneven distribution: largest category is ${Math.round(
-          ratio
-        )}x larger than smallest`
+          ratio,
+        )}x larger than smallest`,
       );
     }
   }
@@ -134,7 +129,7 @@ function generateMapFindings(data: CrossTabResult): string[] {
     const colLabel = colLabels.find((c) => c.id === topCell.colId)?.label ?? topCell.colId;
 
     findings.push(
-      `Most common combination: "${rowLabel}" × "${colLabel}" with ${topCell.count} sources (${topCell.percentage}%)`
+      `Most common combination: "${rowLabel}" × "${colLabel}" with ${topCell.count} sources (${topCell.percentage}%)`,
     );
   }
 
@@ -145,7 +140,7 @@ function generateMapFindings(data: CrossTabResult): string[] {
 
   if (emptyCells.length > 0) {
     findings.push(
-      `${emptyCells.length} of ${totalCells} cells are empty (${emptyPercent}% sparsity)`
+      `${emptyCells.length} of ${totalCells} cells are empty (${emptyPercent}% sparsity)`,
     );
   }
 
@@ -158,9 +153,7 @@ function generateMapFindings(data: CrossTabResult): string[] {
   if (topRow && topRow[1] > 0) {
     const rowLabel = rowLabels.find((r) => r.id === topRow[0])?.label ?? topRow[0];
     const rowPercent = Math.round((topRow[1] / grandTotal) * 100);
-    findings.push(
-      `Row "${rowLabel}" has the most sources: ${topRow[1]} (${rowPercent}%)`
-    );
+    findings.push(`Row "${rowLabel}" has the most sources: ${topRow[1]} (${rowPercent}%)`);
   }
 
   // Finding 4: Column with most sources
@@ -172,9 +165,7 @@ function generateMapFindings(data: CrossTabResult): string[] {
   if (topCol && topCol[1] > 0) {
     const colLabel = colLabels.find((c) => c.id === topCol[0])?.label ?? topCol[0];
     const colPercent = Math.round((topCol[1] / grandTotal) * 100);
-    findings.push(
-      `Column "${colLabel}" has the most sources: ${topCol[1]} (${colPercent}%)`
-    );
+    findings.push(`Column "${colLabel}" has the most sources: ${topCol[1]} (${colPercent}%)`);
   }
 
   // Finding 5: Total sources
@@ -224,9 +215,7 @@ function generateTrendFindings(data: TimeSeriesResult): string[] {
     const recentPercent = Math.round((recentTotal / totalPublications) * 100);
 
     if (recentPercent >= 40) {
-      findings.push(
-        `Recent activity: ${recentPercent}% of publications are from the last 3 years`
-      );
+      findings.push(`Recent activity: ${recentPercent}% of publications are from the last 3 years`);
     }
   }
 
@@ -252,15 +241,13 @@ function generateTrendFindings(data: TimeSeriesResult): string[] {
       label: s.label,
       total: s.data.reduce((sum, v) => sum + v, 0),
     }));
-    const topSeries = seriesTotals.reduce((max, s) =>
-      s.total > max.total ? s : max
-    );
+    const topSeries = seriesTotals.reduce((max, s) => (s.total > max.total ? s : max));
     const totalAll = seriesTotals.reduce((sum, s) => sum + s.total, 0);
     const topPercent = Math.round((topSeries.total / totalAll) * 100);
 
     if (topPercent >= 30) {
       findings.push(
-        `Dominant category: "${topSeries.label}" accounts for ${topPercent}% of publications`
+        `Dominant category: "${topSeries.label}" accounts for ${topPercent}% of publications`,
       );
     }
   }
@@ -291,21 +278,15 @@ function generateGapFindings(data: GapAnalysis): string[] {
   }
 
   if (totalEmptyCategories > 0) {
-    findings.push(
-      `${totalEmptyCategories} categories have no sources (across all facets)`
-    );
+    findings.push(`${totalEmptyCategories} categories have no sources (across all facets)`);
   }
 
   if (totalLowCoverageCategories > 0) {
-    findings.push(
-      `${totalLowCoverageCategories} categories have ${threshold} or fewer sources`
-    );
+    findings.push(`${totalLowCoverageCategories} categories have ${threshold} or fewer sources`);
   }
 
   // Finding 2: Facets with most gaps
-  const facetsWithGaps = singleDimensionGaps.filter(
-    (f) => f.gaps.length > 0 || f.empty.length > 0
-  );
+  const facetsWithGaps = singleDimensionGaps.filter((f) => f.gaps.length > 0 || f.empty.length > 0);
   if (facetsWithGaps.length > 0) {
     const worstFacet = facetsWithGaps.reduce((worst, f) => {
       const gapCount = f.gaps.length + f.empty.length;
@@ -315,19 +296,14 @@ function generateGapFindings(data: GapAnalysis): string[] {
 
     const gapCount = worstFacet.gaps.length + worstFacet.empty.length;
     findings.push(
-      `"${worstFacet.facetName}" has the most gaps: ${gapCount} categories with low or no coverage`
+      `"${worstFacet.facetName}" has the most gaps: ${gapCount} categories with low or no coverage`,
     );
   }
 
   // Finding 3: Cross-tab gaps summary
   if (crossTabGaps.length > 0) {
-    const totalCrossTabGaps = crossTabGaps.reduce(
-      (sum, ctg) => sum + ctg.gaps.length,
-      0
-    );
-    findings.push(
-      `${totalCrossTabGaps} cross-tabulation combinations have low coverage`
-    );
+    const totalCrossTabGaps = crossTabGaps.reduce((sum, ctg) => sum + ctg.gaps.length, 0);
+    findings.push(`${totalCrossTabGaps} cross-tabulation combinations have low coverage`);
   }
 
   // Finding 4: Specific empty categories
@@ -340,9 +316,7 @@ function generateGapFindings(data: GapAnalysis): string[] {
 
   // Finding 5: No gaps detected
   if (totalEmptyCategories === 0 && totalLowCoverageCategories === 0) {
-    findings.push(
-      `Good coverage: all categories have more than ${threshold} sources`
-    );
+    findings.push(`Good coverage: all categories have more than ${threshold} sources`);
   }
 
   return findings;

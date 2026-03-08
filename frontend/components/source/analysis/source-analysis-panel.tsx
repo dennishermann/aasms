@@ -48,19 +48,19 @@ export function SourceAnalysisPanel({
   const [isEditingClassifications, setIsEditingClassifications] = useState(false);
 
   const [inclusionRecommendation, setInclusionRecommendation] = useState(
-    initialAnalysis.inclusionRecommendation
+    initialAnalysis.inclusionRecommendation,
   );
   const [inclusionReasoning, setInclusionReasoning] = useState(initialAnalysis.inclusionReasoning);
   const [exclusionReasoning, setExclusionReasoning] = useState(initialAnalysis.exclusionReasoning);
   const [confidenceScore, setConfidenceScore] = useState(initialAnalysis.confidenceScore);
   const [inclusionCriteria, setInclusionCriteria] = useState<CriterionEval[]>(
-    normalizeCriteria(initialAnalysis.inclusionCriteria)
+    normalizeCriteria(initialAnalysis.inclusionCriteria),
   );
   const [exclusionCriteria, setExclusionCriteria] = useState<CriterionEval[]>(
-    normalizeCriteria(initialAnalysis.exclusionCriteria)
+    normalizeCriteria(initialAnalysis.exclusionCriteria),
   );
   const [classifications, setClassifications] = useState<Classification[]>(
-    initialAnalysis.classifications || []
+    initialAnalysis.classifications || [],
   );
   const [relevanceScore, setRelevanceScore] = useState(initialAnalysis.relevanceScore || 0.5);
   const [qualityNotes, setQualityNotes] = useState(initialAnalysis.qualityNotes || "");
@@ -103,7 +103,7 @@ export function SourceAnalysisPanel({
             inclusionCriteria,
             exclusionCriteria,
           }),
-        }
+        },
       );
 
       if (!response.ok) {
@@ -131,7 +131,7 @@ export function SourceAnalysisPanel({
           body: JSON.stringify({
             classifications,
           }),
-        }
+        },
       );
 
       if (!response.ok) {
@@ -318,5 +318,3 @@ export function SourceAnalysisPanel({
     </div>
   );
 }
-
-

@@ -33,8 +33,8 @@ export default function Home() {
               <CardHeader>
                 <CardTitle>Study Management</CardTitle>
                 <CardDescription>
-                  Create and manage systematic mapping studies with research questions, inclusion/exclusion
-                  criteria, and classification schemas.
+                  Create and manage systematic mapping studies with research questions,
+                  inclusion/exclusion criteria, and classification schemas.
                 </CardDescription>
               </CardHeader>
             </Card>

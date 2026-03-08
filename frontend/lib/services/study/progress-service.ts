@@ -4,7 +4,7 @@ export interface PhaseProgress {
   current: number;
   total: number;
   percentage: number;
-  status: 'not_started' | 'in_progress' | 'complete';
+  status: "not_started" | "in_progress" | "complete";
   detail: string; // e.g., "47 of 312 screened"
 }
 
@@ -32,53 +32,53 @@ export function computeStudyProgress(data: {
   const collectionCurrent = data.totalSources - data.sourcesNeedingPdf;
   const collectionPercentage =
     collectionTotal > 0 ? Math.round((collectionCurrent / collectionTotal) * 100) : 0;
-  const collectionStatus: 'not_started' | 'in_progress' | 'complete' =
+  const collectionStatus: "not_started" | "in_progress" | "complete" =
     collectionTotal === 0
-      ? 'not_started'
+      ? "not_started"
       : collectionCurrent === collectionTotal
-        ? 'complete'
-        : 'in_progress';
+        ? "complete"
+        : "in_progress";
 
   // Screening phase: analyzed sources (included + excluded)
   const screeningTotal = data.totalSources;
   const screeningCurrent = data.analyzedSources;
   const screeningPercentage =
     screeningTotal > 0 ? Math.round((screeningCurrent / screeningTotal) * 100) : 0;
-  const screeningStatus: 'not_started' | 'in_progress' | 'complete' =
+  const screeningStatus: "not_started" | "in_progress" | "complete" =
     screeningCurrent === 0
-      ? 'not_started'
+      ? "not_started"
       : screeningCurrent === screeningTotal
-        ? 'complete'
-        : 'in_progress';
+        ? "complete"
+        : "in_progress";
 
   // Classification phase: classified sources out of included
   const classificationTotal = data.includedSources;
   const classificationCurrent = data.classifiedSources;
   const classificationPercentage =
     classificationTotal > 0 ? Math.round((classificationCurrent / classificationTotal) * 100) : 0;
-  const classificationStatus: 'not_started' | 'in_progress' | 'complete' =
+  const classificationStatus: "not_started" | "in_progress" | "complete" =
     classificationCurrent === 0
-      ? 'not_started'
+      ? "not_started"
       : classificationCurrent === classificationTotal
-        ? 'complete'
-        : 'in_progress';
+        ? "complete"
+        : "in_progress";
 
   // Analysis phase: recipes run out of total recipes
   const analysisTotal = data.totalRecipes;
   const analysisCurrent = data.recipesRun;
   const analysisPercentage =
     analysisTotal > 0 ? Math.round((analysisCurrent / analysisTotal) * 100) : 0;
-  const analysisStatus: 'not_started' | 'in_progress' | 'complete' =
+  const analysisStatus: "not_started" | "in_progress" | "complete" =
     analysisCurrent === 0
-      ? 'not_started'
+      ? "not_started"
       : analysisCurrent === analysisTotal
-        ? 'complete'
-        : 'in_progress';
+        ? "complete"
+        : "in_progress";
 
   return {
     collection: {
-      label: 'Collection',
-      description: 'Gather sources from databases',
+      label: "Collection",
+      description: "Gather sources from databases",
       current: collectionCurrent,
       total: collectionTotal,
       percentage: collectionPercentage,
@@ -86,8 +86,8 @@ export function computeStudyProgress(data: {
       detail: `${collectionCurrent} of ${collectionTotal} with content`,
     },
     screening: {
-      label: 'Screening',
-      description: 'Include/exclude based on criteria',
+      label: "Screening",
+      description: "Include/exclude based on criteria",
       current: screeningCurrent,
       total: screeningTotal,
       percentage: screeningPercentage,
@@ -95,8 +95,8 @@ export function computeStudyProgress(data: {
       detail: `${screeningCurrent} of ${screeningTotal} screened`,
     },
     classification: {
-      label: 'Classification',
-      description: 'Assign facet categories',
+      label: "Classification",
+      description: "Assign facet categories",
       current: classificationCurrent,
       total: classificationTotal,
       percentage: classificationPercentage,
@@ -104,11 +104,11 @@ export function computeStudyProgress(data: {
       detail:
         classificationTotal > 0
           ? `${classificationCurrent} of ${classificationTotal} classified`
-          : 'No included sources yet',
+          : "No included sources yet",
     },
     analysis: {
-      label: 'Analysis',
-      description: 'Run research question recipes',
+      label: "Analysis",
+      description: "Run research question recipes",
       current: analysisCurrent,
       total: analysisTotal,
       percentage: analysisPercentage,
@@ -116,7 +116,7 @@ export function computeStudyProgress(data: {
       detail:
         analysisTotal > 0
           ? `${analysisCurrent} of ${analysisTotal} recipes run`
-          : 'No recipes defined yet',
+          : "No recipes defined yet",
     },
   };
 }

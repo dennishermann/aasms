@@ -28,7 +28,11 @@ async function fetchStudies(): Promise<Study[]> {
 }
 
 export default function StudiesPage() {
-  const { data: studies, isLoading, error } = useQuery({
+  const {
+    data: studies,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["studies"],
     queryFn: fetchStudies,
   });
@@ -94,8 +98,8 @@ export default function StudiesPage() {
                           study.status === "ACTIVE"
                             ? "default"
                             : study.status === "COMPLETED"
-                            ? "secondary"
-                            : "outline"
+                              ? "secondary"
+                              : "outline"
                         }
                       >
                         {study.status}
@@ -118,4 +122,3 @@ export default function StudiesPage() {
     </div>
   );
 }
-

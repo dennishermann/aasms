@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     if (!validation.success) {
       return NextResponse.json(
         { error: "Validation failed", details: validation.error.errors },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -77,4 +77,3 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Failed to create study" }, { status: 500 });
   }
 }
-

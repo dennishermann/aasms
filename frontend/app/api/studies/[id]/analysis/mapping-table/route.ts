@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getMappingTableData } from "@/lib/services/analysis";
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id: studyId } = await params;
     const searchParams = request.nextUrl.searchParams;
@@ -32,14 +29,14 @@ export async function GET(
     if (isNaN(page) || page < 1) {
       return NextResponse.json(
         { error: "Invalid page parameter (must be a positive integer)" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     if (isNaN(pageSize) || pageSize < 1 || pageSize > 200) {
       return NextResponse.json(
         { error: "Invalid pageSize parameter (must be between 1 and 200)" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -51,7 +48,7 @@ export async function GET(
     if (!validSortFields.includes(sortBy)) {
       return NextResponse.json(
         { error: `Invalid sortBy parameter (must be one of: ${validSortFields.join(", ")})` },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -72,7 +69,7 @@ export async function GET(
         error: "Failed to get mapping table data",
         details: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

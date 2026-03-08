@@ -9,7 +9,7 @@ import { prisma } from "@/lib/db";
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string; sourceId: string }> }
+  { params }: { params: Promise<{ id: string; sourceId: string }> },
 ) {
   try {
     const { id: studyId, sourceId } = await params;
@@ -21,11 +21,7 @@ export async function GET(
         analysis: {
           include: {
             votes: {
-              orderBy: [
-                { criterionType: "asc" },
-                { criterionIndex: "asc" },
-                { provider: "asc" },
-              ],
+              orderBy: [{ criterionType: "asc" }, { criterionIndex: "asc" }, { provider: "asc" }],
             },
           },
         },
@@ -37,10 +33,7 @@ export async function GET(
     }
 
     if (!source.analysis) {
-      return NextResponse.json(
-        { error: "No analysis found for this source" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "No analysis found for this source" }, { status: 404 });
     }
 
     const analysis = source.analysis;
@@ -68,10 +61,7 @@ export async function GET(
     });
   } catch (error) {
     console.error("Error fetching voting data:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch voting data" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to fetch voting data" }, { status: 500 });
   }
 }
 
@@ -118,9 +108,7 @@ function groupVotesByCriterion(votes: any[]) {
       criterion.totalVoters = totalVoters;
       criterion.finalDecision = positiveVotes > totalVoters / 2;
       criterion.agreementRatio =
-        totalVoters > 0
-          ? Math.max(positiveVotes, totalVoters - positiveVotes) / totalVoters
-          : 0;
+        totalVoters > 0 ? Math.max(positiveVotes, totalVoters - positiveVotes) / totalVoters : 0;
     });
   });
 

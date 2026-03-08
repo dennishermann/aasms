@@ -23,7 +23,7 @@ const inclusionExclusionSchema = z.object({
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string; sourceId: string }> }
+  { params }: { params: Promise<{ id: string; sourceId: string }> },
 ) {
   try {
     const { id: studyId, sourceId } = await params;
@@ -33,7 +33,7 @@ export async function PUT(
     if (!validation.success) {
       return NextResponse.json(
         { error: "Validation failed", details: validation.error.errors },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -109,7 +109,3 @@ export async function PUT(
     return NextResponse.json({ error: "Failed to save inclusion/exclusion" }, { status: 500 });
   }
 }
-
-
-
-

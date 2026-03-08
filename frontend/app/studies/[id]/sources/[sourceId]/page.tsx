@@ -61,7 +61,7 @@ export default function SourceDetailPage() {
     patchMutation,
     onApplySuccess: () => {
       // any additional logic if needed
-    }
+    },
   });
 
   if (sourceLoading || analysisLoading) {
@@ -123,8 +123,7 @@ export default function SourceDetailPage() {
     return null;
   })();
 
-  const inclusionRecommendation =
-    analysisData?.data?.inclusionRecommendation ?? false;
+  const inclusionRecommendation = analysisData?.data?.inclusionRecommendation ?? false;
   const showClassifications = !!analysisData?.data && inclusionRecommendation && !loadingInclusion;
   const canEditInclusion = !loadingInclusion;
   const canEditClassifications = showClassifications && !loadingClassifications;
@@ -132,11 +131,13 @@ export default function SourceDetailPage() {
   const batchId = searchParams.get("batchId");
 
   // Construct back URL
-  const backUrl = `/studies/${studyId}/sources?` + new URLSearchParams({
-    ...(tabParam !== "all" && { filter: tabParam }),
-    ...(batchId && { batchId }),
-    sourceId: sourceId
-  }).toString();
+  const backUrl =
+    `/studies/${studyId}/sources?` +
+    new URLSearchParams({
+      ...(tabParam !== "all" && { filter: tabParam }),
+      ...(batchId && { batchId }),
+      sourceId: sourceId,
+    }).toString();
 
   return (
     <StudyLayout
@@ -154,13 +155,11 @@ export default function SourceDetailPage() {
 
           {/* Main Source Card */}
           <Button asChild variant="ghost" size="sm" className="-ml-2 mb-2 w-fit">
-            <Link href={backUrl}>
-              ← Back to Sources
-            </Link>
+            <Link href={backUrl}>← Back to Sources</Link>
           </Button>
           <Card>
             {isMetadataEditing ? (
-              (source.type === "WEBPAGE" || source.type === "BLOG_POST") ? (
+              source.type === "WEBPAGE" || source.type === "BLOG_POST" ? (
                 <WebsiteMetadataEditor
                   source={source}
                   onCancel={() => setIsMetadataEditing(false)}
@@ -199,18 +198,19 @@ export default function SourceDetailPage() {
                 <SourceMetadataView source={source} />
 
                 {/* Content Viewer for Websites */}
-                {(source.type === "WEBPAGE" || source.type === "BLOG_POST") && source.storagePath && (source.storagePath.endsWith('.html') || source.storagePath.endsWith('.txt')) && (
-                  <div className="mt-8">
-                    <SourceWebsiteViewer
-                      contentUrl={`/api/studies/${studyId}/sources/${sourceId}/content`}
-                      originalUrl={source.originalUrl}
-                    />
-                  </div>
-                )}
+                {(source.type === "WEBPAGE" || source.type === "BLOG_POST") &&
+                  source.storagePath &&
+                  (source.storagePath.endsWith(".html") || source.storagePath.endsWith(".txt")) && (
+                    <div className="mt-8">
+                      <SourceWebsiteViewer
+                        contentUrl={`/api/studies/${studyId}/sources/${sourceId}/content`}
+                        originalUrl={source.originalUrl}
+                      />
+                    </div>
+                  )}
               </>
             )}
           </Card>
-
 
           <SourceMetadataReviewSection
             source={source}
@@ -249,8 +249,6 @@ export default function SourceDetailPage() {
               showClassifications={showClassifications}
             />
           )}
-
-
         </div>
 
         {/* Delete Confirmation Dialog */}
@@ -259,13 +257,12 @@ export default function SourceDetailPage() {
             <AlertDialogHeader>
               <AlertDialogTitle>Delete Source?</AlertDialogTitle>
               <AlertDialogDescription>
-                Are you sure you want to delete "{source.title}"? This action cannot be undone and will also delete all associated analysis data.
+                Are you sure you want to delete &quot;{source.title}&quot;? This action cannot be
+                undone and will also delete all associated analysis data.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel disabled={deleteMutation.isPending}>
-                Cancel
-              </AlertDialogCancel>
+              <AlertDialogCancel disabled={deleteMutation.isPending}>Cancel</AlertDialogCancel>
               <AlertDialogAction
                 onClick={() => deleteMutation.mutate()}
                 disabled={deleteMutation.isPending}
@@ -277,6 +274,6 @@ export default function SourceDetailPage() {
           </AlertDialogContent>
         </AlertDialog>
       </div>
-    </StudyLayout >
+    </StudyLayout>
   );
 }

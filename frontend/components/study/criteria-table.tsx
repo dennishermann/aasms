@@ -23,7 +23,7 @@ interface CriteriaTableProps {
 
 export function CriteriaTable({ inclusionCriteria, exclusionCriteria }: CriteriaTableProps) {
   const maxLength = Math.max(inclusionCriteria.length, exclusionCriteria.length);
-  
+
   // Create rows with both IC and EC
   const rows = Array.from({ length: maxLength }, (_, index) => ({
     inclusion: inclusionCriteria[index] || null,
@@ -52,9 +52,7 @@ export function CriteriaTable({ inclusionCriteria, exclusionCriteria }: Criteria
     <Card>
       <CardHeader>
         <CardTitle>Inclusion & Exclusion Criteria</CardTitle>
-        <CardDescription>
-          Criteria for evaluating sources in this study
-        </CardDescription>
+        <CardDescription>Criteria for evaluating sources in this study</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="w-full">
@@ -91,4 +89,3 @@ export function CriteriaTable({ inclusionCriteria, exclusionCriteria }: Criteria
     </Card>
   );
 }
-

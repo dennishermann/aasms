@@ -7,7 +7,7 @@ import { Prisma, SourceStatus, Decision } from "@prisma/client";
  */
 export async function getDimensionLabels(
   studyId: string,
-  dimension: DimensionConfig
+  dimension: DimensionConfig,
 ): Promise<LabeledItem[]> {
   if (dimension.type === "facet" && dimension.facetId) {
     // Get facet with categories
@@ -134,7 +134,7 @@ export function buildBaseSourceWhere(studyId: string): Prisma.SourceWhereInput {
  */
 export function applyFilters(
   baseWhere: Prisma.SourceWhereInput,
-  filters?: Filter[]
+  filters?: Filter[],
 ): Prisma.SourceWhereInput {
   if (!filters || filters.length === 0) {
     return baseWhere;
@@ -278,13 +278,11 @@ export function getSourceDimensionValue(
     sourceCategory?: string;
     greyLiteratureTier?: string | null;
   },
-  dimension: DimensionConfig
+  dimension: DimensionConfig,
 ): string {
   switch (dimension.type) {
     case "publication-year":
-      return source.publicationDate
-        ? String(source.publicationDate.getFullYear())
-        : "Unknown";
+      return source.publicationDate ? String(source.publicationDate.getFullYear()) : "Unknown";
 
     case "venue-type":
       return source.venueType || "Unknown";

@@ -1,10 +1,5 @@
 import { prisma } from "@/lib/db";
-import type {
-  DimensionConfig,
-  Filter,
-  TimeSeriesResult,
-  TimeSeriesSeries,
-} from "@/types/analysis";
+import type { DimensionConfig, Filter, TimeSeriesResult, TimeSeriesSeries } from "@/types/analysis";
 import { buildBaseSourceWhere, applyFilters, getSourceDimensionValue } from "./dimension-utils";
 
 /**
@@ -13,7 +8,7 @@ import { buildBaseSourceWhere, applyFilters, getSourceDimensionValue } from "./d
 export async function getTimeSeriesData(
   studyId: string,
   groupBy?: DimensionConfig,
-  filters?: Filter[]
+  filters?: Filter[],
 ): Promise<TimeSeriesResult> {
   const baseWhere = buildBaseSourceWhere(studyId);
   const where = applyFilters(baseWhere, filters);
@@ -114,13 +109,11 @@ export async function getTimeSeriesData(
   }
 
   // Convert to array
-  const series: TimeSeriesSeries[] = Array.from(seriesMap.entries()).map(
-    ([id, data]) => ({
-      id,
-      label: data.label,
-      data: years.map((y) => data.counts.get(y) || 0),
-    })
-  );
+  const series: TimeSeriesSeries[] = Array.from(seriesMap.entries()).map(([id, data]) => ({
+    id,
+    label: data.label,
+    data: years.map((y) => data.counts.get(y) || 0),
+  }));
 
   // Sort series by total count descending
   series.sort((a, b) => {
@@ -153,12 +146,11 @@ function getGroupValues(
       }[];
     } | null;
   },
-  dimension: DimensionConfig
+  dimension: DimensionConfig,
 ): string[] {
   if (dimension.type === "facet" && dimension.facetId) {
     const classifications =
-      source.analysis?.classifications.filter((c) => c.facetId === dimension.facetId) ||
-      [];
+      source.analysis?.classifications.filter((c) => c.facetId === dimension.facetId) || [];
 
     if (classifications.length === 0) {
       return ["Unknown"];

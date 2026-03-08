@@ -140,7 +140,11 @@ export default function StudyDetailPage() {
   const params = useParams();
   const studyId = params.id as string;
 
-  const { data: study, isLoading, error } = useQuery({
+  const {
+    data: study,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["study", studyId],
     queryFn: () => fetchStudy(studyId),
   });
@@ -212,11 +216,11 @@ export default function StudyDetailPage() {
     (s) =>
       s.finalDecision === "INCLUDE" ||
       (["ANALYZED", "INCLUDED", "CLASSIFIED", "NEEDS_REVIEW"].includes(s.status) &&
-        !s.finalDecision)
+        !s.finalDecision),
   ).length;
 
   const excluded = sources.filter(
-    (s) => s.finalDecision === "EXCLUDE" || s.status === "EXCLUDED"
+    (s) => s.finalDecision === "EXCLUDE" || s.status === "EXCLUDED",
   ).length;
 
   const pending = sources.length - included - excluded;
@@ -226,7 +230,7 @@ export default function StudyDetailPage() {
     (s) =>
       s.finalDecision === "INCLUDE" ||
       (["ANALYZED", "INCLUDED", "CLASSIFIED", "NEEDS_REVIEW"].includes(s.status) &&
-        !s.finalDecision)
+        !s.finalDecision),
   );
 
   const years = includedSources
@@ -239,9 +243,7 @@ export default function StudyDetailPage() {
       : { min: null, max: null };
 
   // Get unique venues
-  const uniqueVenues = new Set(
-    includedSources.map((s) => s.venue).filter(Boolean)
-  ).size;
+  const uniqueVenues = new Set(includedSources.map((s) => s.venue).filter(Boolean)).size;
 
   const stats = {
     total: sources.length,
@@ -253,11 +255,7 @@ export default function StudyDetailPage() {
   };
 
   return (
-    <StudyLayout
-      studyId={studyId}
-      studyTitle={study.title}
-      studyStatus={study.status}
-    >
+    <StudyLayout studyId={studyId} studyTitle={study.title} studyStatus={study.status}>
       <div className="container mx-auto px-4 py-6">
         <div className="space-y-6">
           {/* Progress Stepper */}
@@ -284,17 +282,13 @@ export default function StudyDetailPage() {
               <CardContent className="space-y-4">
                 {study.motivation && (
                   <div>
-                    <p className="text-sm font-semibold text-muted-foreground mb-2">
-                      Motivation
-                    </p>
+                    <p className="text-sm font-semibold text-muted-foreground mb-2">Motivation</p>
                     <p className="text-sm leading-relaxed">{study.motivation}</p>
                   </div>
                 )}
                 {study.description && (
                   <div>
-                    <p className="text-sm font-semibold text-muted-foreground mb-2">
-                      Description
-                    </p>
+                    <p className="text-sm font-semibold text-muted-foreground mb-2">Description</p>
                     <p className="text-sm leading-relaxed">{study.description}</p>
                   </div>
                 )}
@@ -356,12 +350,16 @@ export default function StudyDetailPage() {
                 <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-1">
                     <p className="text-sm text-muted-foreground">Databases Searched</p>
-                    <p className="text-2xl font-bold">{new Set(searchProtocolEntries.map((e: any) => e.database)).size}</p>
+                    <p className="text-2xl font-bold">
+                      {new Set(searchProtocolEntries.map((e: any) => e.database)).size}
+                    </p>
                   </div>
                   <div className="space-y-1">
                     <p className="text-sm text-muted-foreground">Total Results</p>
                     <p className="text-2xl font-bold">
-                      {(searchProtocolEntries as any[]).reduce((sum, e) => sum + (e.totalResults || 0), 0).toLocaleString()}
+                      {(searchProtocolEntries as any[])
+                        .reduce((sum, e) => sum + (e.totalResults || 0), 0)
+                        .toLocaleString()}
                     </p>
                   </div>
                   <div className="space-y-1">

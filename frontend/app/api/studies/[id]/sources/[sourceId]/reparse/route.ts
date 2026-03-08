@@ -6,7 +6,7 @@ const PYTHON_SERVICE_URL = process.env.PYTHON_SERVICE_URL || "http://localhost:8
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string; sourceId: string }> }
+  { params }: { params: Promise<{ id: string; sourceId: string }> },
 ) {
   try {
     const { id: studyId, sourceId } = await params;
@@ -21,7 +21,9 @@ export async function POST(
 
     console.log(`Reparse request for source ${sourceId}, type: ${source.type}`);
     console.log(`StoragePath: ${source.storagePath}`);
-    console.log(`MetadataExtension keys: ${source.metadataExtension ? Object.keys(source.metadataExtension as object).join(",") : "null"}`);
+    console.log(
+      `MetadataExtension keys: ${source.metadataExtension ? Object.keys(source.metadataExtension as object).join(",") : "null"}`,
+    );
 
     // Check if source has textContent directly (websites)
     let hasTextContent = false;
@@ -36,7 +38,8 @@ export async function POST(
     }
 
     // Determine strategy: PDF parsing vs Text parsing
-    const isPdf = source.type === "PDF" || (source.storagePath && source.storagePath.endsWith('.pdf'));
+    const isPdf =
+      source.type === "PDF" || (source.storagePath && source.storagePath.endsWith(".pdf"));
 
     // mark as extracting metadata
     await prisma.source.update({
@@ -50,7 +53,11 @@ export async function POST(
       // PDF Strategy
       const buffer = await downloadFile(source.storagePath);
       const fd = new FormData();
-      fd.append("file", new Blob([new Uint8Array(buffer)], { type: "application/pdf" }), "source.pdf");
+      fd.append(
+        "file",
+        new Blob([new Uint8Array(buffer)], { type: "application/pdf" }),
+        "source.pdf",
+      );
 
       const res = await fetch(`${PYTHON_SERVICE_URL}/api/parse-pdf?include_content=false`, {
         method: "POST",
@@ -62,7 +69,6 @@ export async function POST(
         throw new Error(`Parse PDF failed: ${JSON.stringify(detail)}`);
       }
       data = await res.json();
-
     } else if (hasTextContent) {
       // Text Strategy (Websites)
       const res = await fetch(`${PYTHON_SERVICE_URL}/api/parse-text`, {
@@ -80,7 +86,6 @@ export async function POST(
         throw new Error(`Parse Text failed: ${JSON.stringify(detail)}`);
       }
       data = await res.json();
-
     } else if (source.storagePath && (source.type === "WEBPAGE" || source.type === "BLOG_POST")) {
       // Fallback: If textContent is missing, download the HTML file from storage
       console.log("Downloading HTML content from storagePath:", source.storagePath);
@@ -103,10 +108,19 @@ export async function POST(
         throw new Error(`Parse Text from File failed: ${JSON.stringify(detail)}`);
       }
       data = await res.json();
-
     } else {
-      console.error("No content available. isPdf:", isPdf, "hasTextContent:", hasTextContent, "storagePath:", source.storagePath);
-      return NextResponse.json({ error: "No content available to parse (PDF or Text)" }, { status: 400 });
+      console.error(
+        "No content available. isPdf:",
+        isPdf,
+        "hasTextContent:",
+        hasTextContent,
+        "storagePath:",
+        source.storagePath,
+      );
+      return NextResponse.json(
+        { error: "No content available to parse (PDF or Text)" },
+        { status: 400 },
+      );
     }
 
     // persist parsed metadata and set status to pending metadata review
@@ -121,8 +135,9 @@ export async function POST(
     return NextResponse.json({ data: updated });
   } catch (error: any) {
     console.error("Error re-parsing source:", error);
-    return NextResponse.json({ error: "Failed to re-parse source", details: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to re-parse source", details: error.message },
+      { status: 500 },
+    );
   }
 }
-
-

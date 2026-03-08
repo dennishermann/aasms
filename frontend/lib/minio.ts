@@ -38,7 +38,7 @@ export async function initializeBucket(): Promise<void> {
 export async function uploadFile(
   objectPath: string,
   buffer: Buffer,
-  metadata?: Record<string, string>
+  metadata?: Record<string, string>,
 ): Promise<void> {
   try {
     await minioClient.putObject(BUCKET_NAME, objectPath, buffer, buffer.length, metadata);
@@ -72,7 +72,7 @@ export async function downloadFile(objectPath: string): Promise<Buffer> {
  */
 export async function getPresignedUrl(
   objectPath: string,
-  expirySeconds: number = 3600
+  expirySeconds: number = 3600,
 ): Promise<string> {
   try {
     return await minioClient.presignedGetObject(BUCKET_NAME, objectPath, expirySeconds);
@@ -112,4 +112,3 @@ export async function getFileMetadata(objectPath: string) {
 export function generateStoragePath(studyId: string, sourceId: string, extension: string): string {
   return `studies/${studyId}/sources/${sourceId}${extension}`;
 }
-

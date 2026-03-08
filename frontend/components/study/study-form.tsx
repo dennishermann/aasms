@@ -108,7 +108,7 @@ export function StudyForm({ onSuccess }: StudyFormProps) {
                     />
                   </FormControl>
                   <FormDescription>
-                    Optional: Provide context about the study's objectives
+                    Optional: Provide context about the study&apos;s objectives
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -181,13 +181,13 @@ export function StudyForm({ onSuccess }: StudyFormProps) {
                     rows={2}
                     className="flex-1 resize-none"
                     style={{
-                      minHeight: '60px',
-                      height: 'auto',
+                      minHeight: "60px",
+                      height: "auto",
                     }}
                     onInput={(e) => {
                       const target = e.target as HTMLTextAreaElement;
-                      target.style.height = 'auto';
-                      target.style.height = target.scrollHeight + 'px';
+                      target.style.height = "auto";
+                      target.style.height = target.scrollHeight + "px";
                     }}
                   />
                   {researchQuestions.length > 1 && (
@@ -227,12 +227,9 @@ export function StudyForm({ onSuccess }: StudyFormProps) {
         </div>
 
         {createMutation.error && (
-          <p className="text-sm text-destructive">
-            Failed to create study. Please try again.
-          </p>
+          <p className="text-sm text-destructive">Failed to create study. Please try again.</p>
         )}
       </form>
     </Form>
   );
 }
-

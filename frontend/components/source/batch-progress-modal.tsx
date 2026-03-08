@@ -57,9 +57,7 @@ export function BatchProgressModal({
   const [currentSource, setCurrentSource] = useState<string>("");
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [summary, setSummary] = useState<BatchProgressEvent["summary"] | null>(
-    null
-  );
+  const [summary, setSummary] = useState<BatchProgressEvent["summary"] | null>(null);
   const logsEndRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll logs to bottom
@@ -112,25 +110,15 @@ export function BatchProgressModal({
                   const data = JSON.parse(line.substring(6)) as BatchProgressEvent;
 
                   if (data.type === "progress") {
-                    if (
-                      data.current !== undefined &&
-                      data.total !== undefined
-                    ) {
-                      setProgress(
-                        Math.round((data.current / data.total) * 100)
-                      );
+                    if (data.current !== undefined && data.total !== undefined) {
+                      setProgress(Math.round((data.current / data.total) * 100));
                     }
 
                     if (data.sourceTitle) {
                       setCurrentSource(data.sourceTitle);
                     }
 
-                    if (
-                      data.sourceId &&
-                      data.sourceTitle &&
-                      data.status &&
-                      data.message
-                    ) {
+                    if (data.sourceId && data.sourceTitle && data.status && data.message) {
                       setLogs((prev) => [
                         ...prev,
                         {
@@ -181,10 +169,7 @@ export function BatchProgressModal({
             sourceId: "error",
             sourceTitle: "Batch Operation",
             status: "error",
-            message:
-              error instanceof Error
-                ? error.message
-                : "Unknown error occurred",
+            message: error instanceof Error ? error.message : "Unknown error occurred",
           },
         ]);
       }
@@ -217,9 +202,7 @@ export function BatchProgressModal({
       case "error":
         return <Badge className="bg-red-100 text-red-800">Error</Badge>;
       case "skipped":
-        return (
-          <Badge className="bg-yellow-100 text-yellow-800">Skipped</Badge>
-        );
+        return <Badge className="bg-yellow-100 text-yellow-800">Skipped</Badge>;
     }
   };
 
@@ -228,14 +211,10 @@ export function BatchProgressModal({
       <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            {isProcessing && (
-              <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
-            )}
+            {isProcessing && <Loader2 className="h-5 w-5 animate-spin text-blue-600" />}
             {title}
           </DialogTitle>
-          <DialogDescription>
-            Processing sources...
-          </DialogDescription>
+          <DialogDescription>Processing sources...</DialogDescription>
         </DialogHeader>
 
         <div className="flex-1 overflow-hidden flex flex-col gap-4">
@@ -268,9 +247,7 @@ export function BatchProgressModal({
                   {getStatusIcon(log.status)}
                   <div className="flex-1 min-w-0">
                     <div className="font-medium truncate">{log.sourceTitle}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {log.message}
-                    </div>
+                    <div className="text-xs text-muted-foreground">{log.message}</div>
                   </div>
                   {getStatusBadge(log.status)}
                 </div>
@@ -287,8 +264,7 @@ export function BatchProgressModal({
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4 text-green-600" />
                   <span className="text-sm">
-                    <span className="font-medium">{summary.success}</span>{" "}
-                    successful
+                    <span className="font-medium">{summary.success}</span> successful
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -299,14 +275,12 @@ export function BatchProgressModal({
                 </div>
                 {summary.included !== undefined && (
                   <div className="text-sm">
-                    <span className="font-medium">{summary.included}</span>{" "}
-                    included
+                    <span className="font-medium">{summary.included}</span> included
                   </div>
                 )}
                 {summary.excluded !== undefined && (
                   <div className="text-sm">
-                    <span className="font-medium">{summary.excluded}</span>{" "}
-                    excluded
+                    <span className="font-medium">{summary.excluded}</span> excluded
                   </div>
                 )}
               </div>

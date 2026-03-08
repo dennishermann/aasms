@@ -19,13 +19,7 @@ import { DimensionConfig } from "./dimension-config";
 import type { RecipeFormProps } from "./types";
 import type { RecipeStatus } from "@/types/recipe";
 
-function StatusBadge({
-  status,
-  reason,
-}: {
-  status: RecipeStatus;
-  reason?: string | null;
-}) {
+function StatusBadge({ status, reason }: { status: RecipeStatus; reason?: string | null }) {
   switch (status) {
     case "VALID":
       return (
@@ -77,9 +71,7 @@ export function RecipeForm({
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
             <StatusBadge status={recipe.status} reason={recipe.statusReason} />
-            <h2 className="text-xl font-semibold">
-              {recipe.name || "Untitled Recipe"}
-            </h2>
+            <h2 className="text-xl font-semibold">{recipe.name || "Untitled Recipe"}</h2>
             {isSaving && (
               <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -165,10 +157,7 @@ export function RecipeForm({
         </div>
 
         {/* Recipe Type */}
-        <RecipeTypeSelector
-          value={recipe.type}
-          onChange={(type) => onUpdate({ type })}
-        />
+        <RecipeTypeSelector value={recipe.type} onChange={(type) => onUpdate({ type })} />
 
         {/* Type-Specific Configuration */}
         <div className="space-y-4 pt-4 border-t">
@@ -227,10 +216,7 @@ export function RecipeForm({
                   max={20}
                   value={recipe.config.gapThreshold ?? 3}
                   onChange={(e) =>
-                    handleConfigUpdate(
-                      "gapThreshold",
-                      parseInt(e.target.value) || 3
-                    )
+                    handleConfigUpdate("gapThreshold", parseInt(e.target.value) || 3)
                   }
                 />
                 <p className="text-xs text-muted-foreground">

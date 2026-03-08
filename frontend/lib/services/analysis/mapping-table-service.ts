@@ -16,7 +16,7 @@ interface MappingTableOptions {
  */
 export async function getMappingTableData(
   studyId: string,
-  options: MappingTableOptions = {}
+  options: MappingTableOptions = {},
 ): Promise<MappingTableResult> {
   const {
     facetIds,
@@ -102,9 +102,7 @@ export async function getMappingTableData(
       result.authors = source.authors;
     }
     if (includeMetadata.includes("year")) {
-      result.year = source.publicationDate
-        ? source.publicationDate.getFullYear()
-        : null;
+      result.year = source.publicationDate ? source.publicationDate.getFullYear() : null;
     }
     if (includeMetadata.includes("venue")) {
       result.venue = source.venue;
@@ -129,7 +127,7 @@ export async function getMappingTableData(
  */
 export async function getMappingTableForExport(
   studyId: string,
-  facetIds?: string[]
+  facetIds?: string[],
 ): Promise<MappingTableSource[]> {
   // Get all facets for the study
   const facets = await prisma.facet.findMany({
@@ -196,7 +194,7 @@ export async function getMappingTableForExport(
  */
 export async function generateMappingTableCsv(
   studyId: string,
-  facetIds?: string[]
+  facetIds?: string[],
 ): Promise<string> {
   // Get facets for headers
   const facets = await prisma.facet.findMany({
@@ -243,9 +241,7 @@ export async function generateMappingTableCsv(
   // Generate CSV content
   const csvContent = [
     headers.map((h) => `"${h.replace(/"/g, '""')}"`).join(","),
-    ...rows.map((row) =>
-      row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")
-    ),
+    ...rows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")),
   ].join("\n");
 
   return csvContent;

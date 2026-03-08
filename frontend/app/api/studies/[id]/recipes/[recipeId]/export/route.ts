@@ -16,7 +16,7 @@ import { exportRecipeBundle, type ExportOptions } from "@/lib/services/recipe/ex
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string; recipeId: string }> }
+  { params }: { params: Promise<{ id: string; recipeId: string }> },
 ) {
   try {
     const { recipeId } = await params;
@@ -53,7 +53,7 @@ export async function POST(
     console.error("Error exporting recipe:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to export recipe" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

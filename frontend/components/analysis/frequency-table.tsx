@@ -41,9 +41,7 @@ export function FrequencyTable({
   showProgressBar = true,
   showMultiClassInfo = false,
 }: FrequencyTableProps) {
-  const [sorting, setSorting] = useState<SortingState>([
-    { id: "count", desc: true },
-  ]);
+  const [sorting, setSorting] = useState<SortingState>([{ id: "count", desc: true }]);
 
   const columns = useMemo<ColumnDef<FrequencyItem>[]>(
     () => [
@@ -65,9 +63,7 @@ export function FrequencyTable({
             )}
           </Button>
         ),
-        cell: ({ row }) => (
-          <div className="font-medium">{row.getValue("label")}</div>
-        ),
+        cell: ({ row }) => <div className="font-medium">{row.getValue("label")}</div>,
       },
       {
         accessorKey: "count",
@@ -90,9 +86,7 @@ export function FrequencyTable({
         cell: ({ row }) => {
           const count = row.getValue("count") as number;
           const percentage = row.original.percentage;
-          const maxPercentage = data
-            ? Math.max(...data.items.map((i) => i.percentage))
-            : 100;
+          const maxPercentage = data ? Math.max(...data.items.map((i) => i.percentage)) : 100;
 
           return (
             <div className="flex items-center gap-3">
@@ -117,7 +111,7 @@ export function FrequencyTable({
         },
       },
     ],
-    [data, showPercentages, showProgressBar]
+    [data, showPercentages, showProgressBar],
   );
 
   const table = useReactTable({
@@ -180,10 +174,7 @@ export function FrequencyTable({
                     <TableHead key={header.id}>
                       {header.isPlaceholder
                         ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
+                        : flexRender(header.column.columnDef.header, header.getContext())}
                     </TableHead>
                   ))}
                 </TableRow>
@@ -195,10 +186,7 @@ export function FrequencyTable({
                   <TableRow key={row.id}>
                     {row.getVisibleCells().map((cell) => (
                       <TableCell key={cell.id}>
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </TableCell>
                     ))}
                   </TableRow>
@@ -212,16 +200,12 @@ export function FrequencyTable({
               )}
               {/* Total row */}
               <TableRow className="bg-muted/50 font-semibold">
-                <TableCell>
-                  {showMultiClassInfo ? "Unique Sources" : "Total"}
-                </TableCell>
+                <TableCell>{showMultiClassInfo ? "Unique Sources" : "Total"}</TableCell>
                 <TableCell>
                   <div className="flex items-center gap-3">
                     <span className="w-12 text-right font-mono">{data.total}</span>
                     {showPercentages && (
-                      <span className="w-16 text-right text-muted-foreground">
-                        (100%)
-                      </span>
+                      <span className="w-16 text-right text-muted-foreground">(100%)</span>
                     )}
                   </div>
                 </TableCell>
@@ -229,9 +213,7 @@ export function FrequencyTable({
               {/* Multi-classification info row */}
               {showMultiClassInfo && data.multiClassification && (
                 <TableRow className="bg-muted/30 text-sm">
-                  <TableCell className="text-muted-foreground">
-                    Avg. categories/source
-                  </TableCell>
+                  <TableCell className="text-muted-foreground">Avg. categories/source</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <span className="w-12 text-right font-mono">

@@ -48,7 +48,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     const suggestion = await pythonResponse.json();
     const match = facet.categories.find(
-      (cat) => cat.name.toLowerCase() === (suggestion.category_name || "").toLowerCase()
+      (cat) => cat.name.toLowerCase() === (suggestion.category_name || "").toLowerCase(),
     );
 
     const mapping = await prisma.facetKeywordMapping.upsert({

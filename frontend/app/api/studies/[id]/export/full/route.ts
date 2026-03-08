@@ -2,18 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
-export async function POST(
-  request: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
+export async function POST(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const { id: studyId } = await context.params;
 
     if (!studyId) {
-      return NextResponse.json(
-        { error: "Study ID is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Study ID is required" }, { status: 400 });
     }
 
     // Call Python service export endpoint
@@ -33,7 +27,7 @@ export async function POST(
       const errorData = await response.json().catch(() => ({ detail: "Unknown error" }));
       return NextResponse.json(
         { error: errorData.detail || "Export failed" },
-        { status: response.status }
+        { status: response.status },
       );
     }
 
@@ -53,7 +47,7 @@ export async function POST(
     console.error("Export error:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Export failed" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

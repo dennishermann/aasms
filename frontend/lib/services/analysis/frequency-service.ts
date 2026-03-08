@@ -14,7 +14,7 @@ import {
 export async function getFrequencyData(
   studyId: string,
   dimension: DimensionConfig,
-  filters?: Filter[]
+  filters?: Filter[],
 ): Promise<FrequencyResult> {
   const baseWhere = buildBaseSourceWhere(studyId);
   const where = applyFilters(baseWhere, filters);
@@ -32,7 +32,7 @@ export async function getFrequencyData(
 async function getFrequencyByFacet(
   studyId: string,
   facetId: string,
-  where: any
+  where: any,
 ): Promise<FrequencyResult> {
   const facet = await prisma.facet.findUnique({
     where: { id: facetId },
@@ -119,7 +119,8 @@ async function getFrequencyByFacet(
   // Calculate multi-classification metadata
   const totalClassifications = items.reduce((sum, item) => sum + item.count, 0);
   const isMultiClass = totalClassifications > total;
-  const avgCategoriesPerSource = total > 0 ? Math.round((totalClassifications / total) * 10) / 10 : 0;
+  const avgCategoriesPerSource =
+    total > 0 ? Math.round((totalClassifications / total) * 10) / 10 : 0;
 
   return {
     dimension: { type: "facet", facetId },
@@ -139,7 +140,7 @@ async function getFrequencyByFacet(
 async function getFrequencyByBuiltinDimension(
   studyId: string,
   dimension: DimensionConfig,
-  where: any
+  where: any,
 ): Promise<FrequencyResult> {
   const sources = await prisma.source.findMany({
     where,
@@ -204,7 +205,7 @@ async function getFrequencyByBuiltinDimension(
 export async function getExclusiveCombinationData(
   studyId: string,
   facetId: string,
-  filters?: Filter[]
+  filters?: Filter[],
 ): Promise<FrequencyResult> {
   const baseWhere = buildBaseSourceWhere(studyId);
   const where = applyFilters(baseWhere, filters);
@@ -262,9 +263,8 @@ export async function getExclusiveCombinationData(
   for (const [sourceId, categories] of sourceCategories) {
     // Sort category names alphabetically for consistent combination labels
     const sortedCategories = Array.from(categories).sort();
-    const combinationKey = sortedCategories.length === 1
-      ? `${sortedCategories[0]} only`
-      : sortedCategories.join(" + ");
+    const combinationKey =
+      sortedCategories.length === 1 ? `${sortedCategories[0]} only` : sortedCategories.join(" + ");
 
     const existing = combinationCounts.get(combinationKey);
     if (existing) {
@@ -278,15 +278,13 @@ export async function getExclusiveCombinationData(
   const total = sourceCategories.size;
 
   // Build result items
-  const items: FrequencyItem[] = Array.from(combinationCounts.entries()).map(
-    ([label, data]) => ({
-      id: label,
-      label,
-      count: data.count,
-      percentage: total > 0 ? Math.round((data.count / total) * 1000) / 10 : 0,
-      sourceIds: data.sourceIds,
-    })
-  );
+  const items: FrequencyItem[] = Array.from(combinationCounts.entries()).map(([label, data]) => ({
+    id: label,
+    label,
+    count: data.count,
+    percentage: total > 0 ? Math.round((data.count / total) * 1000) / 10 : 0,
+    sourceIds: data.sourceIds,
+  }));
 
   // Sort by count descending
   items.sort((a, b) => b.count - a.count);

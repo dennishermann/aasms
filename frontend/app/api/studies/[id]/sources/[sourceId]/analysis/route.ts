@@ -13,8 +13,8 @@ const criterionSchema = z.object({
 // Updated to use facetId/categoryId instead of facetName/category
 const classificationSchema = z.object({
   facetId: z.string(),
-  categoryId: z.string().optional().nullable(),  // null for OPEN facets
-  value: z.string().optional().nullable(),       // For OPEN facets
+  categoryId: z.string().optional().nullable(), // null for OPEN facets
+  value: z.string().optional().nullable(), // For OPEN facets
   confidence: z.number().min(0).max(1),
   reasoning: z.string().optional(),
   isManualOverride: z.boolean().optional(),
@@ -35,7 +35,7 @@ const updateAnalysisSchema = z.object({
 // GET /api/studies/[id]/sources/[sourceId]/analysis - Get or generate dummy analysis
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string; sourceId: string }> }
+  { params }: { params: Promise<{ id: string; sourceId: string }> },
 ) {
   try {
     const { id: studyId, sourceId } = await params;
@@ -73,7 +73,10 @@ export async function GET(
         sourceId,
         status: source.status,
       });
-      return NextResponse.json({ data: null, message: "Analysis not available yet." }, { status: 200 });
+      return NextResponse.json(
+        { data: null, message: "Analysis not available yet." },
+        { status: 200 },
+      );
     }
 
     const inclusionCriteria = (source.analysis as any).inclusionCriteria || [];
@@ -105,7 +108,7 @@ export async function GET(
 // PUT /api/studies/[id]/sources/[sourceId]/analysis - Save or update analysis
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string; sourceId: string }> }
+  { params }: { params: Promise<{ id: string; sourceId: string }> },
 ) {
   try {
     const { id: studyId, sourceId } = await params;
@@ -115,7 +118,7 @@ export async function PUT(
     if (!validation.success) {
       return NextResponse.json(
         { error: "Validation failed", details: validation.error.errors },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -147,77 +150,77 @@ export async function PUT(
     const hasClassifications = data.classifications.length > 0;
     const classificationsUpdate = hasClassifications
       ? {
-        deleteMany: { facetId: { in: facetIds } },
-        create: data.classifications.map((c) => ({
-          facetId: c.facetId,
-          categoryId: c.categoryId ?? null,
-          value: c.value ?? null,
-          confidence: c.confidence,
-          reasoning: c.reasoning,
-          isManualOverride: c.isManualOverride ?? true,
-        })),
-      }
+          deleteMany: { facetId: { in: facetIds } },
+          create: data.classifications.map((c) => ({
+            facetId: c.facetId,
+            categoryId: c.categoryId ?? null,
+            value: c.value ?? null,
+            confidence: c.confidence,
+            reasoning: c.reasoning,
+            isManualOverride: c.isManualOverride ?? true,
+          })),
+        }
       : undefined;
 
     const analysis = source.analysis
       ? await prisma.sourceAnalysis.update({
-        where: { id: source.analysis.id },
-        data: {
-          inclusionRecommendation: data.inclusionRecommendation,
-          inclusionReasoning: data.inclusionReasoning,
-          exclusionReasoning: data.exclusionReasoning,
-          confidenceScore: data.confidenceScore,
-          relevanceScore: data.relevanceScore,
-          qualityNotes: data.qualityNotes,
-          inclusionCriteria,
-          exclusionCriteria,
-          isUserEdited: true,
-          editedFields,
-          ...(classificationsUpdate ? { classifications: classificationsUpdate } : {}),
-        },
-        include: {
-          classifications: {
-            include: {
-              facet: true,
-              category: true,
+          where: { id: source.analysis.id },
+          data: {
+            inclusionRecommendation: data.inclusionRecommendation,
+            inclusionReasoning: data.inclusionReasoning,
+            exclusionReasoning: data.exclusionReasoning,
+            confidenceScore: data.confidenceScore,
+            relevanceScore: data.relevanceScore,
+            qualityNotes: data.qualityNotes,
+            inclusionCriteria,
+            exclusionCriteria,
+            isUserEdited: true,
+            editedFields,
+            ...(classificationsUpdate ? { classifications: classificationsUpdate } : {}),
+          },
+          include: {
+            classifications: {
+              include: {
+                facet: true,
+                category: true,
+              },
             },
           },
-        },
-      })
+        })
       : await prisma.sourceAnalysis.create({
-        data: {
-          sourceId,
-          extractedText: "", // Will be filled by actual analysis later
-          inclusionRecommendation: data.inclusionRecommendation,
-          inclusionReasoning: data.inclusionReasoning,
-          exclusionReasoning: data.exclusionReasoning,
-          confidenceScore: data.confidenceScore,
-          relevanceScore: data.relevanceScore,
-          qualityNotes: data.qualityNotes,
-          inclusionCriteria,
-          exclusionCriteria,
-          isUserEdited: true,
-          editedFields,
-          classifications: {
-            create: data.classifications.map((c) => ({
-              facetId: c.facetId,
-              categoryId: c.categoryId ?? null,
-              value: c.value ?? null,
-              confidence: c.confidence,
-              reasoning: c.reasoning,
-              isManualOverride: c.isManualOverride ?? true,
-            })),
-          },
-        },
-        include: {
-          classifications: {
-            include: {
-              facet: true,
-              category: true,
+          data: {
+            sourceId,
+            extractedText: "", // Will be filled by actual analysis later
+            inclusionRecommendation: data.inclusionRecommendation,
+            inclusionReasoning: data.inclusionReasoning,
+            exclusionReasoning: data.exclusionReasoning,
+            confidenceScore: data.confidenceScore,
+            relevanceScore: data.relevanceScore,
+            qualityNotes: data.qualityNotes,
+            inclusionCriteria,
+            exclusionCriteria,
+            isUserEdited: true,
+            editedFields,
+            classifications: {
+              create: data.classifications.map((c) => ({
+                facetId: c.facetId,
+                categoryId: c.categoryId ?? null,
+                value: c.value ?? null,
+                confidence: c.confidence,
+                reasoning: c.reasoning,
+                isManualOverride: c.isManualOverride ?? true,
+              })),
             },
           },
-        },
-      });
+          include: {
+            classifications: {
+              include: {
+                facet: true,
+                category: true,
+              },
+            },
+          },
+        });
 
     // Update source status
     await prisma.source.update({

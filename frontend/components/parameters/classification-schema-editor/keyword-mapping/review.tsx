@@ -19,14 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  Loader2,
-  CheckCircle2,
-  XCircle,
-  ChevronDown,
-  Sparkles,
-  Plus,
-} from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, ChevronDown, Sparkles, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface KeywordMapping {
@@ -81,7 +74,7 @@ export function KeywordMappingReview({
       setLoading(true);
       try {
         const res = await fetch(
-          `/api/studies/${studyId}/facets/${facetId}/coding/mappings?status=PENDING`
+          `/api/studies/${studyId}/facets/${facetId}/coding/mappings?status=PENDING`,
         );
         if (!res.ok) return;
         const data = await res.json();
@@ -101,7 +94,9 @@ export function KeywordMappingReview({
   }, [open, studyId, facetId]);
 
   const highConfidenceMappings = useMemo(() => {
-    return mappings.filter((m) => (m.confidence ?? 0) >= 0.7 && (m.categoryId || m.proposedCategoryName));
+    return mappings.filter(
+      (m) => (m.confidence ?? 0) >= 0.7 && (m.categoryId || m.proposedCategoryName),
+    );
   }, [mappings]);
 
   const toggleSelection = (id: string) => {
@@ -140,7 +135,7 @@ export function KeywordMappingReview({
     }
     if (mapping.proposedCategoryName) {
       const existing = categories.find(
-        (c) => c.name.toLowerCase() === mapping.proposedCategoryName?.toLowerCase()
+        (c) => c.name.toLowerCase() === mapping.proposedCategoryName?.toLowerCase(),
       );
       return existing?.id || null;
     }
@@ -174,14 +169,11 @@ export function KeywordMappingReview({
         body.categoryDescription = mapping.proposedCategoryDescription;
       }
 
-      const res = await fetch(
-        `/api/studies/${studyId}/facets/${facetId}/coding/mappings`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        }
-      );
+      const res = await fetch(`/api/studies/${studyId}/facets/${facetId}/coding/mappings`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
 
       if (res.ok) {
         setMappings((prev) => prev.filter((m) => m.id !== mapping.id));
@@ -204,14 +196,11 @@ export function KeywordMappingReview({
   const handleReject = async (mapping: KeywordMapping) => {
     setSubmitting((prev) => new Set([...prev, mapping.id]));
     try {
-      const res = await fetch(
-        `/api/studies/${studyId}/facets/${facetId}/coding/mappings`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ mappingId: mapping.id, action: "reject" }),
-        }
-      );
+      const res = await fetch(`/api/studies/${studyId}/facets/${facetId}/coding/mappings`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mappingId: mapping.id, action: "reject" }),
+      });
       if (res.ok) {
         setMappings((prev) => prev.filter((m) => m.id !== mapping.id));
         setSelectedIds((prev) => {
@@ -236,17 +225,14 @@ export function KeywordMappingReview({
     const idsToApprove = Array.from(selectedIds);
 
     try {
-      const res = await fetch(
-        `/api/studies/${studyId}/facets/${facetId}/coding/mappings`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            action: "batch-approve",
-            mappingIds: idsToApprove,
-          }),
-        }
-      );
+      const res = await fetch(`/api/studies/${studyId}/facets/${facetId}/coding/mappings`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "batch-approve",
+          mappingIds: idsToApprove,
+        }),
+      });
 
       if (res.ok) {
         setMappings((prev) => prev.filter((m) => !selectedIds.has(m.id)));
@@ -263,17 +249,14 @@ export function KeywordMappingReview({
     setBatchAction("reject");
 
     try {
-      const res = await fetch(
-        `/api/studies/${studyId}/facets/${facetId}/coding/mappings`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            action: "batch-reject",
-            mappingIds: Array.from(selectedIds),
-          }),
-        }
-      );
+      const res = await fetch(`/api/studies/${studyId}/facets/${facetId}/coding/mappings`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "batch-reject",
+          mappingIds: Array.from(selectedIds),
+        }),
+      });
 
       if (res.ok) {
         setMappings((prev) => prev.filter((m) => !selectedIds.has(m.id)));
@@ -307,7 +290,8 @@ export function KeywordMappingReview({
             <Badge variant="secondary">{mappings.length}</Badge>
           </DialogTitle>
           <DialogDescription>
-            Review AI-suggested keyword mappings for "{facetName}". Approve, reject, or reassign to different categories.
+            Review AI-suggested keyword mappings for &quot;{facetName}&quot;. Approve, reject, or
+            reassign to different categories.
           </DialogDescription>
         </DialogHeader>
 
@@ -328,11 +312,7 @@ export function KeywordMappingReview({
           <div className="flex-1" />
           {selectedIds.size > 0 && (
             <>
-              <Button
-                size="sm"
-                onClick={handleBatchApprove}
-                disabled={!!batchAction}
-              >
+              <Button size="sm" onClick={handleBatchApprove} disabled={!!batchAction}>
                 {batchAction === "approve" ? (
                   <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
                 ) : (
@@ -398,15 +378,17 @@ export function KeywordMappingReview({
                   {mappings.map((mapping) => {
                     const isSelected = selectedIds.has(mapping.id);
                     const isSubmitting = submitting.has(mapping.id);
-                    const suggestedCategory = mapping.category?.name || mapping.proposedCategoryName;
+                    const suggestedCategory =
+                      mapping.category?.name || mapping.proposedCategoryName;
                     const isNewCategory = !mapping.categoryId && !!mapping.proposedCategoryName;
                     const overriddenCategoryId = categoryOverrides[mapping.id];
                     const customCategoryName = overriddenCategoryId?.startsWith("__custom__:")
                       ? overriddenCategoryId.slice("__custom__:".length)
                       : null;
-                    const overriddenCategory = overriddenCategoryId && !customCategoryName
-                      ? categories.find((c) => c.id === overriddenCategoryId)
-                      : null;
+                    const overriddenCategory =
+                      overriddenCategoryId && !customCategoryName
+                        ? categories.find((c) => c.id === overriddenCategoryId)
+                        : null;
 
                     return (
                       <tr
@@ -414,7 +396,7 @@ export function KeywordMappingReview({
                         className={cn(
                           "border-b transition-colors",
                           isSelected && "bg-primary/5",
-                          "hover:bg-muted/50"
+                          "hover:bg-muted/50",
                         )}
                       >
                         <td className="px-6 py-3">
@@ -428,7 +410,11 @@ export function KeywordMappingReview({
                         </td>
                         <td className="px-4 py-3">
                           <Select
-                            value={customCategoryName ? "__create__" : (overriddenCategoryId || mapping.categoryId || "__new__")}
+                            value={
+                              customCategoryName
+                                ? "__create__"
+                                : overriddenCategoryId || mapping.categoryId || "__new__"
+                            }
                             onValueChange={(value) => {
                               if (value === "__new__") {
                                 setCategoryOverrides((prev) => {
@@ -562,7 +548,7 @@ export function KeywordMappingReview({
                                   ? "border-green-200 bg-green-50 text-green-700"
                                   : mapping.confidence >= 0.4
                                     ? "border-amber-200 bg-amber-50 text-amber-700"
-                                    : "border-red-200 bg-red-50 text-red-700"
+                                    : "border-red-200 bg-red-50 text-red-700",
                               )}
                             >
                               {Math.round(mapping.confidence * 100)}%

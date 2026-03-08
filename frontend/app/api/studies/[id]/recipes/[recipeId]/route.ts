@@ -8,17 +8,14 @@ import type { UpdateRecipeInput } from "@/types/recipe";
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string; recipeId: string }> }
+  { params }: { params: Promise<{ id: string; recipeId: string }> },
 ) {
   try {
     const { recipeId } = await params;
     const recipe = await getRecipe(recipeId);
 
     if (!recipe) {
-      return NextResponse.json(
-        { error: "Recipe not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Recipe not found" }, { status: 404 });
     }
 
     return NextResponse.json({ data: recipe });
@@ -26,7 +23,7 @@ export async function GET(
     console.error("Error getting recipe:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to get recipe" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -37,7 +34,7 @@ export async function GET(
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string; recipeId: string }> }
+  { params }: { params: Promise<{ id: string; recipeId: string }> },
 ) {
   try {
     const { recipeId } = await params;
@@ -50,7 +47,7 @@ export async function PUT(
     console.error("Error updating recipe:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to update recipe" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -61,7 +58,7 @@ export async function PUT(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string; recipeId: string }> }
+  { params }: { params: Promise<{ id: string; recipeId: string }> },
 ) {
   try {
     const { recipeId } = await params;
@@ -73,7 +70,7 @@ export async function DELETE(
     console.error("Error deleting recipe:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to delete recipe" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

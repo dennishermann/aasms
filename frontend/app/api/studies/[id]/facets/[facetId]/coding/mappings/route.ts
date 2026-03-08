@@ -49,7 +49,10 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     if (action === "batch-approve" || action === "batch-reject") {
       const mappingIds = body.mappingIds as string[] | undefined;
       if (!mappingIds || !Array.isArray(mappingIds) || mappingIds.length === 0) {
-        return NextResponse.json({ error: "mappingIds array is required for batch operations" }, { status: 400 });
+        return NextResponse.json(
+          { error: "mappingIds array is required for batch operations" },
+          { status: 400 },
+        );
       }
 
       const newStatus = action === "batch-approve" ? "APPROVED" : "REJECTED";
@@ -121,7 +124,10 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     if (createCategory) {
       if (!categoryName) {
-        return NextResponse.json({ error: "categoryName is required to create a category" }, { status: 400 });
+        return NextResponse.json(
+          { error: "categoryName is required to create a category" },
+          { status: 400 },
+        );
       }
       const category = await prisma.facetCategory.upsert({
         where: {
@@ -156,4 +162,3 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ error: "Failed to update mapping" }, { status: 500 });
   }
 }
-

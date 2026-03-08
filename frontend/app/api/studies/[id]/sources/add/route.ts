@@ -14,7 +14,20 @@ const addSourceSchema = z.object({
   authors: z.array(z.string()).optional(),
   publicationDate: z.string().optional(),
   venue: z.string().optional(),
-  venueType: z.enum(["JOURNAL", "CONFERENCE", "WORKSHOP", "SYMPOSIUM", "BOOK_CHAPTER", "PREPRINT_SERVER", "TECHNICAL_REPORT", "BLOG", "OTHER"]).optional().nullable(),
+  venueType: z
+    .enum([
+      "JOURNAL",
+      "CONFERENCE",
+      "WORKSHOP",
+      "SYMPOSIUM",
+      "BOOK_CHAPTER",
+      "PREPRINT_SERVER",
+      "TECHNICAL_REPORT",
+      "BLOG",
+      "OTHER",
+    ])
+    .optional()
+    .nullable(),
   doi: z.string().optional(),
   abstract: z.string().optional(),
   keywords: z.array(z.string()).optional(),
@@ -65,7 +78,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       if (!validation.success) {
         return NextResponse.json(
           { error: "Invalid metadata", details: validation.error.errors },
-          { status: 400 }
+          { status: 400 },
         );
       }
       metadata = validation.data;
@@ -191,7 +204,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       const objectPath = generateStoragePath(studyId, source.id, ".pdf");
       if (fileBuffer) {
         if (!file?.name) {
-          return NextResponse.json({ error: "Original filename missing for uploaded PDF" }, { status: 400 });
+          return NextResponse.json(
+            { error: "Original filename missing for uploaded PDF" },
+            { status: 400 },
+          );
         }
         const originalFilename = file.name;
         await uploadFile(objectPath, fileBuffer, {
@@ -239,7 +255,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             ? "PDF uploaded; metadata extraction completed"
             : "PDF uploaded; metadata extraction in progress",
         },
-        { status: 201 }
+        { status: 201 },
       );
     }
 
@@ -254,7 +270,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         data: {
           status,
           metadataExtension: sourceContentExt,
-        }
+        },
       });
 
       // 1. Upload HTML Snapshot (Primary Storage for Display)
@@ -319,9 +335,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json(
         {
           data: { ...updatedSource },
-          message: parsedPayload ? "Source added; metadata extracted" : "Source added; extraction failed",
+          message: parsedPayload
+            ? "Source added; metadata extracted"
+            : "Source added; extraction failed",
         },
-        { status: 201 }
+        { status: 201 },
       );
     }
 
@@ -352,13 +370,16 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         },
         message: "Source added",
       },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (error) {
     console.error("Error adding source:", error);
     return NextResponse.json(
-      { error: "Failed to add source", details: error instanceof Error ? error.message : "Unknown error" },
-      { status: 500 }
+      {
+        error: "Failed to add source",
+        details: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 },
     );
   }
 }

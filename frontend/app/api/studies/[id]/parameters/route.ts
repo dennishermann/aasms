@@ -4,26 +4,50 @@ import { z } from "zod";
 
 // Simplified schema without classificationSchema (now handled via /facets API)
 const studyParametersSchema = z.object({
-  formalSources: z.array(z.object({
-    name: z.string(),
-    type: z.enum(["ACADEMIC_DATABASE", "JOURNAL", "CONFERENCE_PROCEEDINGS"]),
-    searchString: z.string().optional(),
-    dateRange: z.any().optional(),
-  })).optional(),
-  greySources: z.array(z.object({
-    name: z.string(),
-    type: z.enum(["BLOG", "WHITE_PAPER", "TECHNICAL_REPORT", "PREPRINT_SERVER", "COMPANY_WEBSITE", "RESEARCH_LAB_SITE", "GOVERNMENT_REPORT"]),
-    url: z.string().optional(),
-    searchStrategy: z.string().optional(),
-  })).optional(),
-  inclusionCriteria: z.array(z.object({
-    criterion: z.string(),
-    order: z.number(),
-  })).optional(),
-  exclusionCriteria: z.array(z.object({
-    criterion: z.string(),
-    order: z.number(),
-  })).optional(),
+  formalSources: z
+    .array(
+      z.object({
+        name: z.string(),
+        type: z.enum(["ACADEMIC_DATABASE", "JOURNAL", "CONFERENCE_PROCEEDINGS"]),
+        searchString: z.string().optional(),
+        dateRange: z.any().optional(),
+      }),
+    )
+    .optional(),
+  greySources: z
+    .array(
+      z.object({
+        name: z.string(),
+        type: z.enum([
+          "BLOG",
+          "WHITE_PAPER",
+          "TECHNICAL_REPORT",
+          "PREPRINT_SERVER",
+          "COMPANY_WEBSITE",
+          "RESEARCH_LAB_SITE",
+          "GOVERNMENT_REPORT",
+        ]),
+        url: z.string().optional(),
+        searchStrategy: z.string().optional(),
+      }),
+    )
+    .optional(),
+  inclusionCriteria: z
+    .array(
+      z.object({
+        criterion: z.string(),
+        order: z.number(),
+      }),
+    )
+    .optional(),
+  exclusionCriteria: z
+    .array(
+      z.object({
+        criterion: z.string(),
+        order: z.number(),
+      }),
+    )
+    .optional(),
 });
 
 // POST /api/studies/[id]/parameters - Create or update study parameters
@@ -36,7 +60,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if (!validation.success) {
       return NextResponse.json(
         { error: "Validation failed", details: validation.error.errors },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -65,39 +89,39 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         studyId,
         formalSources: formalSources
           ? {
-            create: formalSources.map((fs) => ({
-              name: fs.name,
-              type: fs.type,
-              searchString: fs.searchString,
-              dateRange: fs.dateRange,
-            })),
-          }
+              create: formalSources.map((fs) => ({
+                name: fs.name,
+                type: fs.type,
+                searchString: fs.searchString,
+                dateRange: fs.dateRange,
+              })),
+            }
           : undefined,
         greySources: greySources
           ? {
-            create: greySources.map((gs) => ({
-              name: gs.name,
-              type: gs.type,
-              url: gs.url,
-              searchStrategy: gs.searchStrategy,
-            })),
-          }
+              create: greySources.map((gs) => ({
+                name: gs.name,
+                type: gs.type,
+                url: gs.url,
+                searchStrategy: gs.searchStrategy,
+              })),
+            }
           : undefined,
         inclusionCriteria: inclusionCriteria
           ? {
-            create: inclusionCriteria.map((ic) => ({
-              criterion: ic.criterion,
-              order: ic.order,
-            })),
-          }
+              create: inclusionCriteria.map((ic) => ({
+                criterion: ic.criterion,
+                order: ic.order,
+              })),
+            }
           : undefined,
         exclusionCriteria: exclusionCriteria
           ? {
-            create: exclusionCriteria.map((ec) => ({
-              criterion: ec.criterion,
-              order: ec.order,
-            })),
-          }
+              create: exclusionCriteria.map((ec) => ({
+                criterion: ec.criterion,
+                order: ec.order,
+              })),
+            }
           : undefined,
       },
       include: {

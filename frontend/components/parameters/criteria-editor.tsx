@@ -51,7 +51,8 @@ export function CriteriaEditor({ type, value, onChange }: CriteriaEditorProps) {
           <div key={index} className="space-y-2">
             <div className="flex items-start gap-2">
               <div className="flex-shrink-0 w-10 pt-3 text-sm text-muted-foreground font-medium">
-                {prefix}{index + 1}
+                {prefix}
+                {index + 1}
               </div>
               <Textarea
                 placeholder={`Enter ${label.toLowerCase()} criterion ${index + 1}`}
@@ -60,13 +61,13 @@ export function CriteriaEditor({ type, value, onChange }: CriteriaEditorProps) {
                 rows={2}
                 className="flex-1 resize-none"
                 style={{
-                  minHeight: '60px',
-                  height: 'auto',
+                  minHeight: "60px",
+                  height: "auto",
                 }}
                 onInput={(e) => {
                   const target = e.target as HTMLTextAreaElement;
-                  target.style.height = 'auto';
-                  target.style.height = target.scrollHeight + 'px';
+                  target.style.height = "auto";
+                  target.style.height = target.scrollHeight + "px";
                 }}
               />
               <Button
@@ -82,16 +83,10 @@ export function CriteriaEditor({ type, value, onChange }: CriteriaEditorProps) {
           </div>
         ))
       )}
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        onClick={handleAddCriterion}
-      >
+      <Button type="button" variant="outline" size="sm" onClick={handleAddCriterion}>
         <Plus className="h-4 w-4 mr-2" />
         Add {label} Criterion
       </Button>
     </div>
   );
 }
-

@@ -13,12 +13,7 @@ interface OverviewTabProps {
   onFacetClick: (facet: Facet) => void;
 }
 
-export function OverviewTab({
-  stats,
-  isLoading,
-  facets,
-  onFacetClick,
-}: OverviewTabProps) {
+export function OverviewTab({ stats, isLoading, facets, onFacetClick }: OverviewTabProps) {
   return (
     <div className="space-y-6">
       {/* Summary Statistics */}
@@ -31,23 +26,19 @@ export function OverviewTab({
       {facets.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">
-              Available Classification Facets
-            </CardTitle>
+            <CardTitle className="text-base">Available Classification Facets</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground mb-4">
-              Click on a facet to view its distribution analysis. Open facets can
-              be coded to create categories.
+              Click on a facet to view its distribution analysis. Open facets can be coded to create
+              categories.
             </p>
             <div className="flex flex-wrap gap-2">
               {facets.map((facet) => (
                 <Badge
                   key={facet.id}
                   variant={
-                    facet.type === "CLOSED" || facet.type === "OPEN_CODED"
-                      ? "default"
-                      : "secondary"
+                    facet.type === "CLOSED" || facet.type === "OPEN_CODED" ? "default" : "secondary"
                   }
                   className="cursor-pointer hover:opacity-80 transition-opacity"
                   onClick={() => onFacetClick(facet)}
@@ -56,9 +47,7 @@ export function OverviewTab({
                   {facet.type === "OPEN" && " (Open)"}
                   {facet.type === "OPEN_CODED" && " (Coded)"}
                   {facet.categories.length > 0 && (
-                    <span className="ml-1 text-xs opacity-70">
-                      ({facet.categories.length})
-                    </span>
+                    <span className="ml-1 text-xs opacity-70">({facet.categories.length})</span>
                   )}
                 </Badge>
               ))}

@@ -97,10 +97,7 @@ export function RqAnswersTab({ studyId }: RqAnswersTabProps) {
   const { data: recipes, isLoading: recipesLoading } = useRecipes(studyId);
 
   // Fetch bundle for selected recipe
-  const { data: bundle, isLoading: bundleLoading } = useRecipeBundle(
-    studyId,
-    selectedRecipeId
-  );
+  const { data: bundle, isLoading: bundleLoading } = useRecipeBundle(studyId, selectedRecipeId);
 
   // Run recipe mutation
   const runMutation = useRunRecipe(studyId);
@@ -245,9 +242,7 @@ export function RqAnswersTab({ studyId }: RqAnswersTabProps) {
                     {runStatus === "UP_TO_DATE" && (
                       <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
                     )}
-                    {runStatus === "ERROR" && (
-                      <XCircle className="h-4 w-4 text-red-500 shrink-0" />
-                    )}
+                    {runStatus === "ERROR" && <XCircle className="h-4 w-4 text-red-500 shrink-0" />}
                     {runStatus === "RUNNING" && (
                       <Loader2 className="h-4 w-4 text-blue-500 animate-spin shrink-0" />
                     )}
@@ -271,15 +266,10 @@ export function RqAnswersTab({ studyId }: RqAnswersTabProps) {
               <div>
                 <div className="flex items-center gap-3 mb-2">
                   <h2 className="text-xl font-semibold">{selectedRecipe.name}</h2>
-                  <RunStatusBadge
-                    status={bundle?.status ?? "NOT_RUN"}
-                    isStale={bundle?.isStale}
-                  />
+                  <RunStatusBadge status={bundle?.status ?? "NOT_RUN"} isStale={bundle?.isStale} />
                 </div>
                 {selectedRecipe.description && (
-                  <p className="text-sm text-muted-foreground mb-2">
-                    {selectedRecipe.description}
-                  </p>
+                  <p className="text-sm text-muted-foreground mb-2">{selectedRecipe.description}</p>
                 )}
                 {selectedRecipe.researchQuestion && (
                   <p className="text-sm text-indigo-600">
@@ -289,10 +279,7 @@ export function RqAnswersTab({ studyId }: RqAnswersTabProps) {
               </div>
               <Button
                 onClick={() => handleRunRecipe(selectedRecipe.id)}
-                disabled={
-                  runMutation.isPending ||
-                  selectedRecipe.status !== "VALID"
-                }
+                disabled={runMutation.isPending || selectedRecipe.status !== "VALID"}
               >
                 {runMutation.isPending ? (
                   <>
@@ -313,8 +300,7 @@ export function RqAnswersTab({ studyId }: RqAnswersTabProps) {
               <Alert variant="destructive" className="mb-6">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
-                  {selectedRecipe.statusReason ??
-                    "This recipe is blocked and cannot be run."}
+                  {selectedRecipe.statusReason ?? "This recipe is blocked and cannot be run."}
                 </AlertDescription>
               </Alert>
             )}
@@ -323,8 +309,8 @@ export function RqAnswersTab({ studyId }: RqAnswersTabProps) {
               <Alert className="mb-6">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
-                  This recipe is still in draft. Complete the configuration in
-                  Study Parameters before running.
+                  This recipe is still in draft. Complete the configuration in Study Parameters
+                  before running.
                 </AlertDescription>
               </Alert>
             )}
@@ -334,8 +320,8 @@ export function RqAnswersTab({ studyId }: RqAnswersTabProps) {
               <Alert className="mb-6 border-amber-200 bg-amber-50">
                 <Clock className="h-4 w-4 text-amber-600" />
                 <AlertDescription className="text-amber-800">
-                  Results are stale. Data has changed since the last run. Re-run
-                  the recipe to update results.
+                  Results are stale. Data has changed since the last run. Re-run the recipe to
+                  update results.
                 </AlertDescription>
               </Alert>
             )}

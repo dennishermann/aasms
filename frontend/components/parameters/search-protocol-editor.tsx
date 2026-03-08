@@ -84,10 +84,7 @@ async function fetchSearchProtocolEntries(studyId: string): Promise<SearchProtoc
   return data.data;
 }
 
-async function createEntry(
-  studyId: string,
-  formData: FormData
-): Promise<SearchProtocolEntry> {
+async function createEntry(studyId: string, formData: FormData): Promise<SearchProtocolEntry> {
   const response = await fetch(`/api/studies/${studyId}/search-protocol`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -109,7 +106,7 @@ async function createEntry(
 async function updateEntry(
   studyId: string,
   entryId: string,
-  formData: FormData
+  formData: FormData,
 ): Promise<SearchProtocolEntry> {
   const response = await fetch(`/api/studies/${studyId}/search-protocol/${entryId}`, {
     method: "PUT",
@@ -351,8 +348,8 @@ export function SearchProtocolEditor({ studyId }: SearchProtocolEditorProps) {
                       </span>
                     ) : entry.dateRangeFrom || entry.dateRangeTo ? (
                       <span>
-                        {entry.dateRangeFrom ? format(new Date(entry.dateRangeFrom), "yyyy") : "-"} -{" "}
-                        {entry.dateRangeTo ? format(new Date(entry.dateRangeTo), "yyyy") : "-"}
+                        {entry.dateRangeFrom ? format(new Date(entry.dateRangeFrom), "yyyy") : "-"}{" "}
+                        - {entry.dateRangeTo ? format(new Date(entry.dateRangeTo), "yyyy") : "-"}
                       </span>
                     ) : (
                       "-"
@@ -430,9 +427,12 @@ export function SearchProtocolEditor({ studyId }: SearchProtocolEditorProps) {
             {/* Database */}
             <div className="space-y-2">
               <Label htmlFor="database">Database *</Label>
-              <Select value={formData.database} onValueChange={(value) => {
-                setFormData({ ...formData, database: value === "Other" ? "" : value });
-              }}>
+              <Select
+                value={formData.database}
+                onValueChange={(value) => {
+                  setFormData({ ...formData, database: value === "Other" ? "" : value });
+                }}
+              >
                 <SelectTrigger id="database">
                   <SelectValue placeholder="Select a database" />
                 </SelectTrigger>
@@ -531,7 +531,12 @@ export function SearchProtocolEditor({ studyId }: SearchProtocolEditorProps) {
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleSave} disabled={isSaving || !formData.database || !formData.searchString || !formData.dateSearched}>
+            <Button
+              onClick={handleSave}
+              disabled={
+                isSaving || !formData.database || !formData.searchString || !formData.dateSearched
+              }
+            >
               {isSaving ? "Saving..." : editingEntryId ? "Update Entry" : "Create Entry"}
             </Button>
           </div>

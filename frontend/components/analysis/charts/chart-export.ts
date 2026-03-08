@@ -1,10 +1,7 @@
 /**
  * Export a chart as PNG image
  */
-export function exportChartAsPNG(
-  chart: any | null,
-  filename: string = "chart"
-): void {
+export function exportChartAsPNG(chart: any | null, filename: string = "chart"): void {
   if (!chart) {
     console.error("Chart instance is not available");
     return;
@@ -33,10 +30,7 @@ export function exportChartAsPNG(
 /**
  * Export a chart as SVG
  */
-export function exportChartAsSVG(
-  chart: any | null,
-  filename: string = "chart"
-): void {
+export function exportChartAsSVG(chart: any | null, filename: string = "chart"): void {
   if (!chart) {
     console.error("Chart instance is not available");
     return;

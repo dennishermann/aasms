@@ -76,3 +76,6 @@ Core model chain: **Study** → **Source** → **SourceAnalysis** → **Classifi
 - **Services**: `src/services/` — business logic separated from routes
 - **Config**: pydantic-settings in `src/core/config.py`, reads from `.env`
 - **Retry/rate-limit**: tenacity for retries, aiolimiter for API throttling
+
+## Git Conventions
+- **Never** add "Co-Authored-By" lines to commit messages

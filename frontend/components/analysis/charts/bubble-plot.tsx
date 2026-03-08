@@ -27,13 +27,7 @@ interface BubblePlotProps {
   onChartReady?: (chart: echarts.ECharts) => void;
 }
 
-const DEFAULT_COLORS = [
-  "#5470c6",
-  "#91cc75",
-  "#fac858",
-  "#ee6666",
-  "#73c0de",
-];
+const DEFAULT_COLORS = ["#5470c6", "#91cc75", "#fac858", "#ee6666", "#73c0de"];
 
 export function BubblePlot({
   title,
@@ -63,10 +57,8 @@ export function BubblePlot({
       .map((cell) => {
         const x = colIndexMap.get(cell.colId) ?? 0;
         const y = rowIndexMap.get(cell.rowId) ?? 0;
-        const rowLabel =
-          data.rowLabels.find((r) => r.id === cell.rowId)?.label ?? "";
-        const colLabel =
-          data.colLabels.find((c) => c.id === cell.colId)?.label ?? "";
+        const rowLabel = data.rowLabels.find((r) => r.id === cell.rowId)?.label ?? "";
+        const colLabel = data.colLabels.find((c) => c.id === cell.colId)?.label ?? "";
         return {
           value: [x, y, cell.count],
           rowLabel,
@@ -169,8 +161,7 @@ export function BubblePlot({
       if (!onCellClick || !data) return;
 
       chart.on("click", "series.scatter", (params: any) => {
-        const { rowId, colId, rowLabel, colLabel, sourceIds, value } =
-          params.data;
+        const { rowId, colId, rowLabel, colLabel, sourceIds, value } = params.data;
         const count = value[2];
         onCellClick({
           rowId,
@@ -182,7 +173,7 @@ export function BubblePlot({
         });
       });
     },
-    [onCellClick, data, onChartReadyProp]
+    [onCellClick, data, onChartReadyProp],
   );
 
   if (isLoading) {

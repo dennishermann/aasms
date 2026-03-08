@@ -6,10 +6,7 @@ import type { CreateRecipeInput } from "@/types/recipe";
  * GET /api/studies/[id]/recipes
  * List all recipes for a study with their latest run status.
  */
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id: studyId } = await params;
     const recipes = await listRecipes(studyId);
@@ -19,7 +16,7 @@ export async function GET(
     console.error("Error listing recipes:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to list recipes" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -28,20 +25,14 @@ export async function GET(
  * POST /api/studies/[id]/recipes
  * Create a new recipe.
  */
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id: studyId } = await params;
     const body: CreateRecipeInput = await request.json();
 
     // Validate required fields
     if (!body.name || !body.type) {
-      return NextResponse.json(
-        { error: "name and type are required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "name and type are required" }, { status: 400 });
     }
 
     const recipe = await createRecipe(studyId, body);
@@ -51,7 +42,7 @@ export async function POST(
     console.error("Error creating recipe:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to create recipe" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -20,10 +20,7 @@ async function fetchRecipes(studyId: string): Promise<RqRecipe[]> {
   return data.data;
 }
 
-async function fetchRecipe(
-  studyId: string,
-  recipeId: string
-): Promise<RqRecipe> {
+async function fetchRecipe(studyId: string, recipeId: string): Promise<RqRecipe> {
   const response = await fetch(`/api/studies/${studyId}/recipes/${recipeId}`);
   if (!response.ok) {
     throw new Error("Failed to fetch recipe");
@@ -32,13 +29,8 @@ async function fetchRecipe(
   return data.data;
 }
 
-async function fetchRecipeBundle(
-  studyId: string,
-  recipeId: string
-): Promise<RqAnswerBundle> {
-  const response = await fetch(
-    `/api/studies/${studyId}/recipes/${recipeId}/bundle`
-  );
+async function fetchRecipeBundle(studyId: string, recipeId: string): Promise<RqAnswerBundle> {
+  const response = await fetch(`/api/studies/${studyId}/recipes/${recipeId}/bundle`);
   if (!response.ok) {
     throw new Error("Failed to fetch recipe bundle");
   }
@@ -46,10 +38,7 @@ async function fetchRecipeBundle(
   return data.data;
 }
 
-async function createRecipe(
-  studyId: string,
-  input: CreateRecipeInput
-): Promise<RqRecipe> {
+async function createRecipe(studyId: string, input: CreateRecipeInput): Promise<RqRecipe> {
   const response = await fetch(`/api/studies/${studyId}/recipes`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -66,7 +55,7 @@ async function createRecipe(
 async function updateRecipe(
   studyId: string,
   recipeId: string,
-  input: UpdateRecipeInput
+  input: UpdateRecipeInput,
 ): Promise<RqRecipe> {
   const response = await fetch(`/api/studies/${studyId}/recipes/${recipeId}`, {
     method: "PUT",
@@ -93,14 +82,11 @@ async function deleteRecipe(studyId: string, recipeId: string): Promise<void> {
 
 async function runRecipe(
   studyId: string,
-  recipeId: string
+  recipeId: string,
 ): Promise<{ run: RqRun; isNew: boolean }> {
-  const response = await fetch(
-    `/api/studies/${studyId}/recipes/${recipeId}/run`,
-    {
-      method: "POST",
-    }
-  );
+  const response = await fetch(`/api/studies/${studyId}/recipes/${recipeId}/run`, {
+    method: "POST",
+  });
   if (!response.ok) {
     const error = await response.json();
     throw new Error(error.error ?? "Failed to run recipe");
@@ -170,13 +156,8 @@ export function useUpdateRecipe(studyId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
-      recipeId,
-      input,
-    }: {
-      recipeId: string;
-      input: UpdateRecipeInput;
-    }) => updateRecipe(studyId, recipeId, input),
+    mutationFn: ({ recipeId, input }: { recipeId: string; input: UpdateRecipeInput }) =>
+      updateRecipe(studyId, recipeId, input),
     onSuccess: (data, { recipeId }) => {
       queryClient.invalidateQueries({ queryKey: ["recipes", studyId] });
       queryClient.invalidateQueries({
@@ -226,14 +207,11 @@ export function useRunRecipe(studyId: string) {
 export function useExportRecipe(studyId: string) {
   return useMutation({
     mutationFn: async (recipeId: string) => {
-      const response = await fetch(
-        `/api/studies/${studyId}/recipes/${recipeId}/export`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({}),
-        }
-      );
+      const response = await fetch(`/api/studies/${studyId}/recipes/${recipeId}/export`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
 
       if (!response.ok) {
         const error = await response.json();

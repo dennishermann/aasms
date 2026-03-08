@@ -10,12 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Info } from "lucide-react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DimensionSelector } from "../shared/dimension-selector";
 import { ExportButton } from "../shared/export-button";
 import { AnalysisBarChart, AnalysisPieChart } from "../charts";
@@ -86,9 +81,8 @@ export function FrequencyTab({
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs">
                     <p className="text-sm">
-                      Sources may belong to multiple categories.
-                      Average: {avgCategories} categories per source.
-                      Percentages show coverage, not distribution.
+                      Sources may belong to multiple categories. Average: {avgCategories} categories
+                      per source. Percentages show coverage, not distribution.
                     </p>
                   </TooltipContent>
                 </Tooltip>
@@ -103,10 +97,7 @@ export function FrequencyTab({
               placeholder="Select dimension"
             />
 
-            <Select
-              value={chartType}
-              onValueChange={(v) => onChartTypeChange(v as "bar" | "pie")}
-            >
+            <Select value={chartType} onValueChange={(v) => onChartTypeChange(v as "bar" | "pie")}>
               <SelectTrigger className="w-[120px]">
                 <SelectValue />
               </SelectTrigger>
@@ -154,7 +145,9 @@ export function FrequencyTab({
               />
             )}
             <FrequencyTable
-              title={isCombinationsMode ? `${selectedLabel} Combinations` : `${selectedLabel} Breakdown`}
+              title={
+                isCombinationsMode ? `${selectedLabel} Combinations` : `${selectedLabel} Breakdown`
+              }
               data={data}
               isLoading={isLoading}
               showMultiClassInfo={isMultiClass && !isCombinationsMode}

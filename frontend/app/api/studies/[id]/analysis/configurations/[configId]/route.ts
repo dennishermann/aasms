@@ -5,7 +5,7 @@ import type { ArtifactConfiguration } from "@/types/analysis";
 // GET - Get a specific configuration
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string; configId: string }> }
+  { params }: { params: Promise<{ id: string; configId: string }> },
 ) {
   try {
     const { id: studyId, configId } = await params;
@@ -18,10 +18,7 @@ export async function GET(
     });
 
     if (!configuration) {
-      return NextResponse.json(
-        { error: "Configuration not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Configuration not found" }, { status: 404 });
     }
 
     return NextResponse.json({
@@ -37,17 +34,14 @@ export async function GET(
     });
   } catch (error) {
     console.error("Error getting configuration:", error);
-    return NextResponse.json(
-      { error: "Failed to get configuration" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to get configuration" }, { status: 500 });
   }
 }
 
 // PUT - Update a configuration
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string; configId: string }> }
+  { params }: { params: Promise<{ id: string; configId: string }> },
 ) {
   try {
     const { id: studyId, configId } = await params;
@@ -64,10 +58,7 @@ export async function PUT(
     });
 
     if (!existing) {
-      return NextResponse.json(
-        { error: "Configuration not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Configuration not found" }, { status: 404 });
     }
 
     // Build update data
@@ -94,17 +85,14 @@ export async function PUT(
     });
   } catch (error) {
     console.error("Error updating configuration:", error);
-    return NextResponse.json(
-      { error: "Failed to update configuration" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to update configuration" }, { status: 500 });
   }
 }
 
 // DELETE - Delete a configuration
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string; configId: string }> }
+  { params }: { params: Promise<{ id: string; configId: string }> },
 ) {
   try {
     const { id: studyId, configId } = await params;
@@ -118,10 +106,7 @@ export async function DELETE(
     });
 
     if (!existing) {
-      return NextResponse.json(
-        { error: "Configuration not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Configuration not found" }, { status: 404 });
     }
 
     await prisma.analysisConfiguration.delete({
@@ -131,9 +116,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error deleting configuration:", error);
-    return NextResponse.json(
-      { error: "Failed to delete configuration" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to delete configuration" }, { status: 500 });
   }
 }

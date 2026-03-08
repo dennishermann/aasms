@@ -1,14 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef } from "react";
 import * as echarts from "echarts/core";
-import {
-  BarChart,
-  LineChart,
-  PieChart,
-  ScatterChart,
-  HeatmapChart,
-} from "echarts/charts";
+import { BarChart, LineChart, PieChart, ScatterChart, HeatmapChart } from "echarts/charts";
 import {
   TitleComponent,
   TooltipComponent,
@@ -59,7 +53,9 @@ export function EChartsWrapper({
   const onChartReadyRef = useRef(onChartReady);
 
   // Keep callback ref updated
-  onChartReadyRef.current = onChartReady;
+  useEffect(() => {
+    onChartReadyRef.current = onChartReady;
+  }, [onChartReady]);
 
   // Initialize and update chart
   useEffect(() => {

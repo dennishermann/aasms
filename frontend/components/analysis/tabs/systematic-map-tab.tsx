@@ -153,9 +153,7 @@ export function SystematicMapTab({
         ) : (
           <div className="py-12 text-center text-muted-foreground">
             <Grid3X3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>
-              Select both row and column dimensions to generate a systematic map
-            </p>
+            <p>Select both row and column dimensions to generate a systematic map</p>
           </div>
         )}
       </CardContent>

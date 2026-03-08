@@ -37,4 +37,3 @@ export function UnsavedChangesDialog({ open, onCancel, onConfirm }: UnsavedChang
     </AlertDialog>
   );
 }
-

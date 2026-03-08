@@ -1,4 +1,10 @@
-import type { Filter, FrequencyResult, CrossTabResult, TimeSeriesResult, GapAnalysis } from "./analysis";
+import type {
+  Filter,
+  FrequencyResult,
+  CrossTabResult,
+  TimeSeriesResult,
+  GapAnalysis,
+} from "./analysis";
 
 // ============ Enums ============
 
@@ -102,11 +108,7 @@ export interface RqRun {
 }
 
 // Result data can be any of the analysis result types
-export type RecipeResultData =
-  | FrequencyResult
-  | CrossTabResult
-  | TimeSeriesResult
-  | GapAnalysis;
+export type RecipeResultData = FrequencyResult | CrossTabResult | TimeSeriesResult | GapAnalysis;
 
 // Figure specification for chart rendering
 export interface FigureSpec {

@@ -65,22 +65,22 @@ export const BUILT_IN_DIMENSIONS: Array<{
   label: string;
   description: string;
 }> = [
-    {
-      type: "publication-year",
-      label: "Publication Year",
-      description: "Year of publication",
-    },
-    {
-      type: "venue-type",
-      label: "Venue Type",
-      description: "Journal, Conference, Workshop, etc.",
-    },
-    {
-      type: "source-category",
-      label: "Source Category",
-      description: "Formal vs Grey Literature",
-    },
-  ];
+  {
+    type: "publication-year",
+    label: "Publication Year",
+    description: "Year of publication",
+  },
+  {
+    type: "venue-type",
+    label: "Venue Type",
+    description: "Journal, Conference, Workshop, etc.",
+  },
+  {
+    type: "source-category",
+    label: "Source Category",
+    description: "Formal vs Grey Literature",
+  },
+];
 
 // ============ Fetch Functions ============
 
@@ -140,9 +140,7 @@ export function useAnalysisPage({ studyId }: UseAnalysisPageOptions) {
     BUILT_IN_DIMENSIONS.forEach((d) => {
       const keywords = builtInKeywords[d.type] || [];
       const hasSimilarFacet = facetNames.some((facetName) =>
-        keywords.some((keyword) =>
-          facetName.includes(keyword) || keyword.includes(facetName)
-        )
+        keywords.some((keyword) => facetName.includes(keyword) || keyword.includes(facetName)),
       );
 
       if (!hasSimilarFacet) {
@@ -171,15 +169,10 @@ export function useAnalysisPage({ studyId }: UseAnalysisPageOptions) {
   }, [facets]);
 
   // Helper to get dimension value string
-  const getDimensionValue = useCallback(
-    (dimension: DimensionConfig | null): string => {
-      if (!dimension) return "";
-      return dimension.type === "facet"
-        ? `facet:${dimension.facetId}`
-        : dimension.type;
-    },
-    []
-  );
+  const getDimensionValue = useCallback((dimension: DimensionConfig | null): string => {
+    if (!dimension) return "";
+    return dimension.type === "facet" ? `facet:${dimension.facetId}` : dimension.type;
+  }, []);
 
   // Helper to get dimension label
   const getDimensionLabel = useCallback(
@@ -188,7 +181,7 @@ export function useAnalysisPage({ studyId }: UseAnalysisPageOptions) {
       const value = getDimensionValue(dimension);
       return dimensionOptions.find((o) => o.value === value)?.label ?? "";
     },
-    [dimensionOptions, getDimensionValue]
+    [dimensionOptions, getDimensionValue],
   );
 
   // Helper to find dimension from value string
@@ -197,13 +190,12 @@ export function useAnalysisPage({ studyId }: UseAnalysisPageOptions) {
       const option = dimensionOptions.find((o) => o.value === value);
       return option?.dimension ?? null;
     },
-    [dimensionOptions]
+    [dimensionOptions],
   );
 
   // ============ Frequency Tab State ============
 
-  const [selectedDimension, setSelectedDimension] =
-    useState<DimensionConfig | null>(null);
+  const [selectedDimension, setSelectedDimension] = useState<DimensionConfig | null>(null);
   const [chartType, setChartType] = useState<"bar" | "pie">("bar");
 
   // Set default dimension when facets load
@@ -220,7 +212,7 @@ export function useAnalysisPage({ studyId }: UseAnalysisPageOptions) {
         setSelectedDimension(dimension);
       }
     },
-    [findDimension]
+    [findDimension],
   );
 
   // ============ Systematic Map State ============
@@ -234,7 +226,7 @@ export function useAnalysisPage({ studyId }: UseAnalysisPageOptions) {
       const dimension = findDimension(value);
       setRowDimension(dimension);
     },
-    [findDimension]
+    [findDimension],
   );
 
   const handleColDimensionChange = useCallback(
@@ -242,7 +234,7 @@ export function useAnalysisPage({ studyId }: UseAnalysisPageOptions) {
       const dimension = findDimension(value);
       setColDimension(dimension);
     },
-    [findDimension]
+    [findDimension],
   );
 
   // ============ Gap Analysis State ============
@@ -299,7 +291,7 @@ export function useAnalysisPage({ studyId }: UseAnalysisPageOptions) {
       const dimension = findDimension(value);
       setTrendsDimension(dimension);
     },
-    [findDimension]
+    [findDimension],
   );
 
   const clearTrendsDimension = useCallback(() => {
@@ -325,7 +317,7 @@ export function useAnalysisPage({ studyId }: UseAnalysisPageOptions) {
   const gapQuery = useGapAnalysis(
     studyId,
     gapThreshold,
-    gapFacetIds.length > 0 ? gapFacetIds : undefined
+    gapFacetIds.length > 0 ? gapFacetIds : undefined,
   );
   const mappingTableQuery = useMappingTable(studyId, {
     facetIds: mappingFacetIds.length > 0 ? mappingFacetIds : undefined,

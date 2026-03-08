@@ -40,7 +40,7 @@ async function fetchFrequencyData(
   studyId: string,
   dimension: DimensionConfig,
   filters?: Filter[],
-  mode?: FrequencyMode
+  mode?: FrequencyMode,
 ): Promise<FrequencyResult> {
   const params = new URLSearchParams();
   params.set("dimension", JSON.stringify(dimension));
@@ -51,9 +51,7 @@ async function fetchFrequencyData(
     params.set("mode", mode);
   }
 
-  const response = await fetch(
-    `/api/studies/${studyId}/analysis/frequency?${params.toString()}`
-  );
+  const response = await fetch(`/api/studies/${studyId}/analysis/frequency?${params.toString()}`);
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
     throw new Error(error.error || "Failed to fetch frequency data");
@@ -66,7 +64,7 @@ export function useFrequencyData(
   studyId: string,
   dimension: DimensionConfig | null,
   filters?: Filter[],
-  mode?: FrequencyMode
+  mode?: FrequencyMode,
 ) {
   return useQuery({
     queryKey: ["analysis", "frequency", studyId, dimension, filters, mode],
@@ -82,7 +80,7 @@ async function fetchCrossTabData(
   studyId: string,
   rowDimension: DimensionConfig,
   colDimension: DimensionConfig,
-  filters?: Filter[]
+  filters?: Filter[],
 ): Promise<CrossTabResult> {
   const params = new URLSearchParams();
   params.set("rowDimension", JSON.stringify(rowDimension));
@@ -91,9 +89,7 @@ async function fetchCrossTabData(
     params.set("filters", JSON.stringify(filters));
   }
 
-  const response = await fetch(
-    `/api/studies/${studyId}/analysis/crosstab?${params.toString()}`
-  );
+  const response = await fetch(`/api/studies/${studyId}/analysis/crosstab?${params.toString()}`);
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
     throw new Error(error.error || "Failed to fetch cross-tabulation data");
@@ -106,7 +102,7 @@ export function useCrossTabData(
   studyId: string,
   rowDimension: DimensionConfig | null,
   colDimension: DimensionConfig | null,
-  filters?: Filter[]
+  filters?: Filter[],
 ) {
   return useQuery({
     queryKey: ["analysis", "crosstab", studyId, rowDimension, colDimension, filters],
@@ -121,7 +117,7 @@ export function useCrossTabData(
 async function fetchTimeSeriesData(
   studyId: string,
   groupBy?: DimensionConfig,
-  filters?: Filter[]
+  filters?: Filter[],
 ): Promise<TimeSeriesResult> {
   const params = new URLSearchParams();
   if (groupBy) {
@@ -131,9 +127,7 @@ async function fetchTimeSeriesData(
     params.set("filters", JSON.stringify(filters));
   }
 
-  const response = await fetch(
-    `/api/studies/${studyId}/analysis/timeseries?${params.toString()}`
-  );
+  const response = await fetch(`/api/studies/${studyId}/analysis/timeseries?${params.toString()}`);
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
     throw new Error(error.error || "Failed to fetch time series data");
@@ -142,11 +136,7 @@ async function fetchTimeSeriesData(
   return data.data;
 }
 
-export function useTimeSeriesData(
-  studyId: string,
-  groupBy?: DimensionConfig,
-  filters?: Filter[]
-) {
+export function useTimeSeriesData(studyId: string, groupBy?: DimensionConfig, filters?: Filter[]) {
   return useQuery({
     queryKey: ["analysis", "timeseries", studyId, groupBy, filters],
     queryFn: () => fetchTimeSeriesData(studyId, groupBy, filters),
@@ -159,7 +149,7 @@ export function useTimeSeriesData(
 async function fetchGapAnalysis(
   studyId: string,
   threshold?: number,
-  facetIds?: string[]
+  facetIds?: string[],
 ): Promise<GapAnalysis> {
   const params = new URLSearchParams();
   if (threshold !== undefined) {
@@ -169,9 +159,7 @@ async function fetchGapAnalysis(
     params.set("facetIds", facetIds.join(","));
   }
 
-  const response = await fetch(
-    `/api/studies/${studyId}/analysis/gaps?${params.toString()}`
-  );
+  const response = await fetch(`/api/studies/${studyId}/analysis/gaps?${params.toString()}`);
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
     throw new Error(error.error || "Failed to fetch gap analysis");
@@ -180,11 +168,7 @@ async function fetchGapAnalysis(
   return data.data;
 }
 
-export function useGapAnalysis(
-  studyId: string,
-  threshold?: number,
-  facetIds?: string[]
-) {
+export function useGapAnalysis(studyId: string, threshold?: number, facetIds?: string[]) {
   return useQuery({
     queryKey: ["analysis", "gaps", studyId, threshold, facetIds],
     queryFn: () => fetchGapAnalysis(studyId, threshold, facetIds),
@@ -205,7 +189,7 @@ interface MappingTableOptions {
 
 async function fetchMappingTable(
   studyId: string,
-  options: MappingTableOptions = {}
+  options: MappingTableOptions = {},
 ): Promise<MappingTableResult> {
   const params = new URLSearchParams();
 
@@ -229,7 +213,7 @@ async function fetchMappingTable(
   }
 
   const response = await fetch(
-    `/api/studies/${studyId}/analysis/mapping-table?${params.toString()}`
+    `/api/studies/${studyId}/analysis/mapping-table?${params.toString()}`,
   );
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
@@ -269,11 +253,9 @@ export function useAnalysisConfigurations(studyId: string) {
 
 async function fetchConfiguration(
   studyId: string,
-  configId: string
+  configId: string,
 ): Promise<AnalysisConfiguration> {
-  const response = await fetch(
-    `/api/studies/${studyId}/analysis/configurations/${configId}`
-  );
+  const response = await fetch(`/api/studies/${studyId}/analysis/configurations/${configId}`);
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
     throw new Error(error.error || "Failed to fetch configuration");
@@ -334,14 +316,11 @@ export function useUpdateConfiguration(studyId: string, configId: string) {
 
   return useMutation({
     mutationFn: async (input: UpdateConfigurationInput) => {
-      const response = await fetch(
-        `/api/studies/${studyId}/analysis/configurations/${configId}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(input),
-        }
-      );
+      const response = await fetch(`/api/studies/${studyId}/analysis/configurations/${configId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      });
       if (!response.ok) {
         const error = await response.json().catch(() => ({}));
         throw new Error(error.error || "Failed to update configuration");
@@ -365,10 +344,9 @@ export function useDeleteConfiguration(studyId: string) {
 
   return useMutation({
     mutationFn: async (configId: string) => {
-      const response = await fetch(
-        `/api/studies/${studyId}/analysis/configurations/${configId}`,
-        { method: "DELETE" }
-      );
+      const response = await fetch(`/api/studies/${studyId}/analysis/configurations/${configId}`, {
+        method: "DELETE",
+      });
       if (!response.ok) {
         const error = await response.json().catch(() => ({}));
         throw new Error(error.error || "Failed to delete configuration");

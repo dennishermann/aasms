@@ -121,10 +121,7 @@ export async function getRecipe(recipeId: string): Promise<RqRecipe | null> {
 /**
  * Create a new recipe.
  */
-export async function createRecipe(
-  studyId: string,
-  input: CreateRecipeInput
-): Promise<RqRecipe> {
+export async function createRecipe(studyId: string, input: CreateRecipeInput): Promise<RqRecipe> {
   // Get next order value
   const maxOrder = await prisma.rqRecipe.aggregate({
     where: { studyId },
@@ -175,10 +172,7 @@ export async function createRecipe(
 /**
  * Update an existing recipe.
  */
-export async function updateRecipe(
-  recipeId: string,
-  input: UpdateRecipeInput
-): Promise<RqRecipe> {
+export async function updateRecipe(recipeId: string, input: UpdateRecipeInput): Promise<RqRecipe> {
   // Get current recipe
   const current = await prisma.rqRecipe.findUnique({
     where: { id: recipeId },
@@ -203,8 +197,7 @@ export async function updateRecipe(
     (input.xFacetId !== undefined && input.xFacetId !== current.xFacetId) ||
     (input.yFacetId !== undefined && input.yFacetId !== current.yFacetId) ||
     (input.groupByFacetId !== undefined && input.groupByFacetId !== current.groupByFacetId) ||
-    (input.config !== undefined &&
-      JSON.stringify(input.config) !== JSON.stringify(current.config));
+    (input.config !== undefined && JSON.stringify(input.config) !== JSON.stringify(current.config));
 
   // Build update data
   const updateData: any = {};

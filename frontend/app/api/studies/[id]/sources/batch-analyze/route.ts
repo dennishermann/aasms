@@ -4,10 +4,7 @@ import { downloadFile } from "@/lib/minio";
 
 const PYTHON_SERVICE_URL = process.env.PYTHON_SERVICE_URL || "http://localhost:8000";
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id: studyId } = await params;
 
@@ -71,10 +68,7 @@ export async function POST(
               });
 
               const chosen: any =
-                source.metadataChosen ||
-                source.metadataParsed ||
-                source.metadataExtension ||
-                {};
+                source.metadataChosen || source.metadataParsed || source.metadataExtension || {};
               const hasTextContent = !!chosen.content_excerpt;
               const hasAbstract = !!(chosen.abstract || source.abstract);
 
@@ -90,8 +84,8 @@ export async function POST(
                       sourceTitle: source.title,
                       status: "skipped",
                       message: "No content available for analysis",
-                    })}\n\n`
-                  )
+                    })}\n\n`,
+                  ),
                 );
                 errorCount++;
                 continue;
@@ -99,34 +93,26 @@ export async function POST(
 
               // Gather study parameters
               const studyInclusionCriteria =
-                source.study?.parameters?.inclusionCriteria?.map(
-                  (c) => c.criterion
-                ) || [];
+                source.study?.parameters?.inclusionCriteria?.map((c) => c.criterion) || [];
               const studyExclusionCriteria =
-                source.study?.parameters?.exclusionCriteria?.map(
-                  (c) => c.criterion
-                ) || [];
+                source.study?.parameters?.exclusionCriteria?.map((c) => c.criterion) || [];
               const researchQuestions =
                 source.study?.researchQuestions?.map((rq) => rq.question) || [];
 
               // Build classification schema
-              const classificationSchema = (source.study?.facets || []).map(
-                (facet) => ({
-                  id: facet.id,
-                  name: facet.name,
-                  description: facet.description,
-                  type: facet.type.toLowerCase(),
-                  required: facet.required,
-                  categories: facet.categories.map((cat) => ({
-                    id: cat.id,
-                    name: cat.name,
-                    description: cat.description,
-                  })),
-                  researchQuestionIds: facet.researchQuestions.map(
-                    (frq) => frq.researchQuestionId
-                  ),
-                })
-              );
+              const classificationSchema = (source.study?.facets || []).map((facet) => ({
+                id: facet.id,
+                name: facet.name,
+                description: facet.description,
+                type: facet.type.toLowerCase(),
+                required: facet.required,
+                categories: facet.categories.map((cat) => ({
+                  id: cat.id,
+                  name: cat.name,
+                  description: cat.description,
+                })),
+                researchQuestionIds: facet.researchQuestions.map((frq) => frq.researchQuestionId),
+              }));
 
               // Build source content
               const sourceContent = {
@@ -148,9 +134,7 @@ export async function POST(
               let pdfBuffer: Buffer | null = null;
               if (source.hasPdf) {
                 if (!source.storagePath) {
-                  throw new Error(
-                    "Source is marked as PDF but has no storage path"
-                  );
+                  throw new Error("Source is marked as PDF but has no storage path");
                 }
                 try {
                   pdfBuffer = await downloadFile(source.storagePath);
@@ -190,22 +174,16 @@ export async function POST(
                 });
                 formData.append("file", pdfBlob, "source.pdf");
 
-                analyzeRes = await fetch(
-                  `${PYTHON_SERVICE_URL}/api/analyze-inclusion/file`,
-                  {
-                    method: "POST",
-                    body: formData as any,
-                  }
-                );
+                analyzeRes = await fetch(`${PYTHON_SERVICE_URL}/api/analyze-inclusion/file`, {
+                  method: "POST",
+                  body: formData as any,
+                });
               } else {
-                analyzeRes = await fetch(
-                  `${PYTHON_SERVICE_URL}/api/analyze-inclusion/text`,
-                  {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(analyzePayload),
-                  }
-                );
+                analyzeRes = await fetch(`${PYTHON_SERVICE_URL}/api/analyze-inclusion/text`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(analyzePayload),
+                });
               }
 
               if (!analyzeRes.ok) {
@@ -243,39 +221,26 @@ export async function POST(
               }));
 
               const inclusionReasoning =
-                analysisResult.inclusionReasoning ||
-                analysisResult.inclusion_reasoning ||
-                "";
+                analysisResult.inclusionReasoning || analysisResult.inclusion_reasoning || "";
               const exclusionReasoning =
-                analysisResult.exclusionReasoning ||
-                analysisResult.exclusion_reasoning ||
-                "";
+                analysisResult.exclusionReasoning || analysisResult.exclusion_reasoning || "";
               const relevanceScore =
-                analysisResult.relevanceScore ??
-                analysisResult.relevance_score ??
-                null;
+                analysisResult.relevanceScore ?? analysisResult.relevance_score ?? null;
               const qualityNotes =
-                analysisResult.qualityNotes ||
-                analysisResult.quality_notes ||
-                null;
+                analysisResult.qualityNotes || analysisResult.quality_notes || null;
 
               // Extract voting data
               const votingEnabled =
-                analysisResult.votingEnabled ||
-                analysisResult.voting_enabled ||
-                false;
+                analysisResult.votingEnabled || analysisResult.voting_enabled || false;
               const votingSummary =
-                analysisResult.votingSummary ||
-                analysisResult.voting_summary ||
-                null;
+                analysisResult.votingSummary || analysisResult.voting_summary || null;
 
               // Save analysis
               const analysis = await prisma.sourceAnalysis.upsert({
                 where: { sourceId: source.id },
                 update: {
                   extractedText: sourceContent.content_excerpt || "",
-                  inclusionRecommendation:
-                    analysisResult.recommendation === "include",
+                  inclusionRecommendation: analysisResult.recommendation === "include",
                   inclusionReasoning,
                   exclusionReasoning,
                   confidenceScore: parseFloat(analysisResult.confidence || 0),
@@ -289,8 +254,7 @@ export async function POST(
                 create: {
                   sourceId: source.id,
                   extractedText: sourceContent.content_excerpt || "",
-                  inclusionRecommendation:
-                    analysisResult.recommendation === "include",
+                  inclusionRecommendation: analysisResult.recommendation === "include",
                   inclusionReasoning,
                   exclusionReasoning,
                   confidenceScore: parseFloat(analysisResult.confidence || 0),
@@ -312,8 +276,7 @@ export async function POST(
                 const votesToCreate: any[] = [];
 
                 inclusionCriteria.forEach((criterion: any, index: number) => {
-                  const votingDetails =
-                    criterion.votingDetails || criterion.voting_details;
+                  const votingDetails = criterion.votingDetails || criterion.voting_details;
                   if (votingDetails?.votes) {
                     votingDetails.votes.forEach((vote: any) => {
                       votesToCreate.push({
@@ -332,8 +295,7 @@ export async function POST(
                 });
 
                 exclusionCriteria.forEach((criterion: any, index: number) => {
-                  const votingDetails =
-                    criterion.votingDetails || criterion.voting_details;
+                  const votingDetails = criterion.votingDetails || criterion.voting_details;
                   if (votingDetails?.votes) {
                     votingDetails.votes.forEach((vote: any) => {
                       votesToCreate.push({
@@ -396,8 +358,8 @@ export async function POST(
                     sourceTitle: source.title,
                     status: "success",
                     message: "Analysis completed",
-                  })}\n\n`
-                )
+                  })}\n\n`,
+                ),
               );
             } catch (itemError) {
               errorCount++;
@@ -425,12 +387,9 @@ export async function POST(
                     sourceId: source.id,
                     sourceTitle: source.title,
                     status: "error",
-                    message:
-                      itemError instanceof Error
-                        ? itemError.message
-                        : "Unknown error",
-                  })}\n\n`
-                )
+                    message: itemError instanceof Error ? itemError.message : "Unknown error",
+                  })}\n\n`,
+                ),
               );
             }
           }
@@ -447,8 +406,8 @@ export async function POST(
                   included: includedCount.value,
                   excluded: excludedCount.value,
                 },
-              })}\n\n`
-            )
+              })}\n\n`,
+            ),
           );
 
           controller.close();
@@ -473,7 +432,7 @@ export async function POST(
         error: "Batch analysis failed",
         details: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

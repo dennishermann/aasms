@@ -4,10 +4,7 @@ import { generateBibTeXFile } from "@/lib/services/export/bibtex-generator";
 import { generateRISFile } from "@/lib/services/export/ris-generator";
 import { Decision, SourceStatus } from "@prisma/client";
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id: studyId } = await params;
     const { searchParams } = new URL(request.url);
@@ -20,7 +17,7 @@ export async function GET(
     if (!format || !["bibtex", "ris"].includes(format)) {
       return NextResponse.json(
         { error: 'format parameter must be "bibtex" or "ris"' },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -28,7 +25,7 @@ export async function GET(
     if (!["all", "included", "excluded", "pending"].includes(filter)) {
       return NextResponse.json(
         { error: 'filter parameter must be "all", "included", "excluded", or "pending"' },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -49,10 +46,7 @@ export async function GET(
       // Include sources that have been explicitly marked INCLUDE
       whereClause = {
         ...whereClause,
-        OR: [
-          { finalDecision: Decision.INCLUDE },
-          { status: SourceStatus.INCLUDED },
-        ],
+        OR: [{ finalDecision: Decision.INCLUDE }, { status: SourceStatus.INCLUDED }],
       };
     } else if (filter === "excluded") {
       // Exclude sources that have been explicitly marked EXCLUDE
@@ -86,7 +80,7 @@ export async function GET(
     if (sources.length === 0) {
       return NextResponse.json(
         { error: `No sources found for filter: ${filter}` },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -122,7 +116,7 @@ export async function GET(
         error: "Failed to export sources",
         details: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -5,8 +5,8 @@ import { z } from "zod";
 // Updated schema to use facetId and categoryId instead of facetName/category
 const classificationSchema = z.object({
   facetId: z.string(),
-  categoryId: z.string().optional().nullable(),  // null for OPEN facets
-  value: z.string().optional().nullable(),       // For OPEN facets
+  categoryId: z.string().optional().nullable(), // null for OPEN facets
+  value: z.string().optional().nullable(), // For OPEN facets
   confidence: z.number().min(0).max(1),
   reasoning: z.string().optional(),
   isManualOverride: z.boolean().optional(),
@@ -18,7 +18,7 @@ const classificationsPayloadSchema = z.object({
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string; sourceId: string }> }
+  { params }: { params: Promise<{ id: string; sourceId: string }> },
 ) {
   try {
     const { id: studyId, sourceId } = await params;
@@ -28,7 +28,7 @@ export async function PUT(
     if (!validation.success) {
       return NextResponse.json(
         { error: "Validation failed", details: validation.error.errors },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -48,69 +48,69 @@ export async function PUT(
     const hasClassifications = data.classifications.length > 0;
     const classificationsUpdate = hasClassifications
       ? {
-        deleteMany: { facetId: { in: facetIds } },
-        create: data.classifications.map((c) => ({
-          facetId: c.facetId,
-          categoryId: c.categoryId ?? null,
-          value: c.value ?? null,
-          confidence: c.confidence,
-          reasoning: c.reasoning,
-          isManualOverride: c.isManualOverride ?? true,
-        })),
-      }
+          deleteMany: { facetId: { in: facetIds } },
+          create: data.classifications.map((c) => ({
+            facetId: c.facetId,
+            categoryId: c.categoryId ?? null,
+            value: c.value ?? null,
+            confidence: c.confidence,
+            reasoning: c.reasoning,
+            isManualOverride: c.isManualOverride ?? true,
+          })),
+        }
       : undefined;
 
     const analysis = source.analysis
       ? await prisma.sourceAnalysis.update({
-        where: { id: source.analysis.id },
-        data: {
-          ...(classificationsUpdate ? { classifications: classificationsUpdate } : {}),
-          isUserEdited: true,
-          editedFields,
-        },
-        include: {
-          classifications: {
-            include: {
-              facet: true,
-              category: true,
+          where: { id: source.analysis.id },
+          data: {
+            ...(classificationsUpdate ? { classifications: classificationsUpdate } : {}),
+            isUserEdited: true,
+            editedFields,
+          },
+          include: {
+            classifications: {
+              include: {
+                facet: true,
+                category: true,
+              },
             },
           },
-        },
-      })
+        })
       : await prisma.sourceAnalysis.create({
-        data: {
-          sourceId,
-          extractedText: "",
-          inclusionRecommendation: false,
-          inclusionReasoning: "",
-          exclusionReasoning: "",
-          confidenceScore: 0.5,
-          relevanceScore: null,
-          qualityNotes: null,
-          inclusionCriteria: [],
-          exclusionCriteria: [],
-          classifications: {
-            create: data.classifications.map((c) => ({
-              facetId: c.facetId,
-              categoryId: c.categoryId ?? null,
-              value: c.value ?? null,
-              confidence: c.confidence,
-              reasoning: c.reasoning,
-              isManualOverride: c.isManualOverride ?? true,
-            })),
+          data: {
+            sourceId,
+            extractedText: "",
+            inclusionRecommendation: false,
+            inclusionReasoning: "",
+            exclusionReasoning: "",
+            confidenceScore: 0.5,
+            relevanceScore: null,
+            qualityNotes: null,
+            inclusionCriteria: [],
+            exclusionCriteria: [],
+            classifications: {
+              create: data.classifications.map((c) => ({
+                facetId: c.facetId,
+                categoryId: c.categoryId ?? null,
+                value: c.value ?? null,
+                confidence: c.confidence,
+                reasoning: c.reasoning,
+                isManualOverride: c.isManualOverride ?? true,
+              })),
+            },
+            isUserEdited: true,
+            editedFields,
           },
-          isUserEdited: true,
-          editedFields,
-        },
-        include: {
-          classifications: {
-            include: {
-              facet: true,
-              category: true,
+          include: {
+            classifications: {
+              include: {
+                facet: true,
+                category: true,
+              },
             },
           },
-        },
-      });
+        });
 
     return NextResponse.json({ data: analysis });
   } catch (error) {

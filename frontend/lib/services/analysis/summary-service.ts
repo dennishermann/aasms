@@ -117,9 +117,7 @@ export async function getSummaryStats(studyId: string): Promise<SummaryStats> {
       const totalIncluded = includedSources;
       const unclassified = totalIncluded - classifiedCount;
       const coveragePercent =
-        totalIncluded > 0
-          ? Math.round((classifiedCount / totalIncluded) * 100)
-          : 0;
+        totalIncluded > 0 ? Math.round((classifiedCount / totalIncluded) * 100) : 0;
 
       return {
         facetId: facet.id,
@@ -128,7 +126,7 @@ export async function getSummaryStats(studyId: string): Promise<SummaryStats> {
         unclassified: unclassified,
         coveragePercent,
       };
-    })
+    }),
   );
 
   return {

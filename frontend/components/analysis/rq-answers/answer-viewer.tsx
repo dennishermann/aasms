@@ -25,13 +25,14 @@ import {
   TableIcon,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  AnalysisBarChart,
-  AnalysisLineChart,
-  BubblePlot,
-} from "@/components/analysis/charts";
+import { AnalysisBarChart, AnalysisLineChart, BubblePlot } from "@/components/analysis/charts";
 import type { RqAnswerBundle, RecipeType, FigureSpec } from "@/types/recipe";
-import type { FrequencyResult, CrossTabResult, TimeSeriesResult, GapAnalysis } from "@/types/analysis";
+import type {
+  FrequencyResult,
+  CrossTabResult,
+  TimeSeriesResult,
+  GapAnalysis,
+} from "@/types/analysis";
 
 interface AnswerViewerProps {
   bundle: RqAnswerBundle;
@@ -121,9 +122,7 @@ function DistributionResult({ data }: { data: FrequencyResult }) {
                 ))}
               </TableBody>
             </Table>
-            <div className="mt-4 text-sm text-muted-foreground">
-              Total: {total} sources
-            </div>
+            <div className="mt-4 text-sm text-muted-foreground">Total: {total} sources</div>
           </TabsContent>
         </Tabs>
       </CardContent>
@@ -203,7 +202,7 @@ function CrossTabResultView({ data }: { data: CrossTabResult }) {
                         <TableCell className="font-medium">{row.label}</TableCell>
                         {data.colLabels.map((col) => {
                           const cell = data.cells.find(
-                            (c) => c.rowId === row.id && c.colId === col.id
+                            (c) => c.rowId === row.id && c.colId === col.id,
                           );
                           return (
                             <TableCell key={col.id} className="text-center">
@@ -233,10 +232,7 @@ function CrossTabResultView({ data }: { data: CrossTabResult }) {
 // Time series result view
 function TimeSeriesResultView({ data }: { data: TimeSeriesResult }) {
   // Calculate total from all series
-  const total = data.series.reduce(
-    (sum, s) => sum + s.data.reduce((a, b) => a + b, 0),
-    0
-  );
+  const total = data.series.reduce((sum, s) => sum + s.data.reduce((a, b) => a + b, 0), 0);
 
   return (
     <Card>
@@ -280,10 +276,7 @@ function TimeSeriesResultView({ data }: { data: TimeSeriesResult }) {
               </TableHeader>
               <TableBody>
                 {data.years.map((year, yearIdx) => {
-                  const yearTotal = data.series.reduce(
-                    (sum, s) => sum + (s.data[yearIdx] ?? 0),
-                    0
-                  );
+                  const yearTotal = data.series.reduce((sum, s) => sum + (s.data[yearIdx] ?? 0), 0);
                   return (
                     <TableRow key={year}>
                       <TableCell className="font-medium">{year}</TableCell>
@@ -293,9 +286,7 @@ function TimeSeriesResultView({ data }: { data: TimeSeriesResult }) {
                         </TableCell>
                       ))}
                       {data.series.length > 1 && (
-                        <TableCell className="text-right font-bold">
-                          {yearTotal}
-                        </TableCell>
+                        <TableCell className="text-right font-bold">{yearTotal}</TableCell>
                       )}
                     </TableRow>
                   );
@@ -319,13 +310,10 @@ function GapAnalysisResult({ data }: { data: GapAnalysis }) {
   // Count total gaps and empty categories
   const totalGaps = data.singleDimensionGaps.reduce(
     (sum, facet) => sum + facet.gaps.length + facet.empty.length,
-    0
+    0,
   );
 
-  const totalEmpty = data.singleDimensionGaps.reduce(
-    (sum, facet) => sum + facet.empty.length,
-    0
-  );
+  const totalEmpty = data.singleDimensionGaps.reduce((sum, facet) => sum + facet.empty.length, 0);
 
   const hasGaps = totalGaps > 0;
 
@@ -383,13 +371,9 @@ function GapAnalysisResult({ data }: { data: GapAnalysis }) {
                   <TableBody>
                     {allGaps.map((gap) => (
                       <TableRow key={gap.categoryId}>
-                        <TableCell className="font-medium">
-                          {gap.categoryName}
-                        </TableCell>
+                        <TableCell className="font-medium">{gap.categoryName}</TableCell>
                         <TableCell className="text-right">
-                          <Badge
-                            variant={gap.count === 0 ? "destructive" : "outline"}
-                          >
+                          <Badge variant={gap.count === 0 ? "destructive" : "outline"}>
                             {gap.count}
                           </Badge>
                         </TableCell>
@@ -404,8 +388,7 @@ function GapAnalysisResult({ data }: { data: GapAnalysis }) {
           {!hasGaps && (
             <Alert>
               <AlertDescription>
-                No significant gaps found with the current threshold of{" "}
-                {data.threshold} sources.
+                No significant gaps found with the current threshold of {data.threshold} sources.
               </AlertDescription>
             </Alert>
           )}
@@ -478,19 +461,11 @@ export function AnswerViewer({ bundle, studyId, onExport, isExporting }: AnswerV
               <span>Recipe v{run.recipeVersion}</span>
               <span>{run.includedSourceCount} sources</span>
               <span>
-                Last run:{" "}
-                {run.completedAt
-                  ? new Date(run.completedAt).toLocaleString()
-                  : "—"}
+                Last run: {run.completedAt ? new Date(run.completedAt).toLocaleString() : "—"}
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onExport}
-                disabled={isExporting || !run}
-              >
+              <Button variant="outline" size="sm" onClick={onExport} disabled={isExporting || !run}>
                 {isExporting ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />

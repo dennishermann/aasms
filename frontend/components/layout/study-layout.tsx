@@ -31,7 +31,9 @@ export function StudyLayout({
         </Badge>
       )}
     </div>
-  ) : headerRight;
+  ) : (
+    headerRight
+  );
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
@@ -40,11 +42,8 @@ export function StudyLayout({
       <div className="flex flex-1 overflow-hidden">
         {showSidebar && studyId && <Sidebar studyId={studyId} />}
 
-        <main className="flex-1 overflow-auto">
-          {children}
-        </main>
+        <main className="flex-1 overflow-auto">{children}</main>
       </div>
     </div>
   );
 }
-

@@ -67,10 +67,25 @@ interface KeywordMappingOverviewProps {
   onCategoriesChange?: () => void;
 }
 
-function CategoryDropZone({ id, children, className }: { id: string; children: React.ReactNode; className?: string }) {
+function CategoryDropZone({
+  id,
+  children,
+  className,
+}: {
+  id: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
   const { isOver, setNodeRef } = useDroppable({ id });
   return (
-    <div ref={setNodeRef} className={cn("transition-all duration-150", isOver && "ring-2 ring-primary bg-primary/5 rounded-lg", className)}>
+    <div
+      ref={setNodeRef}
+      className={cn(
+        "transition-all duration-150",
+        isOver && "ring-2 ring-primary bg-primary/5 rounded-lg",
+        className,
+      )}
+    >
       {children}
     </div>
   );
@@ -79,7 +94,9 @@ function CategoryDropZone({ id, children, className }: { id: string; children: R
 // Portal wrapper for DragOverlay to avoid coordinate issues with transformed parents
 function PortaledDragOverlay({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false);
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   if (!mounted) return null;
   return createPortal(children, document.body);
 }
@@ -109,7 +126,9 @@ export function KeywordMappingOverview({
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
-  useEffect(() => { setCategories(initialCategories); }, [initialCategories]);
+  useEffect(() => {
+    setCategories(initialCategories);
+  }, [initialCategories]);
 
   useEffect(() => {
     if (!open) return;
@@ -133,7 +152,9 @@ export function KeywordMappingOverview({
         if (active) setLoading(false);
       }
     })();
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, [open, studyId, facetId, initialCategories, selectedCategoryId]);
 
   const filteredMappings = useMemo(() => {
@@ -143,29 +164,36 @@ export function KeywordMappingOverview({
 
   const categoryMappings = useMemo(() => {
     const map = new Map<string, KeywordMapping[]>();
-    categories.forEach(c => map.set(c.id, []));
+    categories.forEach((c) => map.set(c.id, []));
     map.set("__unmapped__", []);
-    filteredMappings.forEach(m => {
+    filteredMappings.forEach((m) => {
       if (m.categoryId && map.has(m.categoryId)) map.get(m.categoryId)!.push(m);
       else if (!m.categoryId) map.get("__unmapped__")!.push(m);
     });
     return map;
   }, [filteredMappings, categories]);
 
-  const stats = useMemo(() => ({
-    total: mappings.length,
-    approved: mappings.filter(m => m.status === "APPROVED").length,
-    pending: mappings.filter(m => m.status === "PENDING").length,
-    rejected: mappings.filter(m => m.status === "REJECTED").length,
-    mapped: mappings.filter(m => m.categoryId).length,
-  }), [mappings]);
+  const stats = useMemo(
+    () => ({
+      total: mappings.length,
+      approved: mappings.filter((m) => m.status === "APPROVED").length,
+      pending: mappings.filter((m) => m.status === "PENDING").length,
+      rejected: mappings.filter((m) => m.status === "REJECTED").length,
+      mapped: mappings.filter((m) => m.categoryId).length,
+    }),
+    [mappings],
+  );
 
   const selectedCategory = useMemo(() => {
-    if (selectedCategoryId === "__unmapped__") return { id: "__unmapped__", name: "Unmapped Keywords", description: null };
-    return categories.find(c => c.id === selectedCategoryId) || null;
+    if (selectedCategoryId === "__unmapped__")
+      return { id: "__unmapped__", name: "Unmapped Keywords", description: null };
+    return categories.find((c) => c.id === selectedCategoryId) || null;
   }, [categories, selectedCategoryId]);
 
-  const selectedMappings = useMemo(() => categoryMappings.get(selectedCategoryId || "") || [], [categoryMappings, selectedCategoryId]);
+  const selectedMappings = useMemo(
+    () => categoryMappings.get(selectedCategoryId || "") || [],
+    [categoryMappings, selectedCategoryId],
+  );
 
   // Check if there are unsaved changes
   const hasUnsavedChanges = useMemo(() => pendingChanges.size > 0, [pendingChanges]);
@@ -182,7 +210,7 @@ export function KeywordMappingOverview({
     if (targetCategoryId.startsWith("sidebar::")) {
       targetCategoryId = targetCategoryId.replace("sidebar::", "");
     }
-    const mapping = mappings.find(m => m.id === mappingId);
+    const mapping = mappings.find((m) => m.id === mappingId);
     if (!mapping) return;
 
     const currentCat = mapping.categoryId || "__unmapped__";
@@ -191,13 +219,15 @@ export function KeywordMappingOverview({
     const newCategoryId = targetCategoryId === "__unmapped__" ? null : targetCategoryId;
 
     // Update local state
-    setMappings(prev => prev.map(m => m.id === mappingId ? { ...m, categoryId: newCategoryId } : m));
+    setMappings((prev) =>
+      prev.map((m) => (m.id === mappingId ? { ...m, categoryId: newCategoryId } : m)),
+    );
 
     // Track pending change (don't save immediately)
-    setPendingChanges(prev => {
+    setPendingChanges((prev) => {
       const next = new Map(prev);
       // Compare with initial state to see if this is actually a change
-      const initialMapping = initialMappings.find(m => m.id === mappingId);
+      const initialMapping = initialMappings.find((m) => m.id === mappingId);
       const initialCategoryId = initialMapping?.categoryId || null;
       if (newCategoryId === initialCategoryId) {
         // Reverted to original - remove from pending
@@ -255,23 +285,43 @@ export function KeywordMappingOverview({
   };
 
   const startEdit = (id: string) => {
-    const cat = categories.find(c => c.id === id);
-    if (cat) { setEditingCategory(id); setEditName(cat.name); setEditDescription(cat.description || ""); }
+    const cat = categories.find((c) => c.id === id);
+    if (cat) {
+      setEditingCategory(id);
+      setEditName(cat.name);
+      setEditDescription(cat.description || "");
+    }
   };
 
-  const cancelEdit = () => { setEditingCategory(null); setEditName(""); setEditDescription(""); };
+  const cancelEdit = () => {
+    setEditingCategory(null);
+    setEditName("");
+    setEditDescription("");
+  };
 
   const saveCategory = async () => {
     if (!editingCategory || !editName.trim()) return;
     setSaving(true);
     try {
-      const res = await fetch(`/api/studies/${studyId}/facets/${facetId}/category/${editingCategory}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: editName.trim(), description: editDescription.trim() || null }),
-      });
+      const res = await fetch(
+        `/api/studies/${studyId}/facets/${facetId}/category/${editingCategory}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: editName.trim(),
+            description: editDescription.trim() || null,
+          }),
+        },
+      );
       if (res.ok) {
-        setCategories(prev => prev.map(c => c.id === editingCategory ? { ...c, name: editName.trim(), description: editDescription.trim() || null } : c));
+        setCategories((prev) =>
+          prev.map((c) =>
+            c.id === editingCategory
+              ? { ...c, name: editName.trim(), description: editDescription.trim() || null }
+              : c,
+          ),
+        );
         cancelEdit();
         onCategoriesChange?.();
       }
@@ -280,7 +330,7 @@ export function KeywordMappingOverview({
     }
   };
 
-  const activeMapping = activeId ? mappings.find(m => m.id === activeId) : null;
+  const activeMapping = activeId ? mappings.find((m) => m.id === activeId) : null;
 
   return (
     <>
@@ -300,7 +350,9 @@ export function KeywordMappingOverview({
               setShowCloseConfirm(true);
             }
           }}
-        >          <DialogHeader className="px-6 py-4 border-b shrink-0">
+        >
+          {" "}
+          <DialogHeader className="px-6 py-4 border-b shrink-0">
             <div className="flex items-center justify-between">
               <div>
                 <DialogTitle className="flex items-center gap-2">
@@ -313,7 +365,8 @@ export function KeywordMappingOverview({
                   )}
                 </DialogTitle>
                 <DialogDescription>
-                  Manage keyword-to-category mappings for &quot;{facetName}&quot;. Drag keywords between categories.
+                  Manage keyword-to-category mappings for &quot;{facetName}&quot;. Drag keywords
+                  between categories.
                 </DialogDescription>
               </div>
               <Button variant="ghost" size="icon" onClick={() => handleCloseRequest(true)}>
@@ -321,36 +374,60 @@ export function KeywordMappingOverview({
               </Button>
             </div>
           </DialogHeader>
-
           {/* Stats */}
           <div className="flex items-center gap-6 px-6 py-3 border-b bg-muted/30 text-sm shrink-0">
-            <span>Total: <Badge variant="secondary">{stats.total}</Badge></span>
-            <span className="flex items-center gap-1"><CheckCircle2 className="h-4 w-4 text-green-600" />{stats.approved}</span>
-            <span className="flex items-center gap-1"><Clock className="h-4 w-4 text-amber-500" />{stats.pending}</span>
-            <span className="flex items-center gap-1"><XCircle className="h-4 w-4 text-red-500" />{stats.rejected}</span>
-            <span className="ml-auto text-muted-foreground">{stats.mapped} mapped / {stats.total - stats.mapped} unmapped</span>
+            <span>
+              Total: <Badge variant="secondary">{stats.total}</Badge>
+            </span>
+            <span className="flex items-center gap-1">
+              <CheckCircle2 className="h-4 w-4 text-green-600" />
+              {stats.approved}
+            </span>
+            <span className="flex items-center gap-1">
+              <Clock className="h-4 w-4 text-amber-500" />
+              {stats.pending}
+            </span>
+            <span className="flex items-center gap-1">
+              <XCircle className="h-4 w-4 text-red-500" />
+              {stats.rejected}
+            </span>
+            <span className="ml-auto text-muted-foreground">
+              {stats.mapped} mapped / {stats.total - stats.mapped} unmapped
+            </span>
           </div>
-
           {/* Search */}
           <div className="px-6 py-3 border-b shrink-0">
             <div className="relative max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Search keywords..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-9" />
+              <Input
+                placeholder="Search keywords..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9"
+              />
             </div>
           </div>
-
-          <DndContext sensors={sensors} collisionDetection={pointerWithin} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={pointerWithin}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+          >
             <div className="flex-1 flex min-h-0">
               {loading ? (
-                <div className="flex-1 flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin" /></div>
+                <div className="flex-1 flex items-center justify-center">
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                </div>
               ) : (
                 <>
                   {/* Left: Categories */}
                   <div className="w-[380px] border-r flex flex-col shrink-0">
-                    <div className="px-4 py-2 bg-muted/20 border-b text-sm font-medium text-muted-foreground">Categories ({categories.length})</div>
+                    <div className="px-4 py-2 bg-muted/20 border-b text-sm font-medium text-muted-foreground">
+                      Categories ({categories.length})
+                    </div>
                     <ScrollArea className="flex-1">
                       <div className="p-2 space-y-1">
-                        {categories.map(cat => {
+                        {categories.map((cat) => {
                           const count = categoryMappings.get(cat.id)?.length || 0;
                           const isSelected = selectedCategoryId === cat.id;
                           return (
@@ -359,12 +436,19 @@ export function KeywordMappingOverview({
                                 onClick={() => setSelectedCategoryId(cat.id)}
                                 className={cn(
                                   "w-full flex items-center gap-2 px-3 py-2 rounded-md text-left text-sm",
-                                  isSelected ? "bg-primary text-primary-foreground" : "hover:bg-muted"
+                                  isSelected
+                                    ? "bg-primary text-primary-foreground"
+                                    : "hover:bg-muted",
                                 )}
                               >
                                 <FolderOpen className="h-4 w-4 shrink-0 opacity-70" />
                                 <span className="flex-1 text-left break-words">{cat.name}</span>
-                                <Badge variant={isSelected ? "secondary" : "outline"} className="text-xs">{count}</Badge>
+                                <Badge
+                                  variant={isSelected ? "secondary" : "outline"}
+                                  className="text-xs"
+                                >
+                                  {count}
+                                </Badge>
                               </button>
                             </CategoryDropZone>
                           );
@@ -379,12 +463,14 @@ export function KeywordMappingOverview({
                                   "w-full flex items-center gap-2 px-3 py-2 rounded-md text-left text-sm",
                                   selectedCategoryId === "__unmapped__"
                                     ? "bg-amber-100 text-amber-900 dark:bg-amber-900/30"
-                                    : "hover:bg-amber-50 text-amber-700 dark:hover:bg-amber-900/20"
+                                    : "hover:bg-amber-50 text-amber-700 dark:hover:bg-amber-900/20",
                                 )}
                               >
                                 <AlertCircle className="h-4 w-4 shrink-0" />
                                 <span className="flex-1">Unmapped</span>
-                                <Badge variant="outline" className="text-xs border-amber-300">{categoryMappings.get("__unmapped__")?.length}</Badge>
+                                <Badge variant="outline" className="text-xs border-amber-300">
+                                  {categoryMappings.get("__unmapped__")?.length}
+                                </Badge>
                               </button>
                             </CategoryDropZone>
                           </>
@@ -398,42 +484,80 @@ export function KeywordMappingOverview({
                     {selectedCategory ? (
                       <>
                         <div className="px-6 py-4 border-b bg-muted/20 shrink-0">
-                          {editingCategory === selectedCategoryId && selectedCategoryId !== "__unmapped__" ? (
+                          {editingCategory === selectedCategoryId &&
+                          selectedCategoryId !== "__unmapped__" ? (
                             <div className="space-y-3">
-                              <Input value={editName} onChange={e => setEditName(e.target.value)} placeholder="Category name" />
-                              <Textarea value={editDescription} onChange={e => setEditDescription(e.target.value)} placeholder="Description (optional)" rows={2} />
+                              <Input
+                                value={editName}
+                                onChange={(e) => setEditName(e.target.value)}
+                                placeholder="Category name"
+                              />
+                              <Textarea
+                                value={editDescription}
+                                onChange={(e) => setEditDescription(e.target.value)}
+                                placeholder="Description (optional)"
+                                rows={2}
+                              />
                               <div className="flex gap-2">
                                 <Button size="sm" onClick={saveCategory} disabled={saving}>
-                                  {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Save className="h-4 w-4 mr-1" />}Save
+                                  {saving ? (
+                                    <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                                  ) : (
+                                    <Save className="h-4 w-4 mr-1" />
+                                  )}
+                                  Save
                                 </Button>
-                                <Button size="sm" variant="ghost" onClick={cancelEdit}><X className="h-4 w-4 mr-1" />Cancel</Button>
+                                <Button size="sm" variant="ghost" onClick={cancelEdit}>
+                                  <X className="h-4 w-4 mr-1" />
+                                  Cancel
+                                </Button>
                               </div>
                             </div>
                           ) : (
                             <div className="flex items-start justify-between gap-4">
                               <div>
                                 <h3 className="font-semibold">{selectedCategory.name}</h3>
-                                {selectedCategory.description && <p className="text-sm text-muted-foreground mt-1">{selectedCategory.description}</p>}
+                                {selectedCategory.description && (
+                                  <p className="text-sm text-muted-foreground mt-1">
+                                    {selectedCategory.description}
+                                  </p>
+                                )}
                               </div>
                               {selectedCategoryId !== "__unmapped__" && (
-                                <Button size="sm" variant="ghost" onClick={() => startEdit(selectedCategoryId!)}><Pencil className="h-4 w-4 mr-1" />Edit</Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => startEdit(selectedCategoryId!)}
+                                >
+                                  <Pencil className="h-4 w-4 mr-1" />
+                                  Edit
+                                </Button>
                               )}
                             </div>
                           )}
                         </div>
 
-                        <CategoryDropZone id={selectedCategoryId!} className="flex-1 overflow-hidden">
+                        <CategoryDropZone
+                          id={selectedCategoryId!}
+                          className="flex-1 overflow-hidden"
+                        >
                           <ScrollArea className="h-full">
                             <div className="p-6">
-                              <div className="text-sm font-medium text-muted-foreground mb-4">Keywords ({selectedMappings.length})</div>
+                              <div className="text-sm font-medium text-muted-foreground mb-4">
+                                Keywords ({selectedMappings.length})
+                              </div>
                               {selectedMappings.length === 0 ? (
                                 <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-lg">
                                   <p>No keywords in this category</p>
-                                  <p className="text-sm mt-1">Drag keywords here from other categories</p>
+                                  <p className="text-sm mt-1">
+                                    Drag keywords here from other categories
+                                  </p>
                                 </div>
                               ) : (
                                 <div className="flex flex-wrap gap-2">
-                                  {selectedMappings.map(m => <DraggableKeyword key={m.id} mapping={m} />)}
+                                  {selectedMappings.map((m) => (
+                                    <DraggableKeyword key={m.id} mapping={m} />
+                                  ))}
                                 </div>
                               )}
                             </div>
@@ -441,7 +565,9 @@ export function KeywordMappingOverview({
                         </CategoryDropZone>
                       </>
                     ) : (
-                      <div className="flex-1 flex items-center justify-center text-muted-foreground">Select a category</div>
+                      <div className="flex-1 flex items-center justify-center text-muted-foreground">
+                        Select a category
+                      </div>
                     )}
                   </div>
                 </>
@@ -451,11 +577,16 @@ export function KeywordMappingOverview({
             {/* Portal DragOverlay to body to avoid transform offset issues */}
             <PortaledDragOverlay>
               <DragOverlay>
-                {activeMapping && <StaticKeyword keyword={activeMapping.keyword} status={activeMapping.status} confidence={activeMapping.confidence} />}
+                {activeMapping && (
+                  <StaticKeyword
+                    keyword={activeMapping.keyword}
+                    status={activeMapping.status}
+                    confidence={activeMapping.confidence}
+                  />
+                )}
               </DragOverlay>
             </PortaledDragOverlay>
           </DndContext>
-
           <div className="px-6 py-4 border-t flex items-center justify-between shrink-0">
             <div className="text-sm text-muted-foreground">
               {hasUnsavedChanges && (
@@ -470,7 +601,11 @@ export function KeywordMappingOverview({
               </Button>
               {hasUnsavedChanges && (
                 <Button onClick={handleSaveChanges} disabled={saving}>
-                  {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+                  {saving ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Save className="h-4 w-4 mr-2" />
+                  )}
                   Save Changes
                 </Button>
               )}
@@ -491,7 +626,12 @@ export function KeywordMappingOverview({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={handleDiscardChanges}>Discard Changes</AlertDialogCancel>
-            <AlertDialogAction onClick={async () => { await handleSaveChanges(); onOpenChange(false); }}>
+            <AlertDialogAction
+              onClick={async () => {
+                await handleSaveChanges();
+                onOpenChange(false);
+              }}
+            >
               Save & Close
             </AlertDialogAction>
           </AlertDialogFooter>

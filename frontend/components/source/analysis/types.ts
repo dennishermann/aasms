@@ -41,7 +41,7 @@ export interface Classification {
   id: string;
   facetId: string;
   categoryId: string | null;
-  value: string | null;  // For OPEN facets
+  value: string | null; // For OPEN facets
   confidence: number;
   reasoning?: string;
   isManualOverride?: boolean;

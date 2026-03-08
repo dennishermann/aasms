@@ -27,7 +27,6 @@ interface MetadataReviewProps {
   loading: boolean;
 }
 
-
 export function MetadataReview({
   metadataFields,
   originalMeta,
@@ -50,12 +49,13 @@ export function MetadataReview({
         <div className="flex items-center justify-between">
           <div className="space-y-1">
             <CardTitle className="text-xl">PDF Analysis</CardTitle>
-            <CardDescription>
-              Review extracted metadata provided by AI analysis.
-            </CardDescription>
+            <CardDescription>Review extracted metadata provided by AI analysis.</CardDescription>
           </div>
           {parsedAvailable && (
-            <Badge variant="secondary" className="bg-blue-100 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300 px-3 py-1">
+            <Badge
+              variant="secondary"
+              className="bg-blue-100 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300 px-3 py-1"
+            >
               <Sparkles className="w-3.5 h-3.5 mr-1.5" />
               AI Summary
             </Badge>
@@ -86,10 +86,21 @@ export function MetadataReview({
                 </div>
               </div>
               <div className="flex gap-2">
-                <Button variant="ghost" size="sm" onClick={onResetSelection} disabled={disableControls} className="text-muted-foreground hover:text-foreground">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onResetSelection}
+                  disabled={disableControls}
+                  className="text-muted-foreground hover:text-foreground"
+                >
                   Reset
                 </Button>
-                <Button variant={applyAll ? "default" : "outline"} size="sm" onClick={onToggleApplyAll} disabled={disableControls}>
+                <Button
+                  variant={applyAll ? "default" : "outline"}
+                  size="sm"
+                  onClick={onToggleApplyAll}
+                  disabled={disableControls}
+                >
                   <Sparkles className="w-3.5 h-3.5 mr-2" />
                   {applyAll ? "All Selected" : "Select All AI"}
                 </Button>
@@ -117,7 +128,9 @@ export function MetadataReview({
                       <div className="flex items-center justify-between mb-3">
                         <h4 className="text-sm font-semibold text-foreground/90 flex items-center gap-2">
                           {label}
-                          {diff && <span className="w-1.5 h-1.5 rounded-full bg-blue-500 opacity-0 group-hover:opacity-100 transition-opacity" />}
+                          {diff && (
+                            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                          )}
                         </h4>
 
                         {/* Toggle Action (Only if different) */}
@@ -143,48 +156,46 @@ export function MetadataReview({
                           variant="match"
                           icon={null}
                         />
+                      ) : isLongContent ? (
+                        <div className="space-y-3">
+                          <MetadataBox
+                            label="Original"
+                            value={originalVal}
+                            fieldKey={key}
+                            isActive={!useParsed}
+                            onSelect={() => onToggleField(key, false)}
+                          />
+                          <MetadataBox
+                            label="AI Extracted"
+                            value={parsedVal}
+                            fieldKey={key}
+                            isActive={useParsed}
+                            variant="ai"
+                            icon={Sparkles}
+                            onSelect={() => onToggleField(key, true)}
+                          />
+                        </div>
                       ) : (
-                        isLongContent ? (
-                          <div className="space-y-3">
-                            <MetadataBox
-                              label="Original"
-                              value={originalVal}
-                              fieldKey={key}
-                              isActive={!useParsed}
-                              onSelect={() => onToggleField(key, false)}
-                            />
-                            <MetadataBox
-                              label="AI Extracted"
-                              value={parsedVal}
-                              fieldKey={key}
-                              isActive={useParsed}
-                              variant="ai"
-                              icon={Sparkles}
-                              onSelect={() => onToggleField(key, true)}
-                            />
-                          </div>
-                        ) : (
-                          <div className="grid md:grid-cols-2 gap-4">
-                            <MetadataBox
-                              label="Original"
-                              value={originalVal}
-                              fieldKey={key}
-                              isActive={!useParsed}
-                              onSelect={() => onToggleField(key, false)}
-                              className="h-full"
-                            />
-                            <MetadataBox
-                              label="AI Extracted"
-                              value={parsedVal}
-                              fieldKey={key}
-                              isActive={useParsed}
-                              variant="ai"
-                              icon={Sparkles}
-                              onSelect={() => onToggleField(key, true)}
-                              className="h-full"
-                            />
-                          </div>
-                        )
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <MetadataBox
+                            label="Original"
+                            value={originalVal}
+                            fieldKey={key}
+                            isActive={!useParsed}
+                            onSelect={() => onToggleField(key, false)}
+                            className="h-full"
+                          />
+                          <MetadataBox
+                            label="AI Extracted"
+                            value={parsedVal}
+                            fieldKey={key}
+                            isActive={useParsed}
+                            variant="ai"
+                            icon={Sparkles}
+                            onSelect={() => onToggleField(key, true)}
+                            className="h-full"
+                          />
+                        </div>
                       )}
                     </div>
                   );
@@ -193,7 +204,12 @@ export function MetadataReview({
             )}
 
             <div className="flex justify-end pt-6 border-t mt-8">
-              <Button size="lg" onClick={onApply} disabled={isSaving || loading || !parsedAvailable} className="min-w-[150px]">
+              <Button
+                size="lg"
+                onClick={onApply}
+                disabled={isSaving || loading || !parsedAvailable}
+                className="min-w-[150px]"
+              >
                 {isSaving ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin mr-2" />

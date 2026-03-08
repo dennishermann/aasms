@@ -9,7 +9,7 @@ const PYTHON_SERVICE_URL = process.env.PYTHON_SERVICE_URL || "http://localhost:8
  */
 function parsePublicationDate(
   publicationDate: string | undefined,
-  year: number | undefined
+  year: number | undefined,
 ): Date | null {
   // First try the full publication_date string (e.g., "2023-03-15" from ACM)
   if (publicationDate) {
@@ -25,10 +25,7 @@ function parsePublicationDate(
   return null;
 }
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id: studyId } = await params;
 
@@ -74,7 +71,7 @@ export async function POST(
       const errorText = await parseResponse.text();
       return NextResponse.json(
         { error: "Failed to parse import file", details: errorText },
-        { status: parseResponse.status }
+        { status: parseResponse.status },
       );
     }
 
@@ -101,19 +98,21 @@ export async function POST(
     for (const source of parsedSources) {
       // Basic duplicate check (DOI or Title)
       // Note: Python used to do this more robustly with fuzzy matching?
-      // For now, let's look for exact DOI match for simplicity in this refactor, 
+      // For now, let's look for exact DOI match for simplicity in this refactor,
       // or title match.
       // Ideally we should reuse Python's duplicate detector but that requires sending all sources back and forth.
       // Let's implement a decent check here.
 
-      const existingByDoi = source.doi ? study.sources.find(s => s.doi === source.doi) : null;
-      const existingByTitle = !existingByDoi ? study.sources.find(s => s.title.toLowerCase() === source.title.toLowerCase()) : null;
+      const existingByDoi = source.doi ? study.sources.find((s) => s.doi === source.doi) : null;
+      const existingByTitle = !existingByDoi
+        ? study.sources.find((s) => s.title.toLowerCase() === source.title.toLowerCase())
+        : null;
       const existing = existingByDoi || existingByTitle;
 
       if (existing) {
         duplicates.push({
           existingId: existing.id,
-          source: source
+          source: source,
         });
         duplicateCount++;
 
@@ -121,7 +120,7 @@ export async function POST(
         if (!existing.sourceOrigins.includes(databaseSource)) {
           await prisma.source.update({
             where: { id: existing.id },
-            data: { sourceOrigins: { push: databaseSource } }
+            data: { sourceOrigins: { push: databaseSource } },
           });
         }
       } else {
@@ -148,8 +147,8 @@ export async function POST(
             metadataExtension: {
               database_source: databaseSource,
               raw_entry: source.raw_entry,
-              database_specific: source.database_specific
-            }
+              database_specific: source.database_specific,
+            },
           },
         });
         createdSourceIds.push(newSource.id);
@@ -163,10 +162,10 @@ export async function POST(
       data: {
         duplicates: duplicateCount,
         newSources: newCount,
-        // status remains PROCESSING until client finishes? 
+        // status remains PROCESSING until client finishes?
         // Or we leave it PROCESSING and client updates it?
         // Let's leave it PROCESSING.
-      }
+      },
     });
 
     return NextResponse.json({
@@ -175,12 +174,14 @@ export async function POST(
       newSourceIds: createdSourceIds,
       duplicateCount,
     });
-
   } catch (error) {
     console.error("Import start error:", error);
     return NextResponse.json(
-      { error: "Failed to start import", details: error instanceof Error ? error.message : "Unknown" },
-      { status: 500 }
+      {
+        error: "Failed to start import",
+        details: error instanceof Error ? error.message : "Unknown",
+      },
+      { status: 500 },
     );
   }
 }

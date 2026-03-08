@@ -3,10 +3,7 @@ import { prisma } from "@/lib/db";
 import type { ArtifactConfiguration } from "@/types/analysis";
 
 // GET - List all configurations for a study
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id: studyId } = await params;
 
@@ -29,18 +26,12 @@ export async function GET(
     return NextResponse.json({ data: transformedConfigs });
   } catch (error) {
     console.error("Error getting configurations:", error);
-    return NextResponse.json(
-      { error: "Failed to get configurations" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to get configurations" }, { status: 500 });
   }
 }
 
 // POST - Create a new configuration
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id: studyId } = await params;
     const body = await request.json();
@@ -48,17 +39,11 @@ export async function POST(
     const { name, description, artifacts } = body;
 
     if (!name) {
-      return NextResponse.json(
-        { error: "name is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "name is required" }, { status: 400 });
     }
 
     if (!artifacts || !Array.isArray(artifacts)) {
-      return NextResponse.json(
-        { error: "artifacts must be an array" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "artifacts must be an array" }, { status: 400 });
     }
 
     // Verify study exists
@@ -67,10 +52,7 @@ export async function POST(
     });
 
     if (!study) {
-      return NextResponse.json(
-        { error: "Study not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Study not found" }, { status: 404 });
     }
 
     const configuration = await prisma.analysisConfiguration.create({
@@ -95,9 +77,6 @@ export async function POST(
     });
   } catch (error) {
     console.error("Error creating configuration:", error);
-    return NextResponse.json(
-      { error: "Failed to create configuration" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to create configuration" }, { status: 500 });
   }
 }

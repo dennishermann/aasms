@@ -57,21 +57,14 @@ export function ExportButton({
         >
           <Download className="h-4 w-4" />
           {showLabel && (
-            <span className="ml-2">
-              {isExportingCSV ? "Exporting..." : "Export CSV"}
-            </span>
+            <span className="ml-2">{isExportingCSV ? "Exporting..." : "Export CSV"}</span>
           )}
         </Button>
       );
     }
     if (hasPNG) {
       return (
-        <Button
-          variant={variant}
-          size={size}
-          onClick={handlePNGExport}
-          disabled={disabled}
-        >
+        <Button variant={variant} size={size} onClick={handlePNGExport} disabled={disabled}>
           <Image className="h-4 w-4" />
           {showLabel && <span className="ml-2">Export PNG</span>}
         </Button>
@@ -86,11 +79,7 @@ export function ExportButton({
       <DropdownMenuTrigger asChild>
         <Button variant={variant} size={size} disabled={disabled || isExportingCSV}>
           <Download className="h-4 w-4" />
-          {showLabel && (
-            <span className="ml-2">
-              {isExportingCSV ? "Exporting..." : "Export"}
-            </span>
-          )}
+          {showLabel && <span className="ml-2">{isExportingCSV ? "Exporting..." : "Export"}</span>}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">

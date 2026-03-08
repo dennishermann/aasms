@@ -50,11 +50,13 @@ export function TrendsTab({
   // Get available series for category selection
   const availableSeries = useMemo(() => {
     if (!groupedData?.series) return [];
-    return groupedData.series.map((s) => ({
-      id: s.id,
-      label: s.label,
-      total: s.data.reduce((a, b) => a + b, 0),
-    })).sort((a, b) => b.total - a.total);
+    return groupedData.series
+      .map((s) => ({
+        id: s.id,
+        label: s.label,
+        total: s.data.reduce((a, b) => a + b, 0),
+      }))
+      .sort((a, b) => b.total - a.total);
   }, [groupedData]);
 
   // Filter data based on selected series
@@ -94,16 +96,14 @@ export function TrendsTab({
   const stats =
     baseData && baseData.years.length > 0 && baseData.series[0]
       ? {
-        yearRange: `${baseData.years[0]} - ${baseData.years[baseData.years.length - 1]}`,
-        totalYears: baseData.years.length,
-        peakYear:
-          baseData.years[
-          baseData.series[0].data.indexOf(Math.max(...baseData.series[0].data))
-          ],
-        average: (
-          baseData.series[0].data.reduce((a, b) => a + b, 0) / baseData.years.length
-        ).toFixed(1),
-      }
+          yearRange: `${baseData.years[0]} - ${baseData.years[baseData.years.length - 1]}`,
+          totalYears: baseData.years.length,
+          peakYear:
+            baseData.years[baseData.series[0].data.indexOf(Math.max(...baseData.series[0].data))],
+          average: (
+            baseData.series[0].data.reduce((a, b) => a + b, 0) / baseData.years.length
+          ).toFixed(1),
+        }
       : null;
 
   return (
@@ -117,14 +117,15 @@ export function TrendsTab({
           <div className="flex items-center gap-4">
             <div className="space-y-1">
               <Label>Group by Dimension</Label>
-              <p className="text-xs text-muted-foreground">
-                Compare trends across categories
-              </p>
+              <p className="text-xs text-muted-foreground">Compare trends across categories</p>
             </div>
             <DimensionSelector
-              value={selectedDimension ?
-                (selectedDimension.type === "facet" ? `facet:${selectedDimension.facetId}` : selectedDimension.type)
-                : ""
+              value={
+                selectedDimension
+                  ? selectedDimension.type === "facet"
+                    ? `facet:${selectedDimension.facetId}`
+                    : selectedDimension.type
+                  : ""
               }
               onValueChange={onDimensionChange}
               options={dimensionOptions}
@@ -148,7 +149,10 @@ export function TrendsTab({
                 <Label>Categories to Compare</Label>
                 <div className="flex items-center gap-2 text-xs">
                   <button
-                    onClick={() => { setShowAllSeries(true); setSelectedSeriesIds(new Set()); }}
+                    onClick={() => {
+                      setShowAllSeries(true);
+                      setSelectedSeriesIds(new Set());
+                    }}
                     className={`hover:underline ${showAllSeries ? "font-semibold" : "text-muted-foreground"}`}
                   >
                     All
@@ -173,9 +177,7 @@ export function TrendsTab({
                   <Badge
                     key={series.id}
                     variant={
-                      showAllSeries || selectedSeriesIds.has(series.id)
-                        ? "default"
-                        : "outline"
+                      showAllSeries || selectedSeriesIds.has(series.id) ? "default" : "outline"
                     }
                     className="cursor-pointer"
                     onClick={() => toggleSeries(series.id)}
@@ -202,10 +204,7 @@ export function TrendsTab({
             <CardTitle className="text-base">
               {selectedDimension ? "Publication Trends by Category" : "Publications Over Time"}
             </CardTitle>
-            <ExportButton
-              chartInstance={chartInstance}
-              chartTitle="publication-trends"
-            />
+            <ExportButton chartInstance={chartInstance} chartTitle="publication-trends" />
           </div>
         </CardHeader>
         <CardContent>

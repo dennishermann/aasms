@@ -89,10 +89,7 @@ export async function getIncludedSourceCount(studyId: string): Promise<number> {
 /**
  * Check if a run's dataset hash matches the current dataset state.
  */
-export async function isRunStale(
-  studyId: string,
-  runDatasetHash: string
-): Promise<boolean> {
+export async function isRunStale(studyId: string, runDatasetHash: string): Promise<boolean> {
   const currentHash = await computeDatasetHash(studyId);
   return currentHash !== runDatasetHash;
 }

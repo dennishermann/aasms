@@ -21,7 +21,7 @@ export function useToast() {
       // For now, just use console and alert
       // In a real implementation, this would show a toast UI component
       console.log("Toast:", toast);
-      
+
       // Use browser alert for now (will replace with proper toast UI later)
       if (toast.variant === "destructive") {
         alert(`Error: ${toast.title}\n${toast.description || ""}`);

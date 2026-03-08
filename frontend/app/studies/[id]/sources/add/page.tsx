@@ -10,10 +10,7 @@ export default function AddSourcePage() {
   const studyId = params.id as string;
 
   return (
-    <StudyLayout
-      studyId={studyId}
-      studyTitle="Add Source"
-    >
+    <StudyLayout studyId={studyId} studyTitle="Add Source">
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-2xl mx-auto">
           <AddSourceForm

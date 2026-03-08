@@ -8,7 +8,7 @@ const researchQuestionsSchema = z.object({
       id: z.string().optional(),
       question: z.string().min(1, "Question is required"),
       order: z.number().int().min(0),
-    })
+    }),
   ),
 });
 
@@ -22,7 +22,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     if (!validation.success) {
       return NextResponse.json(
         { error: "Validation failed", details: validation.error.errors },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -61,4 +61,3 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     return NextResponse.json({ error: "Failed to update research questions" }, { status: 500 });
   }
 }
-

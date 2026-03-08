@@ -4,7 +4,6 @@ import "./globals.css";
 import { Providers } from "./providers";
 import { GlobalProgressIndicator } from "@/components/global-progress-indicator";
 
-
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -31,12 +30,10 @@ export default function RootLayout({
         suppressHydrationWarning
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-
         <Providers>
           {children}
           <GlobalProgressIndicator />
         </Providers>
-
       </body>
     </html>
   );

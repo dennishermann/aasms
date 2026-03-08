@@ -5,9 +5,20 @@ import { z } from "zod";
 const searchProtocolEntrySchema = z.object({
   database: z.string().min(1, "Database is required"),
   searchString: z.string().min(1, "Search string is required"),
-  dateSearched: z.string().or(z.date()).transform((val) => new Date(val)),
-  dateRangeFrom: z.string().or(z.date()).optional().transform((val) => val ? new Date(val) : undefined),
-  dateRangeTo: z.string().or(z.date()).optional().transform((val) => val ? new Date(val) : undefined),
+  dateSearched: z
+    .string()
+    .or(z.date())
+    .transform((val) => new Date(val)),
+  dateRangeFrom: z
+    .string()
+    .or(z.date())
+    .optional()
+    .transform((val) => (val ? new Date(val) : undefined)),
+  dateRangeTo: z
+    .string()
+    .or(z.date())
+    .optional()
+    .transform((val) => (val ? new Date(val) : undefined)),
   totalResults: z.number().int().min(0).optional().nullable(),
   notes: z.string().optional().nullable(),
   importBatchId: z.string().optional().nullable(),
@@ -50,7 +61,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if (!validation.success) {
       return NextResponse.json(
         { error: "Validation failed", details: validation.error.errors },
-        { status: 400 }
+        { status: 400 },
       );
     }
 

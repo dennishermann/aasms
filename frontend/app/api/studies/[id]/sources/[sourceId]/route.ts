@@ -15,20 +15,22 @@ const updateSourceSchema = z.object({
   bibtex: z.string().optional(),
   needsPdf: z.boolean().optional(),
   allowMetadataOnlyClassification: z.boolean().optional(),
-  status: z.enum([
-    "PENDING",
-    "ANALYZING",
-    "ANALYZED",
-    "INCLUDED",
-    "EXCLUDED",
-    "NEEDS_REVIEW",
-    "PENDING_METADATA",
-    "EXTRACTING_METADATA",
-    "READY_FOR_ANALYSIS",
-    "ANALYZING_INCLUSION",
-    "ANALYZING_CLASSIFICATION",
-    "CLASSIFIED",
-  ]).optional(),
+  status: z
+    .enum([
+      "PENDING",
+      "ANALYZING",
+      "ANALYZED",
+      "INCLUDED",
+      "EXCLUDED",
+      "NEEDS_REVIEW",
+      "PENDING_METADATA",
+      "EXTRACTING_METADATA",
+      "READY_FOR_ANALYSIS",
+      "ANALYZING_INCLUSION",
+      "ANALYZING_CLASSIFICATION",
+      "CLASSIFIED",
+    ])
+    .optional(),
   metadataExtension: z.any().optional(),
   metadataParsed: z.any().optional(),
   metadataChosen: z.any().optional(),
@@ -38,7 +40,7 @@ const updateSourceSchema = z.object({
 // GET /api/studies/[id]/sources/[sourceId] - Get source details
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string; sourceId: string }> }
+  { params }: { params: Promise<{ id: string; sourceId: string }> },
 ) {
   try {
     const { id: studyId, sourceId } = await params;
@@ -76,7 +78,7 @@ export async function GET(
 // PATCH /api/studies/[id]/sources/[sourceId] - Update source metadata
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string; sourceId: string }> }
+  { params }: { params: Promise<{ id: string; sourceId: string }> },
 ) {
   try {
     const { id: studyId, sourceId } = await params;
@@ -86,7 +88,7 @@ export async function PATCH(
     if (!validation.success) {
       return NextResponse.json(
         { error: "Validation failed", details: validation.error.errors },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -162,7 +164,7 @@ export async function PATCH(
 // DELETE /api/studies/[id]/sources/[sourceId] - Delete source
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string; sourceId: string }> }
+  { params }: { params: Promise<{ id: string; sourceId: string }> },
 ) {
   try {
     const { id: studyId, sourceId } = await params;

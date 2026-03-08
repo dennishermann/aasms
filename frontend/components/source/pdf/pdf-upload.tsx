@@ -80,21 +80,24 @@ export function PdfUploadForm({ studyId, onSuccess }: PdfUploadFormProps) {
     }
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setDragActive(false);
 
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      const file = e.dataTransfer.files[0];
-      if (file.type === "application/pdf" || file.name.endsWith(".pdf")) {
-        setSelectedFile(file);
-        if (!form.getValues("title")) {
-          form.setValue("title", file.name.replace(".pdf", ""));
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        const file = e.dataTransfer.files[0];
+        if (file.type === "application/pdf" || file.name.endsWith(".pdf")) {
+          setSelectedFile(file);
+          if (!form.getValues("title")) {
+            form.setValue("title", file.name.replace(".pdf", ""));
+          }
         }
       }
-    }
-  }, [form]);
+    },
+    [form],
+  );
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -146,10 +149,11 @@ export function PdfUploadForm({ studyId, onSuccess }: PdfUploadFormProps) {
           <CardContent>
             {!selectedFile ? (
               <div
-                className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${dragActive
-                  ? "border-primary bg-primary/5"
-                  : "border-muted-foreground/25 hover:border-primary/50"
-                  }`}
+                className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+                  dragActive
+                    ? "border-primary bg-primary/5"
+                    : "border-muted-foreground/25 hover:border-primary/50"
+                }`}
                 onDragEnter={handleDrag}
                 onDragLeave={handleDrag}
                 onDragOver={handleDrag}
@@ -157,12 +161,8 @@ export function PdfUploadForm({ studyId, onSuccess }: PdfUploadFormProps) {
                 onClick={() => document.getElementById("file-input")?.click()}
               >
                 <Upload className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                <p className="text-lg font-medium mb-2">
-                  Drop PDF here or click to browse
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Only PDF files are supported
-                </p>
+                <p className="text-lg font-medium mb-2">Drop PDF here or click to browse</p>
+                <p className="text-sm text-muted-foreground">Only PDF files are supported</p>
                 <input
                   id="file-input"
                   type="file"
@@ -199,9 +199,7 @@ export function PdfUploadForm({ studyId, onSuccess }: PdfUploadFormProps) {
           <Card>
             <CardHeader>
               <CardTitle>Metadata (Optional)</CardTitle>
-              <CardDescription>
-                Provide additional information about the document
-              </CardDescription>
+              <CardDescription>Provide additional information about the document</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <FormField
@@ -274,7 +272,11 @@ export function PdfUploadForm({ studyId, onSuccess }: PdfUploadFormProps) {
                   <FormItem>
                     <FormLabel>Venue</FormLabel>
                     <FormControl>
-                      <Input placeholder="Conference or journal name" {...field} value={field.value || ""} />
+                      <Input
+                        placeholder="Conference or journal name"
+                        {...field}
+                        value={field.value || ""}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -302,7 +304,12 @@ export function PdfUploadForm({ studyId, onSuccess }: PdfUploadFormProps) {
                   <FormItem>
                     <FormLabel>Abstract</FormLabel>
                     <FormControl>
-                      <Textarea placeholder="Document abstract" rows={4} {...field} value={field.value || ""} />
+                      <Textarea
+                        placeholder="Document abstract"
+                        rows={4}
+                        {...field}
+                        value={field.value || ""}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -366,4 +373,3 @@ export function PdfUploadForm({ studyId, onSuccess }: PdfUploadFormProps) {
     </Form>
   );
 }
-

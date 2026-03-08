@@ -5,9 +5,21 @@ import { z } from "zod";
 const searchProtocolEntryUpdateSchema = z.object({
   database: z.string().min(1, "Database is required").optional(),
   searchString: z.string().min(1, "Search string is required").optional(),
-  dateSearched: z.string().or(z.date()).transform((val) => new Date(val)).optional(),
-  dateRangeFrom: z.string().or(z.date()).optional().transform((val) => val ? new Date(val) : undefined),
-  dateRangeTo: z.string().or(z.date()).optional().transform((val) => val ? new Date(val) : undefined),
+  dateSearched: z
+    .string()
+    .or(z.date())
+    .transform((val) => new Date(val))
+    .optional(),
+  dateRangeFrom: z
+    .string()
+    .or(z.date())
+    .optional()
+    .transform((val) => (val ? new Date(val) : undefined)),
+  dateRangeTo: z
+    .string()
+    .or(z.date())
+    .optional()
+    .transform((val) => (val ? new Date(val) : undefined)),
   totalResults: z.number().int().min(0).optional().nullable(),
   notes: z.string().optional().nullable(),
   importBatchId: z.string().optional().nullable(),
@@ -16,7 +28,7 @@ const searchProtocolEntryUpdateSchema = z.object({
 // PUT /api/studies/[id]/search-protocol/[entryId] - Update an entry
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string; entryId: string }> }
+  { params }: { params: Promise<{ id: string; entryId: string }> },
 ) {
   try {
     const { id: studyId, entryId } = await params;
@@ -26,7 +38,7 @@ export async function PUT(
     if (!validation.success) {
       return NextResponse.json(
         { error: "Validation failed", details: validation.error.errors },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -75,7 +87,7 @@ export async function PUT(
 // DELETE /api/studies/[id]/search-protocol/[entryId] - Delete an entry
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string; entryId: string }> }
+  { params }: { params: Promise<{ id: string; entryId: string }> },
 ) {
   try {
     const { id: studyId, entryId } = await params;

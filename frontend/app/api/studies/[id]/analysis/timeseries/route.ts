@@ -2,10 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getTimeSeriesData } from "@/lib/services/analysis";
 import type { DimensionConfig, Filter } from "@/types/analysis";
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id: studyId } = await params;
     const searchParams = request.nextUrl.searchParams;
@@ -19,22 +16,19 @@ export async function GET(
       } catch {
         return NextResponse.json(
           { error: "Invalid groupBy parameter (must be valid JSON)" },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
       // Validate groupBy
       if (groupBy && !groupBy.type) {
-        return NextResponse.json(
-          { error: "groupBy.type is required" },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: "groupBy.type is required" }, { status: 400 });
       }
 
       if (groupBy && groupBy.type === "facet" && !groupBy.facetId) {
         return NextResponse.json(
           { error: "groupBy.facetId is required when type is 'facet'" },
-          { status: 400 }
+          { status: 400 },
         );
       }
     }
@@ -48,7 +42,7 @@ export async function GET(
       } catch {
         return NextResponse.json(
           { error: "Invalid filters parameter (must be valid JSON array)" },
-          { status: 400 }
+          { status: 400 },
         );
       }
     }
@@ -63,7 +57,7 @@ export async function GET(
         error: "Failed to get time series data",
         details: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -101,9 +101,7 @@ export function ClassificationSchemaTable({
     <Card>
       <CardHeader>
         <CardTitle>Classification Schema</CardTitle>
-        <CardDescription>
-          Facets for categorizing research sources
-        </CardDescription>
+        <CardDescription>Facets for categorizing research sources</CardDescription>
       </CardHeader>
       <CardContent>
         <Table>
@@ -130,11 +128,10 @@ export function ClassificationSchemaTable({
                     <div className="flex flex-col gap-1">
                       <span className="font-semibold">{facet.name}</span>
                       {facet.type && (
-                        <Badge
-                          variant={getTypeBadgeVariant(facet.type)}
-                          className="text-xs w-fit"
-                        >
-                          {facet.type === "OPEN_CODED" ? "Coded" : facet.type.charAt(0) + facet.type.slice(1).toLowerCase()}
+                        <Badge variant={getTypeBadgeVariant(facet.type)} className="text-xs w-fit">
+                          {facet.type === "OPEN_CODED"
+                            ? "Coded"
+                            : facet.type.charAt(0) + facet.type.slice(1).toLowerCase()}
                         </Badge>
                       )}
                     </div>
@@ -169,7 +166,9 @@ export function ClassificationSchemaTable({
                     {coverage ? (
                       <div className="space-y-1">
                         <div className="flex justify-between text-xs text-muted-foreground">
-                          <span>{classified}/{total}</span>
+                          <span>
+                            {classified}/{total}
+                          </span>
                           <span>{percent}%</span>
                         </div>
                         <div className="h-2 bg-muted rounded-full overflow-hidden">

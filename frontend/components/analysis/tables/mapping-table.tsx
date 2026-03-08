@@ -2,12 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import {
-  useReactTable,
-  getCoreRowModel,
-  flexRender,
-  ColumnDef,
-} from "@tanstack/react-table";
+import { useReactTable, getCoreRowModel, flexRender, ColumnDef } from "@tanstack/react-table";
 import { Card, CardContent, CardHeader, CardTitle, CardAction } from "@/components/ui/card";
 import {
   Table,
@@ -103,10 +98,7 @@ export function MappingTable({
                 >
                   <span className="font-medium line-clamp-2">{source.title}</span>
                 </button>
-                <Link
-                  href={`/studies/${studyId}/sources/${source.id}`}
-                  target="_blank"
-                >
+                <Link href={`/studies/${studyId}/sources/${source.id}`} target="_blank">
                   <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
                     <ExternalLink className="h-3 w-3" />
                   </Button>
@@ -116,8 +108,7 @@ export function MappingTable({
                 <div className="text-xs text-muted-foreground space-y-1 pt-1">
                   {source.authors && source.authors.length > 0 && (
                     <div>
-                      <span className="font-semibold">Authors:</span>{" "}
-                      {source.authors.join(", ")}
+                      <span className="font-semibold">Authors:</span> {source.authors.join(", ")}
                     </div>
                   )}
                   {source.year && (
@@ -132,8 +123,7 @@ export function MappingTable({
                   )}
                   {source.sourceCategory && (
                     <div>
-                      <span className="font-semibold">Category:</span>{" "}
-                      {source.sourceCategory}
+                      <span className="font-semibold">Category:</span> {source.sourceCategory}
                     </div>
                   )}
                 </div>
@@ -161,9 +151,7 @@ export function MappingTable({
         cell: ({ row }) => {
           const classifications = row.original.classifications[facetId];
           if (!classifications || classifications.length === 0) {
-            return (
-              <div className="text-center text-muted-foreground text-xs">—</div>
-            );
+            return <div className="text-center text-muted-foreground text-xs">—</div>;
           }
 
           return (
@@ -221,12 +209,7 @@ export function MappingTable({
           <CardTitle className="text-base">{title}</CardTitle>
           {onExport && (
             <CardAction>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onExport}
-                disabled={isExporting}
-              >
+              <Button variant="outline" size="sm" onClick={onExport} disabled={isExporting}>
                 <Download className="h-4 w-4 mr-2" />
                 {isExporting ? "Exporting..." : "Export CSV"}
               </Button>
@@ -241,9 +224,7 @@ export function MappingTable({
           {facets.map((facet) => (
             <Badge
               key={facet.id}
-              variant={
-                selectedFacetIds.includes(facet.id) ? "default" : "outline"
-              }
+              variant={selectedFacetIds.includes(facet.id) ? "default" : "outline"}
               className="cursor-pointer"
               onClick={() => toggleFacet(facet.id)}
             >
@@ -267,15 +248,13 @@ export function MappingTable({
                       {headerGroup.headers.map((header, index) => (
                         <TableHead
                           key={header.id}
-                          className={`text-center whitespace-nowrap font-semibold py-2 px-3 ${index === 0 ? "text-left sticky left-0 bg-muted/95 z-20" : ""
-                            }`}
+                          className={`text-center whitespace-nowrap font-semibold py-2 px-3 ${
+                            index === 0 ? "text-left sticky left-0 bg-muted/95 z-20" : ""
+                          }`}
                         >
                           {header.isPlaceholder
                             ? null
-                            : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
+                            : flexRender(header.column.columnDef.header, header.getContext())}
                         </TableHead>
                       ))}
                     </TableRow>
@@ -290,13 +269,11 @@ export function MappingTable({
                       {row.getVisibleCells().map((cell, cellIndex) => (
                         <TableCell
                           key={cell.id}
-                          className={`align-top py-2 px-3 ${cellIndex === 0 ? "font-medium sticky left-0 bg-inherit" : ""
-                            }`}
+                          className={`align-top py-2 px-3 ${
+                            cellIndex === 0 ? "font-medium sticky left-0 bg-inherit" : ""
+                          }`}
                         >
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext()
-                          )}
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
                         </TableCell>
                       ))}
                     </TableRow>
@@ -317,9 +294,7 @@ export function MappingTable({
               <div className="flex items-center gap-6">
                 {/* Page Size Selector */}
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">
-                    Rows per page:
-                  </span>
+                  <span className="text-sm text-muted-foreground">Rows per page:</span>
                   <Select
                     value={pageSize.toString()}
                     onValueChange={(v) => {

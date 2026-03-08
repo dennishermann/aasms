@@ -48,7 +48,7 @@ export function InclusionExclusionEditor({
     list: CriterionEval[],
     index: number,
     patch: Partial<CriterionEval>,
-    setter: (next: CriterionEval[]) => void
+    setter: (next: CriterionEval[]) => void,
   ) => {
     const next = [...list];
     next[index] = { ...next[index], ...patch };
@@ -66,7 +66,6 @@ export function InclusionExclusionEditor({
 
       {/* 2-Column Grid for Criteria Edit */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-
         {/* Left Column: Inclusion */}
         <div>
           <div className="flex items-center justify-between mb-4">
@@ -89,7 +88,9 @@ export function InclusionExclusionEditor({
                   key={index}
                   className={cn(
                     "border rounded-lg p-3 space-y-3 transition-colors duration-200",
-                    isIncluded ? "border-green-200 bg-green-50/50" : "border-border hover:border-border/80"
+                    isIncluded
+                      ? "border-green-200 bg-green-50/50"
+                      : "border-border hover:border-border/80",
                   )}
                 >
                   <div className="flex items-start gap-3">
@@ -101,11 +102,11 @@ export function InclusionExclusionEditor({
                           inclusionCriteria,
                           index,
                           { fulfilled: !!checked },
-                          onChangeInclusionCriteria
+                          onChangeInclusionCriteria,
                         )
                       }
                       className={cn(
-                        "mt-1 data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600"
+                        "mt-1 data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600",
                       )}
                       disabled={disabled}
                     />
@@ -114,7 +115,7 @@ export function InclusionExclusionEditor({
                         htmlFor={`inc-${index}`}
                         className={cn(
                           "text-sm font-medium leading-tight cursor-pointer block",
-                          isIncluded ? "text-green-900" : "text-foreground"
+                          isIncluded ? "text-green-900" : "text-foreground",
                         )}
                       >
                         {ic.criterion}
@@ -126,7 +127,7 @@ export function InclusionExclusionEditor({
                             inclusionCriteria,
                             index,
                             { reasoning: e.target.value },
-                            onChangeInclusionCriteria
+                            onChangeInclusionCriteria,
                           )
                         }
                         placeholder="Reasoning..."
@@ -165,8 +166,8 @@ export function InclusionExclusionEditor({
                   className={cn(
                     "border rounded-lg p-3 space-y-3 transition-colors duration-200",
                     isExcluded
-                      ? "border-red-200 bg-red-50/50"  // Crit met = Excluded (Bad)
-                      : "border-green-200 bg-green-50/50" // Crit NOT met = Safe (Good)
+                      ? "border-red-200 bg-red-50/50" // Crit met = Excluded (Bad)
+                      : "border-green-200 bg-green-50/50", // Crit NOT met = Safe (Good)
                   )}
                 >
                   <div className="flex items-start gap-3">
@@ -178,14 +179,14 @@ export function InclusionExclusionEditor({
                           exclusionCriteria,
                           index,
                           { fulfilled: !!checked },
-                          onChangeExclusionCriteria
+                          onChangeExclusionCriteria,
                         )
                       }
                       className={cn(
                         "mt-1",
                         isExcluded
                           ? "data-[state=checked]:bg-red-600 data-[state=checked]:border-red-600"
-                          : "border-green-600 data-[state=unchecked]:border-green-600" // Green check logic is tricky with checkbox, standard checkbox is empty when unchecked.
+                          : "border-green-600 data-[state=unchecked]:border-green-600", // Green check logic is tricky with checkbox, standard checkbox is empty when unchecked.
                         // Let's keep visualized state simple: Checked = Excluded.
                       )}
                       disabled={disabled}
@@ -196,7 +197,7 @@ export function InclusionExclusionEditor({
                           htmlFor={`exc-${index}`}
                           className={cn(
                             "text-sm font-medium leading-tight cursor-pointer block",
-                            isExcluded ? "text-red-900" : "text-green-900"
+                            isExcluded ? "text-red-900" : "text-green-900",
                           )}
                         >
                           {ec.criterion}
@@ -215,7 +216,7 @@ export function InclusionExclusionEditor({
                             exclusionCriteria,
                             index,
                             { reasoning: e.target.value },
-                            onChangeExclusionCriteria
+                            onChangeExclusionCriteria,
                           )
                         }
                         placeholder="Reasoning..."
@@ -242,26 +243,52 @@ export function InclusionExclusionEditor({
               disabled={disabled}
               className="flex flex-col gap-3"
             >
-              <div className={cn(
-                "flex items-center space-x-3 border rounded-md p-3 transition-all cursor-pointer",
-                inclusionRecommendation ? "border-green-500 bg-green-50 ring-1 ring-green-500" : "hover:bg-accent"
-              )}>
-                <RadioGroupItem value="include" id="include" className="text-green-600 border-green-600" />
+              <div
+                className={cn(
+                  "flex items-center space-x-3 border rounded-md p-3 transition-all cursor-pointer",
+                  inclusionRecommendation
+                    ? "border-green-500 bg-green-50 ring-1 ring-green-500"
+                    : "hover:bg-accent",
+                )}
+              >
+                <RadioGroupItem
+                  value="include"
+                  id="include"
+                  className="text-green-600 border-green-600"
+                />
                 <Label htmlFor="include" className="cursor-pointer font-medium flex-1">
                   INCLUDE this source
                 </Label>
-                <CheckCircle2 className={cn("h-4 w-4", inclusionRecommendation ? "text-green-600" : "text-muted-foreground")} />
+                <CheckCircle2
+                  className={cn(
+                    "h-4 w-4",
+                    inclusionRecommendation ? "text-green-600" : "text-muted-foreground",
+                  )}
+                />
               </div>
 
-              <div className={cn(
-                "flex items-center space-x-3 border rounded-md p-3 transition-all cursor-pointer",
-                !inclusionRecommendation ? "border-red-500 bg-red-50 ring-1 ring-red-500" : "hover:bg-accent"
-              )}>
-                <RadioGroupItem value="exclude" id="exclude" className="text-red-600 border-red-600" />
+              <div
+                className={cn(
+                  "flex items-center space-x-3 border rounded-md p-3 transition-all cursor-pointer",
+                  !inclusionRecommendation
+                    ? "border-red-500 bg-red-50 ring-1 ring-red-500"
+                    : "hover:bg-accent",
+                )}
+              >
+                <RadioGroupItem
+                  value="exclude"
+                  id="exclude"
+                  className="text-red-600 border-red-600"
+                />
                 <Label htmlFor="exclude" className="cursor-pointer font-medium flex-1">
                   EXCLUDE this source
                 </Label>
-                <Ban className={cn("h-4 w-4", !inclusionRecommendation ? "text-red-600" : "text-muted-foreground")} />
+                <Ban
+                  className={cn(
+                    "h-4 w-4",
+                    !inclusionRecommendation ? "text-red-600" : "text-muted-foreground",
+                  )}
+                />
               </div>
             </RadioGroup>
           </div>
@@ -315,7 +342,3 @@ export function InclusionExclusionEditor({
     </CardContent>
   );
 }
-
-
-
-

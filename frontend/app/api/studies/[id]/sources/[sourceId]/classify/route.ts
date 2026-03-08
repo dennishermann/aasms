@@ -7,7 +7,7 @@ const PYTHON_SERVICE_URL = process.env.PYTHON_SERVICE_URL || "http://localhost:8
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string; sourceId: string }> }
+  { params }: { params: Promise<{ id: string; sourceId: string }> },
 ) {
   try {
     const { id: studyId, sourceId } = await params;
@@ -42,15 +42,19 @@ export async function POST(
       return NextResponse.json({ error: "Source not found" }, { status: 404 });
     }
 
-    const chosen: any = source.metadataChosen || source.metadataParsed || source.metadataExtension || {};
+    const chosen: any =
+      source.metadataChosen || source.metadataParsed || source.metadataExtension || {};
     const hasTextContent = !!chosen.content_excerpt;
     const hasAbstract = !!(chosen.abstract || source.abstract);
     const allowMetadataOnly = source.allowMetadataOnlyClassification && hasAbstract;
 
     if (!source.storagePath && !hasTextContent && !allowMetadataOnly) {
       return NextResponse.json(
-        { error: "Content is required for classification. Please upload a PDF or enable metadata-only classification." },
-        { status: 400 }
+        {
+          error:
+            "Content is required for classification. Please upload a PDF or enable metadata-only classification.",
+        },
+        { status: 400 },
       );
     }
 
@@ -69,23 +73,26 @@ export async function POST(
         {
           error: `Classification is only allowed when status is ANALYZING_CLASSIFICATION or READY_FOR_ANALYSIS. Current status: ${source.status}`,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     // Get facets from the new Facet model
-    let facets = source.study?.facets || [];
+    const facets = source.study?.facets || [];
 
     console.log("[classify] facets from database", {
       sourceId,
       totalFacets: facets.length,
-      facetNames: facets.map(f => f.name),
+      facetNames: facets.map((f) => f.name),
     });
 
     if (facets.length === 0) {
       return NextResponse.json(
-        { error: "Classification schema not configured for this study. Please add facets in study parameters." },
-        { status: 400 }
+        {
+          error:
+            "Classification schema not configured for this study. Please add facets in study parameters.",
+        },
+        { status: 400 },
       );
     }
 
@@ -101,29 +108,36 @@ export async function POST(
       sourceId,
       totalFacets: facets.length,
       validFacets: validFacets.length,
-      openFacets: validFacets.filter(f => f.type === "OPEN").map(f => f.name),
-      closedFacets: validFacets.filter(f => f.type === "CLOSED").map(f => f.name),
-      invalidFacets: facets.filter(f => f.type === "CLOSED" && (!f.categories || f.categories.length === 0)).map(f => f.name),
+      openFacets: validFacets.filter((f) => f.type === "OPEN").map((f) => f.name),
+      closedFacets: validFacets.filter((f) => f.type === "CLOSED").map((f) => f.name),
+      invalidFacets: facets
+        .filter((f) => f.type === "CLOSED" && (!f.categories || f.categories.length === 0))
+        .map((f) => f.name),
     });
 
     // Optionally narrow to a single facet
     let facetsToUse = validFacets;
     if (facetId) {
-      facetsToUse = validFacets.filter(f => f.id === facetId);
+      facetsToUse = validFacets.filter((f) => f.id === facetId);
     } else if (facetName) {
-      facetsToUse = validFacets.filter(f => f.name === facetName);
+      facetsToUse = validFacets.filter((f) => f.name === facetName);
     }
 
     if (facetsToUse.length === 0) {
       if (facetId || facetName) {
         return NextResponse.json(
-          { error: `Facet '${facetId || facetName}' not found or is invalid (CLOSED facets must have categories defined)` },
-          { status: 400 }
+          {
+            error: `Facet '${facetId || facetName}' not found or is invalid (CLOSED facets must have categories defined)`,
+          },
+          { status: 400 },
         );
       }
       return NextResponse.json(
-        { error: "No valid facets found. CLOSED facets must have categories defined, or use OPEN type." },
-        { status: 400 }
+        {
+          error:
+            "No valid facets found. CLOSED facets must have categories defined, or use OPEN type.",
+        },
+        { status: 400 },
       );
     }
 
@@ -153,8 +167,7 @@ export async function POST(
       content_excerpt: chosen.content_excerpt || "",
     };
 
-    const researchQuestions =
-      source.study?.researchQuestions?.map((rq) => rq.question) || [];
+    const researchQuestions = source.study?.researchQuestions?.map((rq) => rq.question) || [];
 
     const studyParametersPayload = {
       research_questions: researchQuestions,
@@ -165,7 +178,9 @@ export async function POST(
     let pdfBuffer: Buffer | null = null;
     if (source.hasPdf) {
       if (!source.storagePath) {
-        console.warn("[classify] Source marked as PDF but storagePath missing. Using extracted metadata only.");
+        console.warn(
+          "[classify] Source marked as PDF but storagePath missing. Using extracted metadata only.",
+        );
       } else {
         try {
           pdfBuffer = await downloadFile(source.storagePath);
@@ -244,7 +259,7 @@ export async function POST(
       });
       return NextResponse.json(
         { error: detail?.detail || detail?.error || "Classification failed" },
-        { status: classifyRes.status }
+        { status: classifyRes.status },
       );
     }
 
@@ -262,16 +277,16 @@ export async function POST(
     const avgConfidence =
       classifications.length > 0
         ? classifications.reduce((sum: number, c: any) => sum + (c.confidence || 0), 0) /
-        classifications.length
+          classifications.length
         : source.analysis?.confidenceScore || 0.5;
 
     // Build lookup maps
-    const facetNameToId = new Map(facetsToUse.map(f => [f.name, f.id]));
+    const facetNameToId = new Map(facetsToUse.map((f) => [f.name, f.id]));
     const facetIdToCategoryMap = new Map(
-      facetsToUse.map(f => [f.id, new Map(f.categories.map(c => [c.name, c.id]))])
+      facetsToUse.map((f) => [f.id, new Map(f.categories.map((c) => [c.name, c.id]))]),
     );
-    const facetById = new Map(facetsToUse.map(f => [f.id, f]));
-    const facetByName = new Map(facetsToUse.map(f => [f.name, f]));
+    const facetById = new Map(facetsToUse.map((f) => [f.id, f]));
+    const facetByName = new Map(facetsToUse.map((f) => [f.name, f]));
 
     // Determine delete scope
     const deleteScope = facetId
@@ -322,7 +337,7 @@ export async function POST(
       return map;
     };
 
-    const suggestKeywordMapping = async (keyword: string, facet: typeof facetsToUse[number]) => {
+    const suggestKeywordMapping = async (keyword: string, facet: (typeof facetsToUse)[number]) => {
       const response = await fetch(`${PYTHON_SERVICE_URL}/api/coding/map-keyword`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -359,7 +374,7 @@ export async function POST(
             facetId: facet.id,
             categoryId: null,
             value: null,
-            confidence: parseFloat(c.confidence || '0'),
+            confidence: parseFloat(c.confidence || "0"),
             reasoning: c.reasoning || "No matching values found",
             isManualOverride: false,
           });
@@ -397,7 +412,7 @@ export async function POST(
             facetId: facet.id,
             categoryId: null,
             value: null,
-            confidence: parseFloat(c.confidence || '0'),
+            confidence: parseFloat(c.confidence || "0"),
             reasoning: c.reasoning || "No matching values found",
             isManualOverride: false,
           });
@@ -436,7 +451,7 @@ export async function POST(
             const suggestion = await suggestKeywordMapping(trimmed, facet);
             if (suggestion) {
               const match = facet.categories.find(
-                (cat) => cat.name.toLowerCase() === (suggestion.category_name || "").toLowerCase()
+                (cat) => cat.name.toLowerCase() === (suggestion.category_name || "").toLowerCase(),
               );
               await prisma.facetKeywordMapping.upsert({
                 where: {
@@ -484,13 +499,13 @@ export async function POST(
       });
     }
 
-    const openFacetIds = facetsToUse.filter(f => f.type === "OPEN").map(f => f.id);
+    const openFacetIds = facetsToUse.filter((f) => f.type === "OPEN").map((f) => f.id);
     const facetKeywordUpdate =
       openFacetIds.length > 0
         ? {
-          deleteMany: { facetId: { in: openFacetIds } },
-          create: keywordCreates,
-        }
+            deleteMany: { facetId: { in: openFacetIds } },
+            create: keywordCreates,
+          }
         : keywordCreates.length > 0
           ? { create: keywordCreates }
           : undefined;
@@ -562,8 +577,11 @@ export async function POST(
       console.error("Failed to reset status after classification error", e);
     }
     return NextResponse.json(
-      { error: "Failed to classify source", details: error instanceof Error ? error.message : "Unknown error" },
-      { status: 500 }
+      {
+        error: "Failed to classify source",
+        details: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 },
     );
   }
 }

@@ -9,7 +9,7 @@ import { getCrossTabData } from "./crosstab-service";
 export async function getGapAnalysis(
   studyId: string,
   threshold: number = 3,
-  facetIds?: string[]
+  facetIds?: string[],
 ): Promise<GapAnalysis> {
   // Get facets to analyze
   const facets = await prisma.facet.findMany({
@@ -52,12 +52,12 @@ export async function getGapAnalysis(
         gaps,
         empty,
       };
-    })
+    }),
   );
 
   // Analyze cross-tabulation gaps (only for CLOSED facets with reasonable category counts)
   const closedFacets = facets.filter(
-    (f) => f.type === "CLOSED" && f.categories.length > 0 && f.categories.length <= 15
+    (f) => f.type === "CLOSED" && f.categories.length > 0 && f.categories.length <= 15,
   );
 
   const crossTabGaps: CrossTabGap[] = [];
@@ -72,7 +72,7 @@ export async function getGapAnalysis(
         const crossTabData = await getCrossTabData(
           studyId,
           { type: "facet", facetId: rowFacet.id },
-          { type: "facet", facetId: colFacet.id }
+          { type: "facet", facetId: colFacet.id },
         );
 
         const gaps = crossTabData.cells
@@ -94,10 +94,7 @@ export async function getGapAnalysis(
         }
       } catch (error) {
         // Skip failed crosstab analyses
-        console.warn(
-          `Failed to analyze crosstab for ${rowFacet.name} × ${colFacet.name}:`,
-          error
-        );
+        console.warn(`Failed to analyze crosstab for ${rowFacet.name} × ${colFacet.name}:`, error);
       }
     }
   }

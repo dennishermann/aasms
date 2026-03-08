@@ -4,20 +4,24 @@ import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { CardContent } from "@/components/ui/card";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { Loader2, ChevronDown, ChevronUp, AlertCircle, Database, ShieldCheck, Sparkles, Info } from "lucide-react";
+  Loader2,
+  ChevronDown,
+  ChevronUp,
+  AlertCircle,
+  Database,
+  ShieldCheck,
+  Sparkles,
+  Info,
+} from "lucide-react";
 import { Classification, FacetKeyword, getFacetName, getCategoryDisplay, Facet } from "./types";
 import { cn } from "@/lib/utils";
 
 interface ClassificationsViewProps {
   classifications: Classification[];
   facetKeywords?: FacetKeyword[];
-  facets?: Facet[];  // All facets from schema to show "Not Set" for missing ones
+  facets?: Facet[]; // All facets from schema to show "Not Set" for missing ones
   classificationBasis?: "FULL_TEXT" | "METADATA_ONLY";
   loading?: boolean;
 }
@@ -73,9 +77,15 @@ const MetadataClassificationCard = ({
   return (
     <div className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/5 transition-colors">
       <div className="flex flex-col gap-0.5">
-        <span className="text-xs font-bold uppercase text-muted-foreground tracking-wider">{facetName}</span>
+        <span className="text-xs font-bold uppercase text-muted-foreground tracking-wider">
+          {facetName}
+        </span>
         <span className="font-medium text-base truncate max-w-[200px]" title={item.category}>
-          {item.category === "No Match" ? <span className="text-muted-foreground italic">No Match</span> : item.category}
+          {item.category === "No Match" ? (
+            <span className="text-muted-foreground italic">No Match</span>
+          ) : (
+            item.category
+          )}
         </span>
       </div>
       {isVerified ? (
@@ -86,10 +96,16 @@ const MetadataClassificationCard = ({
       ) : (
         <div className="flex items-center gap-1.5" title="Inferred by AI">
           <Sparkles className="h-3.5 w-3.5 text-amber-500" />
-          <span className={cn(
-            "text-xs font-mono font-medium",
-            item.confidence > 0.8 ? "text-green-600" : item.confidence > 0.5 ? "text-amber-600" : "text-red-600"
-          )}>
+          <span
+            className={cn(
+              "text-xs font-mono font-medium",
+              item.confidence > 0.8
+                ? "text-green-600"
+                : item.confidence > 0.5
+                  ? "text-amber-600"
+                  : "text-red-600",
+            )}
+          >
             {(item.confidence * 100).toFixed(0)}%
           </span>
         </div>
@@ -122,11 +138,17 @@ const FacetClassificationCard = ({
         <div className="p-4 flex flex-col">
           <div className="flex items-start justify-between gap-2 mb-3">
             <div className="flex items-center gap-2">
-              <Label className="text-xs font-bold uppercase text-muted-foreground tracking-wider line-clamp-1" title={facetName}>
+              <Label
+                className="text-xs font-bold uppercase text-muted-foreground tracking-wider line-clamp-1"
+                title={facetName}
+              >
                 {facetName}
               </Label>
               {!required && (
-                <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 text-muted-foreground">
+                <Badge
+                  variant="outline"
+                  className="text-[10px] px-1.5 py-0 h-4 text-muted-foreground"
+                >
                   Optional
                 </Badge>
               )}
@@ -145,9 +167,8 @@ const FacetClassificationCard = ({
   const isOpenWithKeywords = facetType === "OPEN" && keywordData && keywordData.length > 0;
 
   // Calculate average confidence for multi-category (only for non-keyword items)
-  const avgConfidence = items.length > 0
-    ? items.reduce((sum, i) => sum + i.confidence, 0) / items.length
-    : 0;
+  const avgConfidence =
+    items.length > 0 ? items.reduce((sum, i) => sum + i.confidence, 0) / items.length : 0;
   const isMultiCategory = items.length > 1;
 
   return (
@@ -158,7 +179,10 @@ const FacetClassificationCard = ({
       >
         <div className="flex items-start justify-between gap-2 mb-3">
           <div className="flex items-center gap-2">
-            <Label className="text-xs font-bold uppercase text-muted-foreground tracking-wider line-clamp-1" title={facetName}>
+            <Label
+              className="text-xs font-bold uppercase text-muted-foreground tracking-wider line-clamp-1"
+              title={facetName}
+            >
               {facetName}
             </Label>
             {isMultiCategory && (
@@ -172,11 +196,12 @@ const FacetClassificationCard = ({
               </Badge>
             )}
           </div>
-          {(items.length > 0 || isOpenWithKeywords) && (expanded ? (
-            <ChevronUp className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-          ) : (
-            <ChevronDown className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-          ))}
+          {(items.length > 0 || isOpenWithKeywords) &&
+            (expanded ? (
+              <ChevronUp className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+            ) : (
+              <ChevronDown className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+            ))}
         </div>
 
         {/* Display keywords for OPEN facets with confidence tooltips */}
@@ -193,9 +218,9 @@ const FacetClassificationCard = ({
                         kw.confidence && kw.confidence > 0.7
                           ? "bg-green-50 text-green-700 border-green-200"
                           : kw.confidence && kw.confidence > 0.4
-                          ? "bg-amber-50 text-amber-700 border-amber-200"
-                          : "bg-slate-50 text-slate-700 border-slate-200",
-                        !expanded && "line-clamp-1"
+                            ? "bg-amber-50 text-amber-700 border-amber-200"
+                            : "bg-slate-50 text-slate-700 border-slate-200",
+                        !expanded && "line-clamp-1",
                       )}
                     >
                       {kw.keyword}
@@ -215,9 +240,7 @@ const FacetClassificationCard = ({
                         </p>
                       )}
                       {kw.evidence && (
-                        <p className="text-xs text-muted-foreground italic">
-                          {kw.evidence}
-                        </p>
+                        <p className="text-xs text-muted-foreground italic">{kw.evidence}</p>
                       )}
                       {!kw.evidence && !kw.confidence && (
                         <p className="text-xs text-muted-foreground italic">
@@ -244,7 +267,7 @@ const FacetClassificationCard = ({
                   item.category === "Not Applicable" || item.category === "No Match"
                     ? "bg-muted text-muted-foreground border-transparent italic"
                     : "bg-primary/5 hover:bg-primary/10 text-primary",
-                  !expanded && "line-clamp-1"
+                  !expanded && "line-clamp-1",
                 )}
                 title={item.category}
               >
@@ -257,10 +280,16 @@ const FacetClassificationCard = ({
         {items.length > 0 && (
           <div className="mt-auto flex items-end justify-between text-xs text-muted-foreground">
             <span>Confidence{isMultiCategory ? " (avg)" : ""}</span>
-            <span className={cn(
-              "font-mono font-medium",
-              avgConfidence > 0.8 ? "text-green-600" : avgConfidence > 0.5 ? "text-yellow-600" : "text-red-600"
-            )}>
+            <span
+              className={cn(
+                "font-mono font-medium",
+                avgConfidence > 0.8
+                  ? "text-green-600"
+                  : avgConfidence > 0.5
+                    ? "text-yellow-600"
+                    : "text-red-600",
+              )}
+            >
               {(avgConfidence * 100).toFixed(0)}%
             </span>
           </div>
@@ -272,7 +301,7 @@ const FacetClassificationCard = ({
         <div
           className={cn(
             "grid transition-all duration-200 ease-in-out border-t border-border/50 bg-muted/20",
-            expanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+            expanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
           )}
         >
           <div className="overflow-hidden">
@@ -284,10 +313,16 @@ const FacetClassificationCard = ({
                       <Badge variant="outline" className="text-xs">
                         {item.category}
                       </Badge>
-                      <span className={cn(
-                        "text-xs font-mono",
-                        item.confidence > 0.8 ? "text-green-600" : item.confidence > 0.5 ? "text-yellow-600" : "text-red-600"
-                      )}>
+                      <span
+                        className={cn(
+                          "text-xs font-mono",
+                          item.confidence > 0.8
+                            ? "text-green-600"
+                            : item.confidence > 0.5
+                              ? "text-yellow-600"
+                              : "text-red-600",
+                        )}
+                      >
                         {(item.confidence * 100).toFixed(0)}%
                       </span>
                     </div>
@@ -297,23 +332,23 @@ const FacetClassificationCard = ({
                     <div
                       className={cn(
                         "h-full rounded-full",
-                        item.confidence > 0.8 ? "bg-green-500" : item.confidence > 0.5 ? "bg-yellow-500" : "bg-red-500"
+                        item.confidence > 0.8
+                          ? "bg-green-500"
+                          : item.confidence > 0.5
+                            ? "bg-yellow-500"
+                            : "bg-red-500",
                       )}
                       style={{ width: `${item.confidence * 100}%` }}
                     />
                   </div>
                   {/* Reasoning */}
                   {item.reasoning && (
-                    <p className="text-sm text-foreground/90 leading-relaxed">
-                      {item.reasoning}
-                    </p>
+                    <p className="text-sm text-foreground/90 leading-relaxed">{item.reasoning}</p>
                   )}
                   {!item.reasoning && !isMultiCategory && (
                     <p className="text-sm text-muted-foreground italic">No reasoning provided.</p>
                   )}
-                  {isMultiCategory && idx < items.length - 1 && (
-                    <div className="border-b my-2" />
-                  )}
+                  {isMultiCategory && idx < items.length - 1 && <div className="border-b my-2" />}
                 </div>
               ))}
             </div>
@@ -365,7 +400,7 @@ export function ClassificationsView({
         required: facet.required,
         items: [],
         keywordData: [],
-        isMetadata: !!facet.metadataField
+        isMetadata: !!facet.metadataField,
       };
       facetMap.set(facet.id, group);
 
@@ -391,7 +426,7 @@ export function ClassificationsView({
         required: false,
         items: [],
         keywordData: [],
-        isMetadata: false // Assume analysis if unknown
+        isMetadata: false, // Assume analysis if unknown
       };
       facetMap.set(facetId, group);
       analysisGroups.push(group);
@@ -399,7 +434,7 @@ export function ClassificationsView({
 
     group.items.push({
       id: c.id,
-      category: (c.category?.name || c.value) ? getCategoryDisplay(c) : "No Match",
+      category: c.category?.name || c.value ? getCategoryDisplay(c) : "No Match",
       confidence: c.confidence,
       reasoning: c.reasoning,
     });
@@ -418,7 +453,7 @@ export function ClassificationsView({
         required: false,
         items: [],
         keywordData: [],
-        isMetadata: false
+        isMetadata: false,
       };
       facetMap.set(facetId, group);
       analysisGroups.push(group);
@@ -458,10 +493,12 @@ export function ClassificationsView({
         <div className="space-y-3">
           <div className="flex items-center gap-2 pb-1 border-b">
             <Database className="h-4 w-4 text-muted-foreground" />
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Source Properties</h3>
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+              Source Properties
+            </h3>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {metadataGroups.map(group => (
+            {metadataGroups.map((group) => (
               <MetadataClassificationCard
                 key={group.facetId}
                 facetName={group.facetName}
@@ -477,12 +514,15 @@ export function ClassificationsView({
       <div className="space-y-3">
         <div className="flex items-center gap-2 pb-1 border-b">
           <Sparkles className="h-4 w-4 text-muted-foreground" />
-          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Research Analysis</h3>
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+            Research Analysis
+          </h3>
           {loading && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground ml-auto" />}
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {analysisGroups.map((group) => {
-            const hasData = group.items.length > 0 || (group.keywordData && group.keywordData.length > 0);
+            const hasData =
+              group.items.length > 0 || (group.keywordData && group.keywordData.length > 0);
             return (
               <FacetClassificationCard
                 key={group.facetId}

@@ -20,7 +20,7 @@ export async function getCrossTabData(
   studyId: string,
   rowDimension: DimensionConfig,
   colDimension: DimensionConfig,
-  filters?: Filter[]
+  filters?: Filter[],
 ): Promise<CrossTabResult> {
   const baseWhere = buildBaseSourceWhere(studyId);
   const where = applyFilters(baseWhere, filters);
@@ -113,8 +113,7 @@ export async function getCrossTabData(
 
   // Calculate percentages
   for (const cell of cells) {
-    cell.percentage =
-      grandTotal > 0 ? Math.round((cell.count / grandTotal) * 1000) / 10 : 0;
+    cell.percentage = grandTotal > 0 ? Math.round((cell.count / grandTotal) * 1000) / 10 : 0;
   }
 
   return {
@@ -148,12 +147,11 @@ function getDimensionValues(
       }[];
     } | null;
   },
-  dimension: DimensionConfig
+  dimension: DimensionConfig,
 ): string[] {
   if (dimension.type === "facet" && dimension.facetId) {
     const classifications =
-      source.analysis?.classifications.filter((c) => c.facetId === dimension.facetId) ||
-      [];
+      source.analysis?.classifications.filter((c) => c.facetId === dimension.facetId) || [];
 
     if (classifications.length === 0) {
       return ["Unknown"];

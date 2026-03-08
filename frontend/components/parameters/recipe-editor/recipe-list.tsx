@@ -6,10 +6,7 @@ import { cn } from "@/lib/utils";
 import type { RecipeListProps, LocalRecipe, ResearchQuestion } from "./types";
 import type { RecipeType, RecipeStatus } from "@/types/recipe";
 
-const RECIPE_TYPE_BADGES: Record<
-  RecipeType,
-  { label: string; className: string }
-> = {
+const RECIPE_TYPE_BADGES: Record<RecipeType, { label: string; className: string }> = {
   DISTRIBUTION: { label: "Dist", className: "bg-blue-100 text-blue-700" },
   MAP: { label: "Map", className: "bg-emerald-100 text-emerald-700" },
   TREND: { label: "Trend", className: "bg-amber-100 text-amber-700" },
@@ -36,7 +33,7 @@ interface RecipeGroup {
 
 function groupRecipesByRQ(
   recipes: LocalRecipe[],
-  researchQuestions: ResearchQuestion[]
+  researchQuestions: ResearchQuestion[],
 ): RecipeGroup[] {
   const rqMap = new Map(researchQuestions.map((rq) => [rq.id, rq.question]));
   const groups: Map<string | null, LocalRecipe[]> = new Map();
@@ -96,17 +93,13 @@ export function RecipeList({
     <div className="w-52 shrink-0 border-r bg-muted/30 flex flex-col">
       {/* Header */}
       <div className="p-3 border-b">
-        <h3 className="text-sm font-semibold text-muted-foreground">
-          RQ Recipes
-        </h3>
+        <h3 className="text-sm font-semibold text-muted-foreground">RQ Recipes</h3>
       </div>
 
       {/* Recipe Groups */}
       <div className="flex-1 overflow-y-auto">
         {groups.length === 0 ? (
-          <div className="p-4 text-sm text-muted-foreground text-center">
-            No recipes yet
-          </div>
+          <div className="p-4 text-sm text-muted-foreground text-center">No recipes yet</div>
         ) : (
           groups.map((group) => (
             <div key={group.rqId ?? "unlinked"} className="py-2">
@@ -131,7 +124,7 @@ export function RecipeList({
                     onClick={() => onSelectRecipe(key)}
                     className={cn(
                       "w-full px-3 py-2 text-left flex items-center gap-2 hover:bg-muted/50 transition-colors",
-                      isSelected && "bg-muted border-l-2 border-primary"
+                      isSelected && "bg-muted border-l-2 border-primary",
                     )}
                   >
                     {/* Status Icon */}
@@ -141,16 +134,14 @@ export function RecipeList({
                     <span
                       className={cn(
                         "text-[10px] font-medium px-1.5 py-0.5 rounded",
-                        typeBadge.className
+                        typeBadge.className,
                       )}
                     >
                       {typeBadge.label}
                     </span>
 
                     {/* Recipe Name */}
-                    <span className="text-sm truncate flex-1">
-                      {recipe.name || "Untitled"}
-                    </span>
+                    <span className="text-sm truncate flex-1">{recipe.name || "Untitled"}</span>
                   </button>
                 );
               })}
@@ -161,12 +152,7 @@ export function RecipeList({
 
       {/* Add Button */}
       <div className="p-2 border-t">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="w-full justify-start"
-          onClick={onAddRecipe}
-        >
+        <Button variant="ghost" size="sm" className="w-full justify-start" onClick={onAddRecipe}>
           <Plus className="h-4 w-4 mr-2" />
           Add Recipe
         </Button>

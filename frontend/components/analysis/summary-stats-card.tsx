@@ -78,9 +78,7 @@ export function SummaryStatsCard({ stats, isLoading }: SummaryStatsCardProps) {
       {stats.facetCoverage.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm font-medium">
-              Classification Coverage
-            </CardTitle>
+            <CardTitle className="text-sm font-medium">Classification Coverage</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">

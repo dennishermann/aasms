@@ -2,14 +2,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import {
-  Check,
-  Circle,
-  Database,
-  Filter,
-  Tags,
-  BarChart3,
-} from "lucide-react";
+import { Check, Circle, Database, Filter, Tags, BarChart3 } from "lucide-react";
 import type { StudyProgress } from "@/lib/services/study/progress-service";
 
 interface StudyProgressStepperProps {
@@ -92,10 +85,7 @@ function PhaseNode({
   const isInProgress = phase.status === "in_progress";
 
   return (
-    <Link
-      href={href}
-      className="flex flex-col items-center flex-1 relative group"
-    >
+    <Link href={href} className="flex flex-col items-center flex-1 relative group">
       {/* Circle indicator */}
       <div
         className={`
@@ -110,14 +100,9 @@ function PhaseNode({
           <Check className="w-8 h-8 text-green-600" />
         ) : isInProgress ? (
           <div className="relative w-8 h-8">
-            <Circle
-              className="w-8 h-8 text-blue-600 animate-spin"
-              strokeWidth={3}
-            />
+            <Circle className="w-8 h-8 text-blue-600 animate-spin" strokeWidth={3} />
             <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-xs font-bold text-blue-600">
-                {phase.percentage}%
-              </span>
+              <span className="text-xs font-bold text-blue-600">{phase.percentage}%</span>
             </div>
           </div>
         ) : (
@@ -130,23 +115,21 @@ function PhaseNode({
         <h3 className={`font-semibold text-sm ${getStatusTextColor(phase.status)}`}>
           {index + 1}. {phase.label}
         </h3>
-        <p className="text-xs text-muted-foreground mt-1 max-w-xs">
-          {phase.description}
-        </p>
+        <p className="text-xs text-muted-foreground mt-1 max-w-xs">{phase.description}</p>
       </div>
 
       {/* Metric detail */}
       <div className="mt-2 text-center">
         <p className="text-xs font-medium text-gray-700">{phase.detail}</p>
         {phase.total > 0 && (
-          <p className="text-xs text-muted-foreground">
-            {phase.percentage}% complete
-          </p>
+          <p className="text-xs text-muted-foreground">{phase.percentage}% complete</p>
         )}
       </div>
 
       {/* Status badge */}
-      <div className={`mt-3 px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeColor(phase.status)}`}>
+      <div
+        className={`mt-3 px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeColor(phase.status)}`}
+      >
         {phase.status === "not_started" && "Not Started"}
         {phase.status === "in_progress" && "In Progress"}
         {phase.status === "complete" && "Complete"}
@@ -160,18 +143,8 @@ function PhaseNode({
             ${getArrowColor(phase.status)}
           `}
         >
-          <svg
-            className="w-6 h-6"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M9 5l7 7-7 7"
-            />
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
         </div>
       )}
@@ -219,9 +192,7 @@ export function StudyProgressStepper({ progress }: StudyProgressStepperProps) {
           <p className="text-sm font-medium text-slate-700">Overall Progress</p>
           <p className="text-sm font-semibold text-slate-900">
             {Math.round(
-              (phases.reduce((sum, p) => sum + p.data.percentage, 0) /
-                phases.length) *
-                100
+              (phases.reduce((sum, p) => sum + p.data.percentage, 0) / phases.length) * 100,
             ) / 100}
           </p>
         </div>
@@ -231,11 +202,7 @@ export function StudyProgressStepper({ progress }: StudyProgressStepperProps) {
             style={{
               width: `${Math.min(
                 100,
-                Math.max(
-                  0,
-                  phases.reduce((sum, p) => sum + p.data.percentage, 0) /
-                    phases.length
-                )
+                Math.max(0, phases.reduce((sum, p) => sum + p.data.percentage, 0) / phases.length),
               )}%`,
             }}
           />

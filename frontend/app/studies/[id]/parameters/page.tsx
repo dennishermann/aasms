@@ -53,15 +53,8 @@ export default function ParametersPage() {
   const [saveSuccess, setSaveSuccess] = useState<TabKey | null>(null);
 
   // Data fetching
-  const {
-    study,
-    apiFacets,
-    apiRecipes,
-    isLoading,
-    studyError,
-    initialFormData,
-    facetsFetching,
-  } = useParametersData(studyId);
+  const { study, apiFacets, apiRecipes, isLoading, studyError, initialFormData, facetsFetching } =
+    useParametersData(studyId);
 
   // Initialize form state when data is loaded
   useEffect(() => {
@@ -77,21 +70,17 @@ export default function ParametersPage() {
   }, [initialFormData, isInitialized, facetsFetching]);
 
   // Unsaved changes tracking
-  const {
-    tabChanges,
-    showUnsavedDialog,
-    handleConfirmLeave,
-    handleCancelLeave,
-  } = useUnsavedChanges({
-    currentData: {
-      motivation,
-      researchQuestions,
-      inclusionCriteria,
-      exclusionCriteria,
-      facets,
-    },
-    initialData: initialState,
-  });
+  const { tabChanges, showUnsavedDialog, handleConfirmLeave, handleCancelLeave } =
+    useUnsavedChanges({
+      currentData: {
+        motivation,
+        researchQuestions,
+        inclusionCriteria,
+        exclusionCriteria,
+        facets,
+      },
+      initialData: initialState,
+    });
 
   // Save mutations
   const { handleSaveTab, isSaving, hasError } = useParametersMutations({
@@ -154,20 +143,17 @@ export default function ParametersPage() {
   // Tab content indicators
   const tabHasContent = {
     overview: motivation.trim().length > 0,
-    "research-questions": researchQuestions.some(rq => rq.question.trim().length > 0),
-    criteria: inclusionCriteria.some(c => c.criterion.trim().length > 0) ||
-      exclusionCriteria.some(c => c.criterion.trim().length > 0),
+    "research-questions": researchQuestions.some((rq) => rq.question.trim().length > 0),
+    criteria:
+      inclusionCriteria.some((c) => c.criterion.trim().length > 0) ||
+      exclusionCriteria.some((c) => c.criterion.trim().length > 0),
     "search-protocol": true, // Content is fetched dynamically by component
-    classification: facets.some(f => f.name.trim().length > 0),
+    classification: facets.some((f) => f.name.trim().length > 0),
     recipes: (apiRecipes?.length ?? 0) > 0,
   };
 
   return (
-    <StudyLayout
-      studyId={studyId}
-      studyTitle={study.title}
-      studyStatus={study.status}
-    >
+    <StudyLayout studyId={studyId} studyTitle={study.title} studyStatus={study.status}>
       <div className="container mx-auto px-4 py-6">
         {/* Header */}
         <div className="mb-6">
@@ -180,24 +166,28 @@ export default function ParametersPage() {
         {/* Tabbed Interface */}
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabKey)} className="w-full">
           <TabsList className="mb-6 h-11">
-            {(Object.entries(TAB_CONFIG) as [TabKey, typeof TAB_CONFIG[TabKey]][]).map(([key, config]) => {
-              const Icon = config.icon;
-              const hasContent = tabHasContent[key];
-              const hasChanges = tabChanges[key];
+            {(Object.entries(TAB_CONFIG) as [TabKey, (typeof TAB_CONFIG)[TabKey]][]).map(
+              ([key, config]) => {
+                const Icon = config.icon;
+                const hasContent = tabHasContent[key];
+                const hasChanges = tabChanges[key];
 
-              return (
-                <TabsTrigger key={key} value={key} className="gap-2 px-4 relative">
-                  <span className={`absolute left-1 top-1/2 -translate-y-1/2 w-1 h-4 rounded-full ${config.color} opacity-50`} />
-                  <Icon className="h-4 w-4 ml-1" />
-                  {config.label}
-                  {hasChanges ? (
-                    <span className="w-2 h-2 rounded-full bg-amber-500" />
-                  ) : hasContent ? (
-                    <span className={`w-1.5 h-1.5 rounded-full ${config.color}`} />
-                  ) : null}
-                </TabsTrigger>
-              );
-            })}
+                return (
+                  <TabsTrigger key={key} value={key} className="gap-2 px-4 relative">
+                    <span
+                      className={`absolute left-1 top-1/2 -translate-y-1/2 w-1 h-4 rounded-full ${config.color} opacity-50`}
+                    />
+                    <Icon className="h-4 w-4 ml-1" />
+                    {config.label}
+                    {hasChanges ? (
+                      <span className="w-2 h-2 rounded-full bg-amber-500" />
+                    ) : hasContent ? (
+                      <span className={`w-1.5 h-1.5 rounded-full ${config.color}`} />
+                    ) : null}
+                  </TabsTrigger>
+                );
+              },
+            )}
           </TabsList>
 
           {/* Overview Tab */}

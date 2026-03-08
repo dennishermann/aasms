@@ -6,7 +6,7 @@ const PYTHON_SERVICE_URL = process.env.PYTHON_SERVICE_URL || "http://localhost:8
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string; sourceId: string }> }
+  { params }: { params: Promise<{ id: string; sourceId: string }> },
 ) {
   try {
     const { id: studyId, sourceId } = await params;
@@ -46,21 +46,27 @@ export async function POST(
       return NextResponse.json({ error: "Source not found" }, { status: 404 });
     }
 
-    const chosen: any = source.metadataChosen || source.metadataParsed || source.metadataExtension || {};
+    const chosen: any =
+      source.metadataChosen || source.metadataParsed || source.metadataExtension || {};
     const hasTextContent = !!chosen.content_excerpt;
     const hasAbstract = !!(chosen.abstract || source.abstract);
 
     if (!source.storagePath && !hasTextContent && !hasAbstract) {
       return NextResponse.json(
-        { error: "Metadata and abstract are required for analysis. Please provide at least an abstract." },
-        { status: 400 }
+        {
+          error:
+            "Metadata and abstract are required for analysis. Please provide at least an abstract.",
+        },
+        { status: 400 },
       );
     }
 
     if (source.status !== "READY_FOR_ANALYSIS") {
       return NextResponse.json(
-        { error: `Analysis allowed only when status is READY_FOR_ANALYSIS. Current status: ${source.status}` },
-        { status: 400 }
+        {
+          error: `Analysis allowed only when status is READY_FOR_ANALYSIS. Current status: ${source.status}`,
+        },
+        { status: 400 },
       );
     }
 
@@ -162,17 +168,20 @@ export async function POST(
       });
     }
 
-
     if (!analyzeRes.ok) {
       const detail = await analyzeRes.json().catch(() => ({}));
-      console.error("[analyze] python-service failed", { sourceId, status: analyzeRes.status, detail });
+      console.error("[analyze] python-service failed", {
+        sourceId,
+        status: analyzeRes.status,
+        detail,
+      });
       await prisma.source.update({
         where: { id: sourceId },
         data: { status: "NEEDS_REVIEW" },
       });
       return NextResponse.json(
         { error: "Inclusion/exclusion analysis failed", detail },
-        { status: analyzeRes.status }
+        { status: analyzeRes.status },
       );
     }
 
@@ -181,23 +190,49 @@ export async function POST(
       sourceId,
       recommendation: analysisResult.recommendation,
       confidence: analysisResult.confidence,
-      hasInclusionCriteria: !!analysisResult.inclusionCriteria || !!analysisResult.inclusion_criteria,
-      hasExclusionCriteria: !!analysisResult.exclusionCriteria || !!analysisResult.exclusion_criteria,
-      inclusionCriteriaCount: (analysisResult.inclusionCriteria || analysisResult.inclusion_criteria || []).length,
-      exclusionCriteriaCount: (analysisResult.exclusionCriteria || analysisResult.exclusion_criteria || []).length,
-      inclSample: (analysisResult.inclusionCriteria || analysisResult.inclusion_criteria || []).slice(0, 2),
-      exclSample: (analysisResult.exclusionCriteria || analysisResult.exclusion_criteria || []).slice(0, 2),
+      hasInclusionCriteria:
+        !!analysisResult.inclusionCriteria || !!analysisResult.inclusion_criteria,
+      hasExclusionCriteria:
+        !!analysisResult.exclusionCriteria || !!analysisResult.exclusion_criteria,
+      inclusionCriteriaCount: (
+        analysisResult.inclusionCriteria ||
+        analysisResult.inclusion_criteria ||
+        []
+      ).length,
+      exclusionCriteriaCount: (
+        analysisResult.exclusionCriteria ||
+        analysisResult.exclusion_criteria ||
+        []
+      ).length,
+      inclSample: (
+        analysisResult.inclusionCriteria ||
+        analysisResult.inclusion_criteria ||
+        []
+      ).slice(0, 2),
+      exclSample: (
+        analysisResult.exclusionCriteria ||
+        analysisResult.exclusion_criteria ||
+        []
+      ).slice(0, 2),
     });
 
     // Normalize field names: handle both camelCase (expected) and snake_case (fallback)
-    const inclusionCriteria = (analysisResult.inclusionCriteria || analysisResult.inclusion_criteria || []).map((c: any) => ({
+    const inclusionCriteria = (
+      analysisResult.inclusionCriteria ||
+      analysisResult.inclusion_criteria ||
+      []
+    ).map((c: any) => ({
       criterion: c.criterion,
       fulfilled: c.decision ?? c.fulfilled ?? false,
       reasoning: c.reasoning || "",
       confidence: c.confidence ?? 0.5,
     }));
 
-    const exclusionCriteria = (analysisResult.exclusionCriteria || analysisResult.exclusion_criteria || []).map((c: any) => ({
+    const exclusionCriteria = (
+      analysisResult.exclusionCriteria ||
+      analysisResult.exclusion_criteria ||
+      []
+    ).map((c: any) => ({
       criterion: c.criterion,
       fulfilled: c.decision ?? c.fulfilled ?? false,
       reasoning: c.reasoning || "",
@@ -213,8 +248,10 @@ export async function POST(
     });
 
     // Persist inclusion/exclusion with normalized field names
-    const inclusionReasoning = analysisResult.inclusionReasoning || analysisResult.inclusion_reasoning || "";
-    const exclusionReasoning = analysisResult.exclusionReasoning || analysisResult.exclusion_reasoning || "";
+    const inclusionReasoning =
+      analysisResult.inclusionReasoning || analysisResult.inclusion_reasoning || "";
+    const exclusionReasoning =
+      analysisResult.exclusionReasoning || analysisResult.exclusion_reasoning || "";
     const relevanceScore = analysisResult.relevanceScore ?? analysisResult.relevance_score ?? null;
     const qualityNotes = analysisResult.qualityNotes || analysisResult.quality_notes || null;
 
@@ -327,12 +364,13 @@ export async function POST(
       where: { id: sourceId },
       data: {
         status: newStatus,
-        classificationThreadId: analysisResult.contextResponseId || analysisResult.context_response_id || undefined
+        classificationThreadId:
+          analysisResult.contextResponseId || analysisResult.context_response_id || undefined,
       },
     });
     console.log(`[analyze] status -> ${newStatus}`, {
       sourceId,
-      inclusionRecommendation: analysis.inclusionRecommendation
+      inclusionRecommendation: analysis.inclusionRecommendation,
     });
 
     return NextResponse.json({ data: analysis });
@@ -347,8 +385,11 @@ export async function POST(
       console.error("Failed to set status after analysis error", e);
     }
     return NextResponse.json(
-      { error: "Failed to run analysis", details: error instanceof Error ? error.message : "Unknown error" },
-      { status: 500 }
+      {
+        error: "Failed to run analysis",
+        details: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 },
     );
   }
 }

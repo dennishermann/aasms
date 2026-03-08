@@ -1,7 +1,13 @@
 "use client";
 
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
 import { CardContent } from "@/components/ui/card";
@@ -50,7 +56,7 @@ export function ClassificationsEditor({
 
   // Update category by ID (for CLOSED facets)
   const updateCategoryById = (index: number, categoryId: string, facet: Facet) => {
-    const category = facet.categories.find(c => c.id === categoryId);
+    const category = facet.categories.find((c) => c.id === categoryId);
     updateClassification(index, {
       categoryId: categoryId,
       category: category ? { id: category.id, name: category.name } : null,
@@ -88,7 +94,8 @@ export function ClassificationsEditor({
         {classifications.map((classification, index) => {
           const { facetName, categoryOrValue } = getDisplayInfo(classification);
           const facet = findFacet(classification);
-          const isConstrained = facet && facet.type === "CLOSED" && facet.categories && facet.categories.length > 0;
+          const isConstrained =
+            facet && facet.type === "CLOSED" && facet.categories && facet.categories.length > 0;
 
           // Generate unique IDs for accessibility and extensions
           const safeFacetName = facetName.replace(/[^a-zA-Z0-9]/g, "_");
@@ -97,18 +104,25 @@ export function ClassificationsEditor({
           const reasoningId = `classification_${index}_${safeFacetName}_reasoning`;
 
           return (
-            <div key={index} className="border rounded-lg p-4 bg-card hover:bg-accent/5 transition-colors flex flex-col gap-4 h-full">
-
+            <div
+              key={index}
+              className="border rounded-lg p-4 bg-card hover:bg-accent/5 transition-colors flex flex-col gap-4 h-full"
+            >
               {/* Header: Facet Name */}
               <div className="flex items-center justify-between">
-                <Label className="text-xs font-bold uppercase text-muted-foreground tracking-wider line-clamp-1" title={facetName}>
+                <Label
+                  className="text-xs font-bold uppercase text-muted-foreground tracking-wider line-clamp-1"
+                  title={facetName}
+                >
                   {facetName}
                 </Label>
               </div>
 
               {/* Category Input (Select or Text) */}
               <div className="space-y-1.5 shrink-0">
-                <Label htmlFor={categoryId} className="text-xs font-medium text-foreground/70">Category</Label>
+                <Label htmlFor={categoryId} className="text-xs font-medium text-foreground/70">
+                  Category
+                </Label>
                 {isConstrained ? (
                   <Select
                     value={classification.categoryId || ""}
@@ -157,11 +171,19 @@ export function ClassificationsEditor({
               {/* Confidence Slider */}
               <div className="space-y-3 shrink-0">
                 <div className="flex justify-between items-center">
-                  <Label htmlFor={confidenceId} className="text-xs font-medium text-foreground/70">Confidence</Label>
-                  <span className={cn(
-                    "text-xs font-mono font-medium",
-                    classification.confidence > 0.8 ? "text-green-600" : classification.confidence > 0.5 ? "text-yellow-600" : "text-red-600"
-                  )}>
+                  <Label htmlFor={confidenceId} className="text-xs font-medium text-foreground/70">
+                    Confidence
+                  </Label>
+                  <span
+                    className={cn(
+                      "text-xs font-mono font-medium",
+                      classification.confidence > 0.8
+                        ? "text-green-600"
+                        : classification.confidence > 0.5
+                          ? "text-yellow-600"
+                          : "text-red-600",
+                    )}
+                  >
                     {(classification.confidence * 100).toFixed(0)}%
                   </span>
                 </div>
@@ -180,7 +202,12 @@ export function ClassificationsEditor({
 
               {/* Reasoning Input */}
               <div className="flex-1 flex flex-col min-h-[100px]">
-                <Label htmlFor={reasoningId} className="text-xs font-medium text-foreground/70 mb-1.5 block">Reasoning</Label>
+                <Label
+                  htmlFor={reasoningId}
+                  className="text-xs font-medium text-foreground/70 mb-1.5 block"
+                >
+                  Reasoning
+                </Label>
                 <Textarea
                   id={reasoningId}
                   name={reasoningId}
@@ -194,7 +221,6 @@ export function ClassificationsEditor({
                   className="text-xs resize-none flex-1 bg-background/50 h-full min-h-[100px]"
                 />
               </div>
-
             </div>
           );
         })}

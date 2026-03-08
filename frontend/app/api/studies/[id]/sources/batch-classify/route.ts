@@ -5,10 +5,7 @@ import { downloadFile } from "@/lib/minio";
 
 const PYTHON_SERVICE_URL = process.env.PYTHON_SERVICE_URL || "http://localhost:8000";
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id: studyId } = await params;
 
@@ -23,10 +20,10 @@ export async function POST(
           {
             status: "CLASSIFIED",
             analysis: {
-              classifications: { none: {} }
-            }
-          }
-        ]
+              classifications: { none: {} },
+            },
+          },
+        ],
       },
       include: {
         study: {
@@ -79,14 +76,10 @@ export async function POST(
               });
 
               const chosen: any =
-                source.metadataChosen ||
-                source.metadataParsed ||
-                source.metadataExtension ||
-                {};
+                source.metadataChosen || source.metadataParsed || source.metadataExtension || {};
               const hasTextContent = !!chosen.content_excerpt;
               const hasAbstract = !!(chosen.abstract || source.abstract);
-              const allowMetadataOnly =
-                source.allowMetadataOnlyClassification && hasAbstract;
+              const allowMetadataOnly = source.allowMetadataOnlyClassification && hasAbstract;
 
               // Skip if no content
               if (!source.storagePath && !hasTextContent && !allowMetadataOnly) {
@@ -100,20 +93,18 @@ export async function POST(
                       sourceTitle: source.title,
                       status: "skipped",
                       message: "No content available for classification",
-                    })}\n\n`
-                  )
+                    })}\n\n`,
+                  ),
                 );
                 errorCount++;
                 continue;
               }
 
               // Get facets
-              let facets = source.study?.facets || [];
+              const facets = source.study?.facets || [];
 
               if (facets.length === 0) {
-                throw new Error(
-                  "Classification schema not configured for this study"
-                );
+                throw new Error("Classification schema not configured for this study");
               }
 
               // Filter valid facets
@@ -132,19 +123,14 @@ export async function POST(
                 id: facet.id,
                 name: facet.name,
                 description: facet.description,
-                type:
-                  facet.type === "OPEN_CODED"
-                    ? "open"
-                    : facet.type.toLowerCase(),
+                type: facet.type === "OPEN_CODED" ? "open" : facet.type.toLowerCase(),
                 required: facet.required,
                 categories: facet.categories.map((cat) => ({
                   id: cat.id,
                   name: cat.name,
                   description: cat.description,
                 })),
-                researchQuestionIds: facet.researchQuestions.map(
-                  (frq) => frq.researchQuestionId
-                ),
+                researchQuestionIds: facet.researchQuestions.map((frq) => frq.researchQuestionId),
               }));
 
               // Build source content
@@ -155,9 +141,7 @@ export async function POST(
                 venue: chosen.venue || source.venue || "",
                 doi: chosen.doi || source.doi || "",
                 publication_date:
-                  source.publicationDate?.toISOString() ||
-                  chosen.publicationDate ||
-                  "",
+                  source.publicationDate?.toISOString() || chosen.publicationDate || "",
                 content_excerpt: chosen.content_excerpt || "",
               };
 
@@ -179,9 +163,7 @@ export async function POST(
               let pdfBuffer: Buffer | null = null;
               if (source.hasPdf) {
                 if (!source.storagePath) {
-                  console.warn(
-                    "[batch-classify] Source marked as PDF but storagePath missing"
-                  );
+                  console.warn("[batch-classify] Source marked as PDF but storagePath missing");
                 } else {
                   try {
                     pdfBuffer = await downloadFile(source.storagePath);
@@ -216,22 +198,16 @@ export async function POST(
                 });
                 formData.append("file", pdfBlob, "source.pdf");
 
-                classifyRes = await fetch(
-                  `${PYTHON_SERVICE_URL}/api/classify/file`,
-                  {
-                    method: "POST",
-                    body: formData as any,
-                  }
-                );
+                classifyRes = await fetch(`${PYTHON_SERVICE_URL}/api/classify/file`, {
+                  method: "POST",
+                  body: formData as any,
+                });
               } else {
-                classifyRes = await fetch(
-                  `${PYTHON_SERVICE_URL}/api/classify/text`,
-                  {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(classifyPayload),
-                  }
-                );
+                classifyRes = await fetch(`${PYTHON_SERVICE_URL}/api/classify/text`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(classifyPayload),
+                });
               }
 
               if (!classifyRes.ok) {
@@ -250,22 +226,17 @@ export async function POST(
 
               const avgConfidence =
                 classifications.length > 0
-                  ? classifications.reduce(
-                      (sum: number, c: any) =>
-                        sum + (c.confidence || 0),
-                      0
-                    ) / classifications.length
+                  ? classifications.reduce((sum: number, c: any) => sum + (c.confidence || 0), 0) /
+                    classifications.length
                   : source.analysis?.confidenceScore || 0.5;
 
               // Build lookup maps
-              const facetNameToId = new Map(validFacets.map(f => [f.name, f.id]));
+              const facetNameToId = new Map(validFacets.map((f) => [f.name, f.id]));
               const facetIdToCategoryMap = new Map(
-                validFacets.map(
-                  f => [f.id, new Map(f.categories.map(c => [c.name, c.id]))]
-                )
+                validFacets.map((f) => [f.id, new Map(f.categories.map((c) => [c.name, c.id]))]),
               );
-              const facetById = new Map(validFacets.map(f => [f.id, f]));
-              const facetByName = new Map(validFacets.map(f => [f.name, f]));
+              const facetById = new Map(validFacets.map((f) => [f.id, f]));
+              const facetByName = new Map(validFacets.map((f) => [f.name, f]));
 
               const createClassifications: Array<{
                 facetId: string;
@@ -291,19 +262,15 @@ export async function POST(
                 if (mappingCache.has(facetId)) {
                   return mappingCache.get(facetId)!;
                 }
-                const mappings =
-                  await prisma.facetKeywordMapping.findMany({
-                    where: { facetId },
-                    select: {
-                      keyword: true,
-                      categoryId: true,
-                      status: true,
-                    },
-                  });
-                const map = new Map<
-                  string,
-                  { categoryId: string | null; status: string }
-                >();
+                const mappings = await prisma.facetKeywordMapping.findMany({
+                  where: { facetId },
+                  select: {
+                    keyword: true,
+                    categoryId: true,
+                    status: true,
+                  },
+                });
+                const map = new Map<string, { categoryId: string | null; status: string }>();
                 for (const mapping of mappings) {
                   map.set(mapping.keyword.toLowerCase(), {
                     categoryId: mapping.categoryId,
@@ -316,25 +283,22 @@ export async function POST(
 
               const suggestKeywordMapping = async (
                 keyword: string,
-                facet: (typeof validFacets)[number]
+                facet: (typeof validFacets)[number],
               ) => {
-                const response = await fetch(
-                  `${PYTHON_SERVICE_URL}/api/coding/map-keyword`,
-                  {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      keyword,
-                      categories: facet.categories.map((cat) => ({
-                        id: cat.id,
-                        name: cat.name,
-                        description: cat.description,
-                      })),
-                      facet_name: facet.name,
-                      facet_description: facet.description,
-                    }),
-                  }
-                );
+                const response = await fetch(`${PYTHON_SERVICE_URL}/api/coding/map-keyword`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    keyword,
+                    categories: facet.categories.map((cat) => ({
+                      id: cat.id,
+                      name: cat.name,
+                      description: cat.description,
+                    })),
+                    facet_name: facet.name,
+                    facet_description: facet.description,
+                  }),
+                });
 
                 if (!response.ok) {
                   return null;
@@ -345,9 +309,7 @@ export async function POST(
               for (const c of classifications) {
                 const cFacetName = c.facetName || c.facet_name || "unknown";
                 const cFacetId = c.facetId || facetNameToId.get(cFacetName);
-                const facet = cFacetId
-                  ? facetById.get(cFacetId)
-                  : facetByName.get(cFacetName);
+                const facet = cFacetId ? facetById.get(cFacetId) : facetByName.get(cFacetName);
                 if (!facet) {
                   continue;
                 }
@@ -360,8 +322,7 @@ export async function POST(
                       categoryId: null,
                       value: null,
                       confidence: parseFloat(c.confidence || "0"),
-                      reasoning:
-                        c.reasoning || "No matching values found",
+                      reasoning: c.reasoning || "No matching values found",
                       isManualOverride: false,
                     });
                   }
@@ -369,9 +330,7 @@ export async function POST(
                     if (typeof keyword !== "string" || !keyword.trim()) {
                       continue;
                     }
-                    const normalized = `${facet.id}:${keyword
-                      .trim()
-                      .toLowerCase()}`;
+                    const normalized = `${facet.id}:${keyword.trim().toLowerCase()}`;
                     if (keywordDedup.has(normalized)) {
                       continue;
                     }
@@ -379,10 +338,7 @@ export async function POST(
                     keywordCreates.push({
                       facetId: facet.id,
                       keyword: keyword.trim(),
-                      confidence:
-                        c.confidence !== undefined
-                          ? parseFloat(c.confidence)
-                          : null,
+                      confidence: c.confidence !== undefined ? parseFloat(c.confidence) : null,
                     });
                     createClassifications.push({
                       facetId: facet.id,
@@ -404,8 +360,7 @@ export async function POST(
                       categoryId: null,
                       value: null,
                       confidence: parseFloat(c.confidence || "0"),
-                      reasoning:
-                        c.reasoning || "No matching values found",
+                      reasoning: c.reasoning || "No matching values found",
                       isManualOverride: false,
                     });
                   }
@@ -422,41 +377,30 @@ export async function POST(
                       keywordCreates.push({
                         facetId: facet.id,
                         keyword: trimmed,
-                        confidence:
-                          c.confidence !== undefined
-                            ? parseFloat(c.confidence)
-                            : null,
+                        confidence: c.confidence !== undefined ? parseFloat(c.confidence) : null,
                       });
                     }
 
                     const existing = mappingMap.get(normalized);
-                    if (
-                      existing &&
-                      existing.status === "APPROVED" &&
-                      existing.categoryId
-                    ) {
+                    if (existing && existing.status === "APPROVED" && existing.categoryId) {
                       createClassifications.push({
                         facetId: facet.id,
                         categoryId: existing.categoryId,
                         value: null,
                         confidence: parseFloat(c.confidence || 0),
-                        reasoning:
-                          c.reasoning || "Mapped from approved keyword",
+                        reasoning: c.reasoning || "Mapped from approved keyword",
                         isManualOverride: false,
                       });
                       continue;
                     }
 
                     if (!existing) {
-                      const suggestion = await suggestKeywordMapping(
-                        trimmed,
-                        facet
-                      );
+                      const suggestion = await suggestKeywordMapping(trimmed, facet);
                       if (suggestion) {
                         const match = facet.categories.find(
                           (cat) =>
                             cat.name.toLowerCase() ===
-                            (suggestion.category_name || "").toLowerCase()
+                            (suggestion.category_name || "").toLowerCase(),
                         );
                         await prisma.facetKeywordMapping.upsert({
                           where: {
@@ -472,8 +416,7 @@ export async function POST(
                             status: "PENDING",
                             confidence: suggestion.confidence ?? null,
                             source: "LLM",
-                            proposedCategoryName:
-                              suggestion.proposed_category_name || null,
+                            proposedCategoryName: suggestion.proposed_category_name || null,
                             proposedCategoryDescription:
                               suggestion.proposed_category_description || null,
                           },
@@ -482,8 +425,7 @@ export async function POST(
                             status: "PENDING",
                             confidence: suggestion.confidence ?? null,
                             source: "LLM",
-                            proposedCategoryName:
-                              suggestion.proposed_category_name || null,
+                            proposedCategoryName: suggestion.proposed_category_name || null,
                             proposedCategoryDescription:
                               suggestion.proposed_category_description || null,
                           },
@@ -498,8 +440,7 @@ export async function POST(
                   continue;
                 }
 
-                const categoryMap =
-                  facetIdToCategoryMap.get(facet.id) || null;
+                const categoryMap = facetIdToCategoryMap.get(facet.id) || null;
                 const cCategoryId = categoryMap?.get(c.category) || null;
 
                 createClassifications.push({
@@ -512,9 +453,7 @@ export async function POST(
                 });
               }
 
-              const openFacetIds = validFacets
-                .filter(f => f.type === "OPEN")
-                .map(f => f.id);
+              const openFacetIds = validFacets.filter((f) => f.type === "OPEN").map((f) => f.id);
               const facetKeywordUpdate =
                 openFacetIds.length > 0
                   ? {
@@ -526,10 +465,8 @@ export async function POST(
                     : undefined;
 
               const hasFullText =
-                !!content.content_excerpt ||
-                (!!pdfBuffer && pdfBuffer.length > 0);
-              const classificationBasis =
-                hasFullText ? "FULL_TEXT" : "METADATA_ONLY";
+                !!content.content_excerpt || (!!pdfBuffer && pdfBuffer.length > 0);
+              const classificationBasis = hasFullText ? "FULL_TEXT" : "METADATA_ONLY";
 
               const analysis = await prisma.sourceAnalysis.upsert({
                 where: { sourceId: source.id },
@@ -539,27 +476,20 @@ export async function POST(
                     deleteMany: {},
                     create: createClassifications,
                   },
-                  ...(facetKeywordUpdate
-                    ? { facetKeywords: facetKeywordUpdate }
-                    : {}),
+                  ...(facetKeywordUpdate ? { facetKeywords: facetKeywordUpdate } : {}),
                 },
                 create: {
                   sourceId: source.id,
                   extractedText: "",
-                  inclusionRecommendation:
-                    source.analysis?.inclusionRecommendation ?? false,
-                  inclusionReasoning:
-                    source.analysis?.inclusionReasoning || "",
-                  exclusionReasoning:
-                    source.analysis?.exclusionReasoning || "",
+                  inclusionRecommendation: source.analysis?.inclusionRecommendation ?? false,
+                  inclusionReasoning: source.analysis?.inclusionReasoning || "",
+                  exclusionReasoning: source.analysis?.exclusionReasoning || "",
                   confidenceScore: avgConfidence,
                   classificationBasis,
                   relevanceScore: source.analysis?.relevanceScore || null,
                   qualityNotes: source.analysis?.qualityNotes || null,
-                  inclusionCriteria:
-                    source.analysis?.inclusionCriteria || [],
-                  exclusionCriteria:
-                    source.analysis?.exclusionCriteria || [],
+                  inclusionCriteria: source.analysis?.inclusionCriteria || [],
+                  exclusionCriteria: source.analysis?.exclusionCriteria || [],
                   classifications: { create: createClassifications },
                   facetKeywords: { create: keywordCreates },
                 },
@@ -590,8 +520,8 @@ export async function POST(
                     sourceTitle: source.title,
                     status: "success",
                     message: "Classification completed",
-                  })}\n\n`
-                )
+                  })}\n\n`,
+                ),
               );
             } catch (itemError) {
               errorCount++;
@@ -619,12 +549,9 @@ export async function POST(
                     sourceId: source.id,
                     sourceTitle: source.title,
                     status: "error",
-                    message:
-                      itemError instanceof Error
-                        ? itemError.message
-                        : "Unknown error",
-                  })}\n\n`
-                )
+                    message: itemError instanceof Error ? itemError.message : "Unknown error",
+                  })}\n\n`,
+                ),
               );
             }
           }
@@ -639,8 +566,8 @@ export async function POST(
                   success: successCount,
                   errors: errorCount,
                 },
-              })}\n\n`
-            )
+              })}\n\n`,
+            ),
           );
 
           controller.close();
@@ -665,7 +592,7 @@ export async function POST(
         error: "Batch classification failed",
         details: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

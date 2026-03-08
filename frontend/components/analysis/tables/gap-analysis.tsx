@@ -21,25 +21,19 @@ export function GapAnalysis({ title, data, isLoading }: GapAnalysisProps) {
 
     const totalGaps = data.singleDimensionGaps.reduce(
       (sum, facet) => sum + facet.gaps.length + facet.empty.length,
-      0
+      0,
     );
 
-    const emptyCount = data.singleDimensionGaps.reduce(
-      (sum, facet) => sum + facet.empty.length,
-      0
-    );
+    const emptyCount = data.singleDimensionGaps.reduce((sum, facet) => sum + facet.empty.length, 0);
 
-    const lowCount = data.singleDimensionGaps.reduce(
-      (sum, facet) => sum + facet.gaps.length,
-      0
-    );
+    const lowCount = data.singleDimensionGaps.reduce((sum, facet) => sum + facet.gaps.length, 0);
 
     return {
       totalGaps,
       emptyCount,
       lowCount,
       facetsWithGaps: data.singleDimensionGaps.filter(
-        (f) => f.gaps.length > 0 || f.empty.length > 0
+        (f) => f.gaps.length > 0 || f.empty.length > 0,
       ).length,
     };
   }, [data]);
@@ -93,18 +87,17 @@ export function GapAnalysis({ title, data, isLoading }: GapAnalysisProps) {
           <Alert variant="destructive">
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription>
-              Found <strong>{summary.totalGaps}</strong> potential research gaps
-              across <strong>{summary.facetsWithGaps}</strong> classification
-              facets ({summary.emptyCount} empty, {summary.lowCount} with ≤
-              {data.threshold} sources).
+              Found <strong>{summary.totalGaps}</strong> potential research gaps across{" "}
+              <strong>{summary.facetsWithGaps}</strong> classification facets ({summary.emptyCount}{" "}
+              empty, {summary.lowCount} with ≤{data.threshold} sources).
             </AlertDescription>
           </Alert>
         ) : (
           <Alert>
             <CheckCircle className="h-4 w-4" />
             <AlertDescription>
-              No significant research gaps detected. All categories have more than{" "}
-              {data.threshold} sources.
+              No significant research gaps detected. All categories have more than {data.threshold}{" "}
+              sources.
             </AlertDescription>
           </Alert>
         )}
@@ -117,14 +110,10 @@ export function GapAnalysis({ title, data, isLoading }: GapAnalysisProps) {
         ) : (
           <div className="space-y-6">
             {data.singleDimensionGaps.map((facet) => {
-              const hasAnyGaps =
-                facet.gaps.length > 0 || facet.empty.length > 0;
+              const hasAnyGaps = facet.gaps.length > 0 || facet.empty.length > 0;
 
               return (
-                <div
-                  key={facet.facetId}
-                  className="border rounded-lg p-4 space-y-3"
-                >
+                <div key={facet.facetId} className="border rounded-lg p-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <h3 className="font-semibold">{facet.facetName}</h3>
                     {hasAnyGaps ? (
@@ -178,9 +167,7 @@ export function GapAnalysis({ title, data, isLoading }: GapAnalysisProps) {
                                 className="border-amber-600 text-amber-700 bg-amber-50 dark:bg-amber-900/20"
                               >
                                 {cat.categoryName}
-                                <span className="ml-1 text-xs opacity-70">
-                                  ({cat.count})
-                                </span>
+                                <span className="ml-1 text-xs opacity-70">({cat.count})</span>
                               </Badge>
                             ))}
                           </div>
@@ -197,12 +184,10 @@ export function GapAnalysis({ title, data, isLoading }: GapAnalysisProps) {
         {/* Cross-Tab Gaps (if available) */}
         {data.crossTabGaps && data.crossTabGaps.length > 0 && (
           <div className="border-t pt-6 space-y-4">
-            <h3 className="font-semibold">
-              Cross-Facet Gaps (2D combinations)
-            </h3>
+            <h3 className="font-semibold">Cross-Facet Gaps (2D combinations)</h3>
             <p className="text-sm text-muted-foreground">
-              These represent sparse or empty cells in cross-tabulations, which
-              may indicate interesting research gaps.
+              These represent sparse or empty cells in cross-tabulations, which may indicate
+              interesting research gaps.
             </p>
             <div className="space-y-3">
               {data.crossTabGaps.map((crossTab, idx) => (

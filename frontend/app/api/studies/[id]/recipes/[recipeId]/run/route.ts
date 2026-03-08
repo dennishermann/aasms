@@ -7,7 +7,7 @@ import { executeRecipe } from "@/lib/services/recipe";
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string; recipeId: string }> }
+  { params }: { params: Promise<{ id: string; recipeId: string }> },
 ) {
   try {
     const { recipeId } = await params;
@@ -19,7 +19,7 @@ export async function POST(
     console.error("Error executing recipe:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to execute recipe" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

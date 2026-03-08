@@ -5,11 +5,7 @@ import { RecipeList } from "./recipe-list";
 import { RecipeForm } from "./recipe-form";
 import type { RecipeEditorProps, LocalRecipe } from "./types";
 import type { RecipeType, RqRecipe } from "@/types/recipe";
-import {
-  useCreateRecipe,
-  useUpdateRecipe,
-  useDeleteRecipe,
-} from "@/hooks/use-recipes";
+import { useCreateRecipe, useUpdateRecipe, useDeleteRecipe } from "@/hooks/use-recipes";
 
 // Re-export types
 export type { LocalRecipe } from "./types";
@@ -47,12 +43,7 @@ function apiToLocalRecipe(recipe: RqRecipe): LocalRecipe {
   };
 }
 
-export function RecipeEditor({
-  studyId,
-  recipes,
-  facets,
-  researchQuestions,
-}: RecipeEditorProps) {
+export function RecipeEditor({ studyId, recipes, facets, researchQuestions }: RecipeEditorProps) {
   const [selectedRecipeKey, setSelectedRecipeKey] = useState<string | null>(null);
   const [pendingRecipe, setPendingRecipe] = useState<LocalRecipe | null>(null);
 
@@ -138,15 +129,17 @@ export function RecipeEditor({
             input: {
               name: updates.name ?? recipe.name,
               description: updates.description ?? recipe.description,
-              researchQuestionId: updates.researchQuestionId !== undefined
-                ? updates.researchQuestionId
-                : recipe.researchQuestionId,
+              researchQuestionId:
+                updates.researchQuestionId !== undefined
+                  ? updates.researchQuestionId
+                  : recipe.researchQuestionId,
               type: updates.type ?? recipe.type,
               xFacetId: updates.xFacetId !== undefined ? updates.xFacetId : recipe.xFacetId,
               yFacetId: updates.yFacetId !== undefined ? updates.yFacetId : recipe.yFacetId,
-              groupByFacetId: updates.groupByFacetId !== undefined
-                ? updates.groupByFacetId
-                : recipe.groupByFacetId,
+              groupByFacetId:
+                updates.groupByFacetId !== undefined
+                  ? updates.groupByFacetId
+                  : recipe.groupByFacetId,
               config: updates.config ?? recipe.config,
             },
           });
@@ -155,7 +148,7 @@ export function RecipeEditor({
         }
       }
     },
-    [localRecipes, pendingRecipe, getRecipeKey, createMutation, updateMutation]
+    [localRecipes, pendingRecipe, getRecipeKey, createMutation, updateMutation],
   );
 
   // Delete a recipe
@@ -183,13 +176,11 @@ export function RecipeEditor({
         }
       }
     },
-    [localRecipes, pendingRecipe, recipes, getRecipeKey, deleteMutation]
+    [localRecipes, pendingRecipe, recipes, getRecipeKey, deleteMutation],
   );
 
   // Find selected recipe
-  const selectedRecipe = localRecipes.find(
-    (r) => getRecipeKey(r) === selectedRecipeKey
-  );
+  const selectedRecipe = localRecipes.find((r) => getRecipeKey(r) === selectedRecipeKey);
 
   // Check if any mutation is pending
   const isSaving = createMutation.isPending || updateMutation.isPending || deleteMutation.isPending;
@@ -241,9 +232,7 @@ export function RecipeEditor({
           recipeKey={selectedRecipeKey!}
           researchQuestions={researchQuestions}
           facets={facets}
-          onUpdate={(updates) =>
-            handleUpdateRecipe(selectedRecipeKey!, updates)
-          }
+          onUpdate={(updates) => handleUpdateRecipe(selectedRecipeKey!, updates)}
           onDelete={handleDeleteRecipe}
           isSaving={isSaving}
         />

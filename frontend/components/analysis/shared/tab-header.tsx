@@ -12,12 +12,7 @@ interface TabHeaderProps {
   actions?: ReactNode;
 }
 
-export function TabHeader({
-  title,
-  description,
-  badge,
-  actions,
-}: TabHeaderProps) {
+export function TabHeader({ title, description, badge, actions }: TabHeaderProps) {
   return (
     <div className="flex items-start justify-between mb-4">
       <div>
@@ -33,9 +28,7 @@ export function TabHeader({
           )}
           {title}
         </h3>
-        {description && (
-          <p className="text-sm text-muted-foreground mt-1">{description}</p>
-        )}
+        {description && <p className="text-sm text-muted-foreground mt-1">{description}</p>}
       </div>
       {actions && <div className="flex items-center gap-2">{actions}</div>}
     </div>

@@ -2,10 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getFrequencyData, getExclusiveCombinationData } from "@/lib/services/analysis";
 import type { DimensionConfig, Filter } from "@/types/analysis";
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id: studyId } = await params;
     const searchParams = request.nextUrl.searchParams;
@@ -13,10 +10,7 @@ export async function GET(
     // Parse dimension from query params
     const dimensionParam = searchParams.get("dimension");
     if (!dimensionParam) {
-      return NextResponse.json(
-        { error: "dimension parameter is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "dimension parameter is required" }, { status: 400 });
     }
 
     let dimension: DimensionConfig;
@@ -25,22 +19,19 @@ export async function GET(
     } catch {
       return NextResponse.json(
         { error: "Invalid dimension parameter (must be valid JSON)" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     // Validate dimension
     if (!dimension.type) {
-      return NextResponse.json(
-        { error: "dimension.type is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "dimension.type is required" }, { status: 400 });
     }
 
     if (dimension.type === "facet" && !dimension.facetId) {
       return NextResponse.json(
         { error: "dimension.facetId is required when type is 'facet'" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -53,7 +44,7 @@ export async function GET(
       } catch {
         return NextResponse.json(
           { error: "Invalid filters parameter (must be valid JSON array)" },
-          { status: 400 }
+          { status: 400 },
         );
       }
     }
@@ -77,7 +68,7 @@ export async function GET(
         error: "Failed to get frequency data",
         details: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -65,9 +65,7 @@ export async function executeRecipe(recipeId: string): Promise<{
   }
 
   // Get current dataset state
-  const { hash: datasetHash, count: includedSourceCount } = await getDatasetState(
-    recipe.studyId
-  );
+  const { hash: datasetHash, count: includedSourceCount } = await getDatasetState(recipe.studyId);
 
   // Check for existing run with same version and hash (cache hit)
   const existingRun = await prisma.rqRun.findFirst({
@@ -107,7 +105,7 @@ export async function executeRecipe(recipeId: string): Promise<{
       recipe.xFacetId,
       recipe.yFacetId,
       recipe.groupByFacetId,
-      config
+      config,
     );
 
     // Generate key findings
@@ -157,7 +155,7 @@ async function executeAnalysis(
   xFacetId: string | null,
   yFacetId: string | null,
   groupByFacetId: string | null,
-  config: RecipeConfig
+  config: RecipeConfig,
 ): Promise<{ resultData: any; figureSpec: FigureSpec }> {
   switch (type) {
     case RecipeType.DISTRIBUTION: {
@@ -189,12 +187,7 @@ async function executeAnalysis(
 
       const rowDimension: DimensionConfig = { type: "facet", facetId: xFacetId };
       const colDimension: DimensionConfig = { type: "facet", facetId: yFacetId };
-      const resultData = await getCrossTabData(
-        studyId,
-        rowDimension,
-        colDimension,
-        config.filters
-      );
+      const resultData = await getCrossTabData(studyId, rowDimension, colDimension, config.filters);
 
       const figureSpec: FigureSpec = {
         type: config.vizPreference?.chartType === "heatmap" ? "heatmap" : "bubble",

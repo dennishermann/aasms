@@ -143,30 +143,22 @@ export default function AnalysisPage() {
         )}
 
         {/* Tabbed Interface */}
-        <Tabs
-          value={activeTab}
-          onValueChange={(v) => setActiveTab(v as TabKey)}
-          className="w-full"
-        >
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabKey)} className="w-full">
           <TabsList className="mb-6 h-11 flex-wrap">
-            {(
-              Object.entries(TAB_CONFIG) as [TabKey, (typeof TAB_CONFIG)[TabKey]][]
-            ).map(([key, config]) => {
-              const Icon = config.icon;
-              return (
-                <TabsTrigger
-                  key={key}
-                  value={key}
-                  className="gap-2 px-4 relative"
-                >
-                  <span
-                    className={`absolute left-1 top-1/2 -translate-y-1/2 w-1 h-4 rounded-full ${config.color} opacity-50`}
-                  />
-                  <Icon className="h-4 w-4 ml-1" />
-                  {config.label}
-                </TabsTrigger>
-              );
-            })}
+            {(Object.entries(TAB_CONFIG) as [TabKey, (typeof TAB_CONFIG)[TabKey]][]).map(
+              ([key, config]) => {
+                const Icon = config.icon;
+                return (
+                  <TabsTrigger key={key} value={key} className="gap-2 px-4 relative">
+                    <span
+                      className={`absolute left-1 top-1/2 -translate-y-1/2 w-1 h-4 rounded-full ${config.color} opacity-50`}
+                    />
+                    <Icon className="h-4 w-4 ml-1" />
+                    {config.label}
+                  </TabsTrigger>
+                );
+              },
+            )}
           </TabsList>
 
           {/* Overview Tab */}

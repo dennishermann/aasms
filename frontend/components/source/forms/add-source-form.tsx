@@ -21,7 +21,20 @@ const addSourceSchema = z.object({
   authors: z.array(z.string()).optional(),
   publicationDate: z.string().optional(),
   venue: z.string().optional(),
-  venueType: z.enum(["JOURNAL", "CONFERENCE", "WORKSHOP", "SYMPOSIUM", "BOOK_CHAPTER", "PREPRINT_SERVER", "TECHNICAL_REPORT", "BLOG", "OTHER"]).optional().nullable(),
+  venueType: z
+    .enum([
+      "JOURNAL",
+      "CONFERENCE",
+      "WORKSHOP",
+      "SYMPOSIUM",
+      "BOOK_CHAPTER",
+      "PREPRINT_SERVER",
+      "TECHNICAL_REPORT",
+      "BLOG",
+      "OTHER",
+    ])
+    .optional()
+    .nullable(),
   doi: z.string().optional(),
   abstract: z.string().optional(),
   keywords: z.array(z.string()).optional(),
@@ -122,7 +135,7 @@ export function AddSourceForm({ studyId, onSuccess }: AddSourceFormProps) {
         setAutoFillLoading(false);
       }
     },
-    [form]
+    [form],
   );
 
   const handleFileSelect = (file: File | null) => {
@@ -186,9 +199,7 @@ export function AddSourceForm({ studyId, onSuccess }: AddSourceFormProps) {
         )}
 
         {/* URL Input Section */}
-        {sourceType === "url" && (
-          <UrlSourceForm form={form} />
-        )}
+        {sourceType === "url" && <UrlSourceForm form={form} />}
 
         {/* Metadata Section */}
         <SourceMetadataFields
@@ -205,9 +216,7 @@ export function AddSourceForm({ studyId, onSuccess }: AddSourceFormProps) {
         <div className="flex gap-4">
           <Button
             type="submit"
-            disabled={
-              (sourceType === "pdf" && !selectedFile) || uploadMutation.isPending
-            }
+            disabled={(sourceType === "pdf" && !selectedFile) || uploadMutation.isPending}
           >
             {uploadMutation.isPending
               ? "Saving..."
@@ -229,4 +238,3 @@ export function AddSourceForm({ studyId, onSuccess }: AddSourceFormProps) {
     </Form>
   );
 }
-

@@ -47,10 +47,13 @@ export function AnalysisBarChart({
 }: BarChartProps) {
   const [chartInstance, setChartInstance] = useState<echarts.ECharts | null>(null);
 
-  const handleChartReady = useCallback((chart: echarts.ECharts) => {
-    setChartInstance(chart);
-    onChartReady?.(chart);
-  }, [onChartReady]);
+  const handleChartReady = useCallback(
+    (chart: echarts.ECharts) => {
+      setChartInstance(chart);
+      onChartReady?.(chart);
+    },
+    [onChartReady],
+  );
 
   const handleExport = () => {
     exportChartAsPNG(chartInstance, title || "bar-chart");
@@ -61,9 +64,7 @@ export function AnalysisBarChart({
     }
 
     const categories = data.items.map((item) => item.label);
-    const values = data.items.map((item) =>
-      showPercentages ? item.percentage : item.count
-    );
+    const values = data.items.map((item) => (showPercentages ? item.percentage : item.count));
 
     const isHorizontal = orientation === "horizontal";
 
@@ -132,9 +133,7 @@ export function AnalysisBarChart({
             show: true,
             position: isHorizontal ? "right" : "top",
             formatter: (params: any) => {
-              return showPercentages
-                ? `${params.value.toFixed(1)}%`
-                : params.value;
+              return showPercentages ? `${params.value.toFixed(1)}%` : params.value;
             },
           },
         },

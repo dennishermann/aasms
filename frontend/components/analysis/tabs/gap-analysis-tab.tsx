@@ -33,9 +33,7 @@ export function GapAnalysisTab({
   const [showHelp, setShowHelp] = useState(true);
 
   // Filter to only CLOSED and OPEN_CODED facets
-  const analyzableFacets = facets.filter(
-    (f) => f.type === "CLOSED" || f.type === "OPEN_CODED"
-  );
+  const analyzableFacets = facets.filter((f) => f.type === "CLOSED" || f.type === "OPEN_CODED");
 
   const toggleFacet = (facetId: string) => {
     if (selectedFacetIds.includes(facetId)) {
@@ -63,11 +61,7 @@ export function GapAnalysisTab({
               onClick={() => setShowHelp(!showHelp)}
               className="text-blue-600 hover:text-blue-800 dark:text-blue-400"
             >
-              {showHelp ? (
-                <ChevronUp className="h-4 w-4" />
-              ) : (
-                <ChevronDown className="h-4 w-4" />
-              )}
+              {showHelp ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
             </Button>
           </div>
         </CardHeader>
@@ -75,9 +69,9 @@ export function GapAnalysisTab({
           <CardContent className="text-sm text-blue-800 dark:text-blue-300 space-y-3">
             <p>
               <strong>Purpose:</strong> Gap analysis helps you identify{" "}
-              <em>under-researched areas</em> within your systematic mapping study.
-              These are categories in your classification scheme that have few or no
-              publications, representing potential research opportunities.
+              <em>under-researched areas</em> within your systematic mapping study. These are
+              categories in your classification scheme that have few or no publications,
+              representing potential research opportunities.
             </p>
             <div className="grid md:grid-cols-2 gap-4 mt-3">
               <div className="space-y-1">
@@ -150,8 +144,7 @@ export function GapAnalysisTab({
                   <Badge
                     key={facet.id}
                     variant={
-                      selectedFacetIds.length === 0 ||
-                        selectedFacetIds.includes(facet.id)
+                      selectedFacetIds.length === 0 || selectedFacetIds.includes(facet.id)
                         ? "default"
                         : "outline"
                     }
@@ -160,9 +153,7 @@ export function GapAnalysisTab({
                   >
                     {facet.name}
                     {facet.categories.length > 0 && (
-                      <span className="ml-1 text-xs opacity-70">
-                        ({facet.categories.length})
-                      </span>
+                      <span className="ml-1 text-xs opacity-70">({facet.categories.length})</span>
                     )}
                   </Badge>
                 ))}
@@ -181,11 +172,7 @@ export function GapAnalysisTab({
       </Card>
 
       {/* Results */}
-      <GapAnalysis
-        title="Research Gap Analysis Results"
-        data={data}
-        isLoading={isLoading}
-      />
+      <GapAnalysis title="Research Gap Analysis Results" data={data} isLoading={isLoading} />
     </div>
   );
 }

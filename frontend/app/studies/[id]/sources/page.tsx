@@ -20,7 +20,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useSourcesPage } from "@/hooks/use-sources-page";
 import { SourceList } from "@/components/source/source-list";
-import { DeleteSourceDialog, BulkDeleteSourceDialog } from "@/components/source/delete-source-dialogs";
+import {
+  DeleteSourceDialog,
+  BulkDeleteSourceDialog,
+} from "@/components/source/delete-source-dialogs";
 import { BatchProgressModal } from "@/components/source/batch-progress-modal";
 import { useToast } from "@/hooks/use-toast";
 
@@ -66,7 +69,7 @@ export default function SourcesPage() {
     try {
       setIsExporting(true);
       const response = await fetch(
-        `/api/studies/${studyId}/sources/export?format=${format}&filter=${filter}`
+        `/api/studies/${studyId}/sources/export?format=${format}&filter=${filter}`,
       );
 
       if (!response.ok) {
@@ -149,11 +152,7 @@ export default function SourcesPage() {
   const isAllSelected = filteredSources.length > 0 && selectedIds.size === filteredSources.length;
 
   return (
-    <StudyLayout
-      studyId={studyId}
-      studyTitle={study.title}
-      studyStatus={study.status}
-    >
+    <StudyLayout studyId={studyId} studyTitle={study.title} studyStatus={study.status}>
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold">Sources</h1>
@@ -161,18 +160,18 @@ export default function SourcesPage() {
             {isEditMode ? (
               <>
                 {selectedIds.size > 0 && (
-                  <Button
-                    variant="destructive"
-                    onClick={() => setShowBulkDeleteConfirm(true)}
-                  >
+                  <Button variant="destructive" onClick={() => setShowBulkDeleteConfirm(true)}>
                     <Trash2 className="h-4 w-4 mr-2" />
                     Delete Selected ({selectedIds.size})
                   </Button>
                 )}
-                <Button variant="outline" onClick={() => {
-                  setIsEditMode(false);
-                  toggleSelectAll(false);
-                }}>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsEditMode(false);
+                    toggleSelectAll(false);
+                  }}
+                >
                   Done
                 </Button>
               </>
@@ -195,9 +194,7 @@ export default function SourcesPage() {
                       }
                       disabled={counts.pending === 0}
                     >
-                      <span>
-                        Screen All Pending ({counts.pending})
-                      </span>
+                      <span>Screen All Pending ({counts.pending})</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() =>
@@ -208,9 +205,7 @@ export default function SourcesPage() {
                       }
                       disabled={counts.included === 0}
                     >
-                      <span>
-                        Classify All Included ({counts.included})
-                      </span>
+                      <span>Classify All Included ({counts.included})</span>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -279,23 +274,41 @@ export default function SourcesPage() {
                     All <span className="ml-1 font-semibold">({counts.all})</span>
                   </TabsTrigger>
                   {batchIdParam && counts.new_import > 0 && (
-                    <TabsTrigger value="new_import" className="data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700 dark:data-[state=active]:bg-blue-950 dark:data-[state=active]:text-blue-300">
+                    <TabsTrigger
+                      value="new_import"
+                      className="data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700 dark:data-[state=active]:bg-blue-950 dark:data-[state=active]:text-blue-300"
+                    >
                       New Import <span className="ml-1 font-semibold">({counts.new_import})</span>
                     </TabsTrigger>
                   )}
-                  <TabsTrigger value="needs_pdf" className={`data-[state=active]:bg-orange-50 data-[state=active]:text-orange-700 dark:data-[state=active]:bg-orange-950 dark:data-[state=active]:text-orange-300 ${counts.needs_pdf > 0 ? 'text-orange-600 dark:text-orange-400' : ''}`}>
+                  <TabsTrigger
+                    value="needs_pdf"
+                    className={`data-[state=active]:bg-orange-50 data-[state=active]:text-orange-700 dark:data-[state=active]:bg-orange-950 dark:data-[state=active]:text-orange-300 ${counts.needs_pdf > 0 ? "text-orange-600 dark:text-orange-400" : ""}`}
+                  >
                     Needs PDF <span className="ml-1 font-semibold">({counts.needs_pdf})</span>
                   </TabsTrigger>
-                  <TabsTrigger value="pending" className={`data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700 dark:data-[state=active]:bg-blue-950 dark:data-[state=active]:text-blue-300 ${counts.pending > 0 ? 'text-blue-600 dark:text-blue-400' : ''}`}>
+                  <TabsTrigger
+                    value="pending"
+                    className={`data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700 dark:data-[state=active]:bg-blue-950 dark:data-[state=active]:text-blue-300 ${counts.pending > 0 ? "text-blue-600 dark:text-blue-400" : ""}`}
+                  >
                     Pending <span className="ml-1 font-semibold">({counts.pending})</span>
                   </TabsTrigger>
-                  <TabsTrigger value="analyzing" className={`data-[state=active]:bg-yellow-50 data-[state=active]:text-yellow-700 dark:data-[state=active]:bg-yellow-950 dark:data-[state=active]:text-yellow-300 ${counts.analyzing > 0 ? 'text-yellow-600 dark:text-yellow-400' : ''}`}>
+                  <TabsTrigger
+                    value="analyzing"
+                    className={`data-[state=active]:bg-yellow-50 data-[state=active]:text-yellow-700 dark:data-[state=active]:bg-yellow-950 dark:data-[state=active]:text-yellow-300 ${counts.analyzing > 0 ? "text-yellow-600 dark:text-yellow-400" : ""}`}
+                  >
                     Analyzing <span className="ml-1 font-semibold">({counts.analyzing})</span>
                   </TabsTrigger>
-                  <TabsTrigger value="included" className={`data-[state=active]:bg-green-50 data-[state=active]:text-green-700 dark:data-[state=active]:bg-green-950 dark:data-[state=active]:text-green-300 ${counts.included > 0 ? 'text-green-600 dark:text-green-400' : ''}`}>
+                  <TabsTrigger
+                    value="included"
+                    className={`data-[state=active]:bg-green-50 data-[state=active]:text-green-700 dark:data-[state=active]:bg-green-950 dark:data-[state=active]:text-green-300 ${counts.included > 0 ? "text-green-600 dark:text-green-400" : ""}`}
+                  >
                     Included <span className="ml-1 font-semibold">({counts.included})</span>
                   </TabsTrigger>
-                  <TabsTrigger value="excluded" className="data-[state=active]:bg-background text-muted-foreground">
+                  <TabsTrigger
+                    value="excluded"
+                    className="data-[state=active]:bg-background text-muted-foreground"
+                  >
                     Excluded <span className="ml-1 font-semibold">({counts.excluded})</span>
                   </TabsTrigger>
                 </TabsList>
@@ -307,7 +320,10 @@ export default function SourcesPage() {
                       onCheckedChange={(checked) => toggleSelectAll(!!checked)}
                       id="select-all"
                     />
-                    <label htmlFor="select-all" className="text-sm text-muted-foreground cursor-pointer">
+                    <label
+                      htmlFor="select-all"
+                      className="text-sm text-muted-foreground cursor-pointer"
+                    >
                       Select All
                     </label>
                   </div>
@@ -326,17 +342,21 @@ export default function SourcesPage() {
                       Reviewing {counts.new_import} new sources from recent import.
                     </p>
                   </div>
-                  <Button
-                    onClick={() => handleTabChange("all")}
-                    variant="default"
-                    size="sm"
-                  >
+                  <Button onClick={() => handleTabChange("all")} variant="default" size="sm">
                     Done Reviewing
                   </Button>
                 </div>
               )}
 
-              {[`all`, `new_import`, `needs_pdf`, `pending`, `analyzing`, `included`, `excluded`].map(tabValue => (
+              {[
+                `all`,
+                `new_import`,
+                `needs_pdf`,
+                `pending`,
+                `analyzing`,
+                `included`,
+                `excluded`,
+              ].map((tabValue) => (
                 <TabsContent key={tabValue} value={tabValue}>
                   <SourceList
                     sources={filteredSources}
@@ -354,7 +374,6 @@ export default function SourcesPage() {
                   />
                 </TabsContent>
               ))}
-
             </Tabs>
           </CardContent>
         </Card>
@@ -385,9 +404,7 @@ export default function SourcesPage() {
           })
         }
         title={
-          batchModalState.type === "analyze"
-            ? "Screening Sources..."
-            : "Classifying Sources..."
+          batchModalState.type === "analyze" ? "Screening Sources..." : "Classifying Sources..."
         }
         apiUrl={
           batchModalState.type === "analyze"

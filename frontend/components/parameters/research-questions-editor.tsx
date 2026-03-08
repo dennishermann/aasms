@@ -52,13 +52,13 @@ export function ResearchQuestionsEditor({ value, onChange }: ResearchQuestionsEd
               rows={2}
               className="flex-1 resize-none"
               style={{
-                minHeight: '60px',
-                height: 'auto',
+                minHeight: "60px",
+                height: "auto",
               }}
               onInput={(e) => {
                 const target = e.target as HTMLTextAreaElement;
-                target.style.height = 'auto';
-                target.style.height = target.scrollHeight + 'px';
+                target.style.height = "auto";
+                target.style.height = target.scrollHeight + "px";
               }}
             />
             {value.length > 1 && (
@@ -75,16 +75,10 @@ export function ResearchQuestionsEditor({ value, onChange }: ResearchQuestionsEd
           </div>
         </div>
       ))}
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        onClick={handleAddQuestion}
-      >
+      <Button type="button" variant="outline" size="sm" onClick={handleAddQuestion}>
         <Plus className="h-4 w-4 mr-2" />
         Add Research Question
       </Button>
     </div>
   );
 }
-

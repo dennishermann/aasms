@@ -28,7 +28,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { useImport } from "@/context/import-context";
 
-
 interface BulkUploadFormProps {
   studyId: string;
   onSuccess?: () => void;
@@ -42,7 +41,7 @@ interface ParsedSourcePreview {
   doi?: string;
 }
 
-type UploadStep = 'upload' | 'review' | 'importing' | 'complete';
+type UploadStep = "upload" | "review" | "importing" | "complete";
 
 export function BulkUploadForm({ studyId, onSuccess }: BulkUploadFormProps) {
   const router = useRouter();
@@ -51,14 +50,15 @@ export function BulkUploadForm({ studyId, onSuccess }: BulkUploadFormProps) {
 
   const [file, setFile] = useState<File | null>(null);
   const [databaseSource, setDatabaseSource] = useState<string>("");
-  const [step, setStep] = useState<UploadStep>('upload');
+  const [step, setStep] = useState<UploadStep>("upload");
   const [previewData, setPreviewData] = useState<ParsedSourcePreview[]>([]);
   const [loading, setLoading] = useState(false);
 
   // Sync local step with global status if we are in this study context
   // This helps when navigating back to this page while import is running
   // For simplicity, if global import is running, we show the 'importing' view
-  const showImportingState = isImporting || (status === 'complete' && progress.total > 0 && step === 'importing');
+  const showImportingState =
+    isImporting || (status === "complete" && progress.total > 0 && step === "importing");
 
   const handlePreview = async () => {
     if (!file || !databaseSource) return;
@@ -81,7 +81,7 @@ export function BulkUploadForm({ studyId, onSuccess }: BulkUploadFormProps) {
 
       const data = await response.json();
       setPreviewData(data.sources || []);
-      setStep('review');
+      setStep("review");
     } catch (error) {
       toast({
         title: "Preview Failed",
@@ -96,7 +96,7 @@ export function BulkUploadForm({ studyId, onSuccess }: BulkUploadFormProps) {
   const handleStartImport = async () => {
     if (!file || !databaseSource) return;
 
-    setStep('importing');
+    setStep("importing");
 
     const formData = new FormData();
     formData.append("file", file);
@@ -107,7 +107,7 @@ export function BulkUploadForm({ studyId, onSuccess }: BulkUploadFormProps) {
   };
 
   // If we are 'importing' locally but global status becomes complete, update local state
-  if (step === 'importing' && status === 'complete' && !isImporting) {
+  if (step === "importing" && status === "complete" && !isImporting) {
     // Only switch to complete if we haven't already
     // We can use a ref or just let the render cycle handle it, but better to be explicit in useEffect or here
     // But since we are inside render, we shouldn't set state directly.
@@ -130,27 +130,32 @@ export function BulkUploadForm({ studyId, onSuccess }: BulkUploadFormProps) {
   // Decide what to render base on local step OR global status
   // If global is importing, we override local view to show progress
   const effectivelyImporting = isImporting;
-  const effectivelyComplete = !isImporting && step === 'importing' && status === 'complete';
+  const effectivelyComplete = !isImporting && step === "importing" && status === "complete";
 
   // Calculate stats for UI
   const percent = progress.total > 0 ? (progress.processed / progress.total) * 100 : 0;
   const remaining = progress.total - progress.processed;
-
 
   return (
     <Card className="w-full">
       <CardHeader>
         <CardTitle>Bulk Import</CardTitle>
         <CardDescription>
-          {!effectivelyImporting && !effectivelyComplete && step === 'upload' && "Upload CSV or BibTeX files from IEEE Xplore, ACM Digital Library, or SCOPUS"}
-          {!effectivelyImporting && !effectivelyComplete && step === 'review' && `Reviewing ${previewData.length} sources found in ${file?.name}`}
+          {!effectivelyImporting &&
+            !effectivelyComplete &&
+            step === "upload" &&
+            "Upload CSV or BibTeX files from IEEE Xplore, ACM Digital Library, or SCOPUS"}
+          {!effectivelyImporting &&
+            !effectivelyComplete &&
+            step === "review" &&
+            `Reviewing ${previewData.length} sources found in ${file?.name}`}
           {effectivelyImporting && "Processing your import..."}
           {effectivelyComplete && "Import completed successfully"}
         </CardDescription>
       </CardHeader>
       <CardContent>
         {/* VIEW 1: UPLOAD */}
-        {!effectivelyImporting && !effectivelyComplete && step === 'upload' && (
+        {!effectivelyImporting && !effectivelyComplete && step === "upload" && (
           <div className="space-y-4">
             <div>
               <Label htmlFor="database-source">Database Source *</Label>
@@ -176,9 +181,7 @@ export function BulkUploadForm({ studyId, onSuccess }: BulkUploadFormProps) {
                 disabled={!databaseSource}
               />
               {databaseSource && (
-                <p className="text-sm text-muted-foreground mt-1">
-                  {getFileTypeHint()}
-                </p>
+                <p className="text-sm text-muted-foreground mt-1">{getFileTypeHint()}</p>
               )}
             </div>
 
@@ -193,13 +196,14 @@ export function BulkUploadForm({ studyId, onSuccess }: BulkUploadFormProps) {
         )}
 
         {/* VIEW 2: REVIEW */}
-        {!effectivelyImporting && !effectivelyComplete && step === 'review' && (
+        {!effectivelyImporting && !effectivelyComplete && step === "review" && (
           <div className="space-y-4">
             <Alert>
               <CheckCircle2 className="h-4 w-4 text-green-600" />
               <AlertTitle>Succesfully parsed {previewData.length} sources</AlertTitle>
               <AlertDescription>
-                Please review the list below. If everything looks correct, click "Start Import".
+                Please review the list below. If everything looks correct, click &quot;Start
+                Import&quot;.
               </AlertDescription>
             </Alert>
 
@@ -210,7 +214,10 @@ export function BulkUploadForm({ studyId, onSuccess }: BulkUploadFormProps) {
                     <div key={idx} className="p-3 hover:bg-muted/50 text-sm">
                       <p className="font-medium line-clamp-1">{source.title}</p>
                       <div className="flex flax-wrap gap-2 text-xs text-muted-foreground mt-1">
-                        <span>{source.authors?.[0] || "Unknown Author"}{source.authors?.length > 1 ? " et al." : ""}</span>
+                        <span>
+                          {source.authors?.[0] || "Unknown Author"}
+                          {source.authors?.length > 1 ? " et al." : ""}
+                        </span>
                         <span>•</span>
                         <span>{source.publication_date || "No Date"}</span>
                         {source.venue && (
@@ -227,7 +234,9 @@ export function BulkUploadForm({ studyId, onSuccess }: BulkUploadFormProps) {
             </div>
             <div className="flex items-center justify-between text-sm text-muted-foreground">
               <p>Total: {previewData.length}</p>
-              {previewData.length === 0 && <p className="text-destructive">No sources found. Check your file format.</p>}
+              {previewData.length === 0 && (
+                <p className="text-destructive">No sources found. Check your file format.</p>
+              )}
             </div>
           </div>
         )}
@@ -244,7 +253,9 @@ export function BulkUploadForm({ studyId, onSuccess }: BulkUploadFormProps) {
               <p className="text-sm text-muted-foreground">
                 AI is analyzing title and abstracts.
                 <br />
-                <span className="text-xs opacity-75">You can leave this page, the process will continue in the background.</span>
+                <span className="text-xs opacity-75">
+                  You can leave this page, the process will continue in the background.
+                </span>
               </p>
 
               <Progress value={percent} className="w-full h-3" />
@@ -252,15 +263,23 @@ export function BulkUploadForm({ studyId, onSuccess }: BulkUploadFormProps) {
               <div className="grid grid-cols-3 gap-4 pt-4">
                 <div className="flex flex-col items-center p-3 bg-muted rounded-lg">
                   <span className="text-2xl font-bold text-green-600">{progress.included}</span>
-                  <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Included</span>
+                  <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
+                    Included
+                  </span>
                 </div>
                 <div className="flex flex-col items-center p-3 bg-muted rounded-lg">
-                  <span className="text-2xl font-bold text-muted-foreground">{progress.excluded}</span>
-                  <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Excluded</span>
+                  <span className="text-2xl font-bold text-muted-foreground">
+                    {progress.excluded}
+                  </span>
+                  <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
+                    Excluded
+                  </span>
                 </div>
                 <div className="flex flex-col items-center p-3 bg-muted rounded-lg">
                   <span className="text-2xl font-bold text-blue-500">{remaining}</span>
-                  <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Remaining</span>
+                  <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
+                    Remaining
+                  </span>
                 </div>
               </div>
 
@@ -287,7 +306,9 @@ export function BulkUploadForm({ studyId, onSuccess }: BulkUploadFormProps) {
                   <span className="text-xs">Included</span>
                 </div>
                 <div className="flex flex-col items-center p-2 border rounded">
-                  <span className="text-xl font-bold text-muted-foreground">{progress.excluded}</span>
+                  <span className="text-xl font-bold text-muted-foreground">
+                    {progress.excluded}
+                  </span>
                   <span className="text-xs">Excluded</span>
                 </div>
               </div>
@@ -296,7 +317,7 @@ export function BulkUploadForm({ studyId, onSuccess }: BulkUploadFormProps) {
         )}
       </CardContent>
       <CardFooter className="flex justify-between">
-        {!effectivelyImporting && !effectivelyComplete && step === 'upload' && (
+        {!effectivelyImporting && !effectivelyComplete && step === "upload" && (
           <>
             <Button variant="outline" onClick={() => window.history.back()}>
               Cancel
@@ -317,9 +338,9 @@ export function BulkUploadForm({ studyId, onSuccess }: BulkUploadFormProps) {
           </>
         )}
 
-        {!effectivelyImporting && !effectivelyComplete && step === 'review' && (
+        {!effectivelyImporting && !effectivelyComplete && step === "review" && (
           <>
-            <Button variant="outline" onClick={() => setStep('upload')}>
+            <Button variant="outline" onClick={() => setStep("upload")}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
             </Button>
@@ -330,11 +351,14 @@ export function BulkUploadForm({ studyId, onSuccess }: BulkUploadFormProps) {
         )}
 
         {effectivelyComplete && (
-          <Button className="w-full" onClick={() => {
-            // Redirect to sources
-            router.push(`/studies/${studyId}/sources?filter=new_import&batchId=${batchId}`);
-            onSuccess?.();
-          }}>
+          <Button
+            className="w-full"
+            onClick={() => {
+              // Redirect to sources
+              router.push(`/studies/${studyId}/sources?filter=new_import&batchId=${batchId}`);
+              onSuccess?.();
+            }}
+          >
             View Results
             <ArrowRight className="ml-2 h-4 w-4" />
           </Button>

@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getFrequencyData, getCrossTabData, generateMappingTableCsv } from "@/lib/services/analysis";
+import {
+  getFrequencyData,
+  getCrossTabData,
+  generateMappingTableCsv,
+} from "@/lib/services/analysis";
 import type { ExportRequest, DimensionConfig, Filter } from "@/types/analysis";
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id: studyId } = await params;
     const body: ExportRequest = await request.json();
@@ -13,16 +14,13 @@ export async function POST(
     const { type, format, config, filters } = body;
 
     if (!type || !format) {
-      return NextResponse.json(
-        { error: "type and format are required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "type and format are required" }, { status: 400 });
     }
 
     if (format !== "csv") {
       return NextResponse.json(
         { error: "Only CSV format is currently supported for data export" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -34,14 +32,14 @@ export async function POST(
         if (!config || !("dimension" in config) || !config.dimension) {
           return NextResponse.json(
             { error: "config.dimension is required for frequency export" },
-            { status: 400 }
+            { status: 400 },
           );
         }
 
         const result = await getFrequencyData(
           studyId,
           config.dimension as DimensionConfig,
-          filters
+          filters,
         );
 
         // Generate CSV
@@ -73,8 +71,10 @@ export async function POST(
           !config.colDimension
         ) {
           return NextResponse.json(
-            { error: "config.rowDimension and config.colDimension are required for crosstab export" },
-            { status: 400 }
+            {
+              error: "config.rowDimension and config.colDimension are required for crosstab export",
+            },
+            { status: 400 },
           );
         }
 
@@ -82,7 +82,7 @@ export async function POST(
           studyId,
           config.rowDimension as DimensionConfig,
           config.colDimension as DimensionConfig,
-          filters
+          filters,
         );
 
         // Generate CSV matrix
@@ -92,9 +92,7 @@ export async function POST(
         for (const row of result.rowLabels) {
           const rowData = [row.label];
           for (const col of result.colLabels) {
-            const cell = result.cells.find(
-              (c) => c.rowId === row.id && c.colId === col.id
-            );
+            const cell = result.cells.find((c) => c.rowId === row.id && c.colId === col.id);
             rowData.push(cell ? cell.count.toString() : "0");
           }
           // Add row total
@@ -128,10 +126,7 @@ export async function POST(
       }
 
       default:
-        return NextResponse.json(
-          { error: `Unknown export type: ${type}` },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: `Unknown export type: ${type}` }, { status: 400 });
     }
 
     // Return CSV as downloadable file
@@ -149,7 +144,7 @@ export async function POST(
         error: "Failed to export data",
         details: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
