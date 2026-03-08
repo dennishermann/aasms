@@ -11,7 +11,10 @@ import { StudyLayout } from "@/components/layout/study-layout";
 import { CriteriaTable } from "@/components/study/criteria-table";
 import { ClassificationSchemaTable } from "@/components/study/classification-schema-table";
 import { StudySummaryStats } from "@/components/shared/study-summary-stats";
+import { StudyProgressStepper } from "@/components/study/study-progress-stepper";
+import { computeStudyProgress } from "@/lib/services/study/progress-service";
 import type { SummaryStats } from "@/types/analysis";
+import type { StudyProgress } from "@/lib/services/study/progress-service";
 
 interface Source {
   id: string;
@@ -103,6 +106,36 @@ async function fetchSummaryStats(studyId: string): Promise<SummaryStats | null> 
   }
 }
 
+async function fetchProgress(studyId: string): Promise<StudyProgress | null> {
+  try {
+    const response = await fetch(`/api/studies/${studyId}/progress`);
+    if (!response.ok) return null;
+    const data = await response.json();
+    if (data.data) {
+      return computeStudyProgress(data.data);
+    }
+    return null;
+  } catch (error) {
+    console.error("Error fetching progress:", error);
+    return null;
+  }
+}
+
+async function fetchSearchProtocolSummary(studyId: string) {
+  try {
+    const response = await fetch(`/api/studies/${studyId}/search-protocol`);
+    if (!response.ok) {
+      if (response.status === 404) return null;
+      throw new Error("Failed to fetch search protocol");
+    }
+    const data = await response.json();
+    return data.data || [];
+  } catch (error) {
+    console.error("Error fetching search protocol:", error);
+    return null;
+  }
+}
+
 export default function StudyDetailPage() {
   const params = useParams();
   const studyId = params.id as string;
@@ -127,6 +160,18 @@ export default function StudyDetailPage() {
   const { data: summaryStats, isLoading: statsLoading } = useQuery({
     queryKey: ["summary-stats", studyId],
     queryFn: () => fetchSummaryStats(studyId),
+    enabled: !!study,
+  });
+
+  const { data: progress, isLoading: progressLoading } = useQuery({
+    queryKey: ["progress", studyId],
+    queryFn: () => fetchProgress(studyId),
+    enabled: !!study,
+  });
+
+  const { data: searchProtocolEntries } = useQuery({
+    queryKey: ["searchProtocolEntries", studyId],
+    queryFn: () => fetchSearchProtocolSummary(studyId),
     enabled: !!study,
   });
 
@@ -215,9 +260,18 @@ export default function StudyDetailPage() {
     >
       <div className="container mx-auto px-4 py-6">
         <div className="space-y-6">
+          {/* Progress Stepper */}
+          {progressLoading ? (
+            <div className="space-y-4">
+              <Skeleton className="h-48" />
+            </div>
+          ) : progress ? (
+            <StudyProgressStepper progress={progress} />
+          ) : null}
+
           {/* Source Statistics */}
           <section>
-            <h2 className="text-lg font-semibold mb-4">Study Progress</h2>
+            <h2 className="text-lg font-semibold mb-4">Study Summary</h2>
             <StudySummaryStats stats={stats} isLoading={isLoading} variant="full" />
           </section>
 
@@ -290,6 +344,33 @@ export default function StudyDetailPage() {
               inclusionCriteria={parameters.inclusionCriteria || []}
               exclusionCriteria={parameters.exclusionCriteria || []}
             />
+          )}
+
+          {/* Search Protocol Summary */}
+          {searchProtocolEntries && searchProtocolEntries.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Search Protocol</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-1">
+                    <p className="text-sm text-muted-foreground">Databases Searched</p>
+                    <p className="text-2xl font-bold">{new Set(searchProtocolEntries.map((e: any) => e.database)).size}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm text-muted-foreground">Total Results</p>
+                    <p className="text-2xl font-bold">
+                      {(searchProtocolEntries as any[]).reduce((sum, e) => sum + (e.totalResults || 0), 0).toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm text-muted-foreground">Searches</p>
+                    <p className="text-2xl font-bold">{searchProtocolEntries.length}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           )}
 
           {/* Classification Schema with Coverage */}

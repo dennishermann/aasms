@@ -52,6 +52,7 @@ export function useUnsavedChanges({
                 overview: false,
                 "research-questions": false,
                 criteria: false,
+                "search-protocol": false,
                 classification: false,
                 recipes: false,
             };
@@ -62,6 +63,7 @@ export function useUnsavedChanges({
             "research-questions": JSON.stringify(currentData.researchQuestions) !== JSON.stringify(initialData.researchQuestions),
             criteria: JSON.stringify(currentData.inclusionCriteria) !== JSON.stringify(initialData.inclusionCriteria) ||
                 JSON.stringify(currentData.exclusionCriteria) !== JSON.stringify(initialData.exclusionCriteria),
+            "search-protocol": false, // Search protocol is saved immediately via mutations, no local dirty state
             classification: JSON.stringify(currentData.facets) !== JSON.stringify(initialData.facets),
             recipes: false, // Recipes are saved immediately via mutations, no local dirty state
         };

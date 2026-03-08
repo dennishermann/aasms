@@ -1,18 +1,31 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { StudyLayout } from "@/components/layout/study-layout";
-import { Plus, Pencil, Trash2, CheckCircle2 } from "lucide-react";
+import { Plus, Pencil, Trash2, CheckCircle2, Zap, Download } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+} from "@/components/ui/dropdown-menu";
 import { useSourcesPage } from "@/hooks/use-sources-page";
 import { SourceList } from "@/components/source/source-list";
 import { DeleteSourceDialog, BulkDeleteSourceDialog } from "@/components/source/delete-source-dialogs";
+import { BatchProgressModal } from "@/components/source/batch-progress-modal";
+import { useToast } from "@/hooks/use-toast";
 
 export default function SourcesPage() {
+  const queryClient = useQueryClient();
   const {
     studyId,
     study,
@@ -40,6 +53,66 @@ export default function SourcesPage() {
     loadingMap,
     sourceRefs,
   } = useSourcesPage();
+
+  const [batchModalState, setBatchModalState] = useState<{
+    isOpen: boolean;
+    type: "analyze" | "classify" | null;
+  }>({ isOpen: false, type: null });
+
+  const [isExporting, setIsExporting] = useState(false);
+  const { toast } = useToast();
+
+  const handleExport = async (format: "bibtex" | "ris", filter: "included" | "all") => {
+    try {
+      setIsExporting(true);
+      const response = await fetch(
+        `/api/studies/${studyId}/sources/export?format=${format}&filter=${filter}`
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        toast({
+          title: "Export failed",
+          description: error.error || "Failed to export sources",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Get the filename from the Content-Disposition header
+      const contentDisposition = response.headers.get("content-disposition");
+      let filename = `sources-${filter}.${format === "bibtex" ? "bib" : "ris"}`;
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename="?([^"]+)"?/);
+        if (match) filename = match[1];
+      }
+
+      // Create blob and download
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({
+        title: "Export successful",
+        description: `${format.toUpperCase()} file downloaded successfully`,
+      });
+    } catch (error) {
+      console.error("Export error:", error);
+      toast({
+        title: "Export failed",
+        description: error instanceof Error ? error.message : "An error occurred during export",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const getSourceUrl = (sourceId: string) => {
     const params = new URLSearchParams();
@@ -105,6 +178,79 @@ export default function SourcesPage() {
               </>
             ) : (
               <>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline">
+                      <Zap className="h-4 w-4 mr-2" />
+                      Batch Actions
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem
+                      onClick={() =>
+                        setBatchModalState({
+                          isOpen: true,
+                          type: "analyze",
+                        })
+                      }
+                      disabled={counts.pending === 0}
+                    >
+                      <span>
+                        Screen All Pending ({counts.pending})
+                      </span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        setBatchModalState({
+                          isOpen: true,
+                          type: "classify",
+                        })
+                      }
+                      disabled={counts.included === 0}
+                    >
+                      <span>
+                        Classify All Included ({counts.included})
+                      </span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline">
+                      <Download className="h-4 w-4 mr-2" />
+                      Export
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>Export Bibliography</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={() => handleExport("bibtex", "included")}
+                      disabled={isExporting || counts.included === 0}
+                    >
+                      BibTeX (Included Sources)
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => handleExport("bibtex", "all")}
+                      disabled={isExporting || counts.all === 0}
+                    >
+                      BibTeX (All Sources)
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={() => handleExport("ris", "included")}
+                      disabled={isExporting || counts.included === 0}
+                    >
+                      RIS (Included Sources)
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => handleExport("ris", "all")}
+                      disabled={isExporting || counts.all === 0}
+                    >
+                      RIS (All Sources)
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 <Button variant="ghost" onClick={() => setIsEditMode(true)}>
                   <Pencil className="h-4 w-4 mr-2" />
                   Edit Sources
@@ -228,6 +374,30 @@ export default function SourcesPage() {
         onOpenChange={(open) => !open && setShowBulkDeleteConfirm(false)}
         onConfirm={() => bulkDeleteMutation.mutate(Array.from(selectedIds))}
         isPending={bulkDeleteMutation.isPending}
+      />
+
+      <BatchProgressModal
+        isOpen={batchModalState.isOpen}
+        onOpenChange={(open) =>
+          setBatchModalState({
+            isOpen: open,
+            type: open ? batchModalState.type : null,
+          })
+        }
+        title={
+          batchModalState.type === "analyze"
+            ? "Screening Sources..."
+            : "Classifying Sources..."
+        }
+        apiUrl={
+          batchModalState.type === "analyze"
+            ? `/api/studies/${studyId}/sources/batch-analyze`
+            : `/api/studies/${studyId}/sources/batch-classify`
+        }
+        onComplete={() => {
+          setBatchModalState({ isOpen: false, type: null });
+          queryClient.invalidateQueries({ queryKey: ["study", studyId] });
+        }}
       />
     </StudyLayout>
   );

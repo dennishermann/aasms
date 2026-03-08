@@ -14,6 +14,7 @@ import {
   AlertTriangle,
   Table2,
   FlaskConical,
+  Download,
 } from "lucide-react";
 import {
   OverviewTab,
@@ -27,6 +28,7 @@ import { SourceDrilldown } from "@/components/analysis";
 import { RqAnswersTab } from "@/components/analysis/rq-answers";
 import { CodingWizard } from "@/components/facets";
 import { useAnalysisPage, type Facet } from "@/hooks/use-analysis-page";
+import { useExport } from "@/hooks/use-export";
 
 // Tab configuration following parameters page pattern
 const TAB_CONFIG = {
@@ -82,6 +84,15 @@ export default function AnalysisPage() {
   const [activeTab, setActiveTab] = useState<TabKey>("overview");
 
   const analysis = useAnalysisPage({ studyId });
+  const { exportFullDataset, isLoading: isExporting, error: exportError } = useExport();
+
+  const handleExportDataset = async () => {
+    try {
+      await exportFullDataset(studyId, analysis.study?.title);
+    } catch (error) {
+      console.error("Export failed:", error);
+    }
+  };
 
   const handleFacetClick = (facet: Facet) => {
     if (facet.type === "CLOSED" || facet.type === "OPEN_CODED") {
@@ -109,11 +120,27 @@ export default function AnalysisPage() {
               Explore and visualize your systematic mapping study data
             </p>
           </div>
-          <Button variant="outline" size="sm" onClick={analysis.refreshAll}>
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="default"
+              size="sm"
+              onClick={handleExportDataset}
+              disabled={isExporting}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              {isExporting ? "Exporting..." : "Export Full Dataset"}
+            </Button>
+            <Button variant="outline" size="sm" onClick={analysis.refreshAll}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Refresh
+            </Button>
+          </div>
         </div>
+        {exportError && (
+          <div className="bg-red-50 text-red-700 p-3 rounded-md mb-6 text-sm">
+            Export error: {exportError}
+          </div>
+        )}
 
         {/* Tabbed Interface */}
         <Tabs
