@@ -25,6 +25,7 @@ dependencies = [
     "tenacity>=8.2.0",
     "aiolimiter>=1.1.0",
     "pandas>=2.1.0",
+    "openpyxl>=3.1.5",
 ]
 
 [dependency-groups]
