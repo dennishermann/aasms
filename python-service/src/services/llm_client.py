@@ -18,17 +18,6 @@ from src.core.config import settings
 from src.core.rate_limiter import get_anthropic_limiter, get_gemini_limiter, get_openai_limiter
 
 logger = logging.getLogger(__name__)
-if not logger.handlers:
-    handler = logging.StreamHandler()
-    formatter = logging.Formatter("%(asctime)s %(levelname)s %(name)s %(message)s")
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
-    # Add file handler for debugging
-    file_handler = logging.FileHandler("debug_llm.log")
-    file_handler.setFormatter(formatter)
-    logger.addHandler(file_handler)
-logger.setLevel(logging.INFO)
-logger.propagate = False
 
 _anthropic_client = None
 _openai_client = None
