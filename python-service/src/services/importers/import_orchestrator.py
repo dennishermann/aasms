@@ -198,7 +198,7 @@ class ImportOrchestrator:
         checker = InclusionEvaluationService(provider)
 
         total = len(new_sources)
-        print(f"DEBUG: import_orchestrator: stream_relevance_checks called for {total} sources")
+        logger.debug("stream_relevance_checks called for %d sources", total)
 
         # Concurrency control
         semaphore = asyncio.Semaphore(5)  # Max 5 concurrent sources
@@ -296,8 +296,6 @@ class ImportOrchestrator:
 
                 # Debug log
                 if event.get("type") == "progress":
-                    print(
-                        f"DEBUG: import_orchestrator: task {event['index']} completed ({completed_count}/{total})"
-                    )
+                    logger.debug("task %s completed (%d/%d)", event["index"], completed_count, total)
 
             yield json.dumps(event) + "\n"
