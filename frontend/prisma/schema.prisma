@@ -25,6 +25,7 @@ model Study {
   facets                  Facet[]
   analysisConfigurations  AnalysisConfiguration[]
   recipes                 RqRecipe[]
+  searchProtocolEntries   SearchProtocolEntry[]
 }
 
 model ResearchQuestion {
@@ -363,26 +364,50 @@ model AnalysisConfiguration {
 // ============ IMPORT BATCHES ============
 
 model ImportBatch {
-  id             String       @id @default(uuid())
-  studyId        String
-  databaseSource String
-  fileName       String
-  status         ImportStatus @default(PROCESSING)
-  totalRecords   Int          @default(0)
-  duplicates     Int          @default(0)
-  newSources     Int          @default(0)
-  relevant       Int          @default(0)
-  irrelevant     Int          @default(0)
-  needsPdf       Int          @default(0)
-  errors         Int          @default(0)
-  errorLog       Json?
-  startedAt      DateTime     @default(now())
-  completedAt    DateTime?
-  study          Study        @relation(fields: [studyId], references: [id], onDelete: Cascade)
-  sources        Source[]     @relation("ImportBatchSources")
+  id                    String       @id @default(uuid())
+  studyId               String
+  databaseSource        String
+  fileName              String
+  status                ImportStatus @default(PROCESSING)
+  totalRecords          Int          @default(0)
+  duplicates            Int          @default(0)
+  newSources            Int          @default(0)
+  relevant              Int          @default(0)
+  irrelevant            Int          @default(0)
+  needsPdf              Int          @default(0)
+  errors                Int          @default(0)
+  errorLog              Json?
+  startedAt             DateTime     @default(now())
+  completedAt           DateTime?
+  study                 Study        @relation(fields: [studyId], references: [id], onDelete: Cascade)
+  sources               Source[]     @relation("ImportBatchSources")
+  searchProtocolEntry   SearchProtocolEntry?
 
   @@index([studyId])
   @@index([status])
+}
+
+// ============ SEARCH PROTOCOL ============
+
+model SearchProtocolEntry {
+  id            String    @id @default(uuid())
+  studyId       String
+  database      String    // e.g., "IEEE Xplore", "ACM Digital Library", "Scopus"
+  searchString  String    @db.Text // The actual query string used
+  dateSearched  DateTime  // When the search was performed
+  dateRangeFrom DateTime? // Optional: publication date filter start
+  dateRangeTo   DateTime? // Optional: publication date filter end
+  totalResults  Int?      // How many hits the search returned
+  notes         String?   @db.Text // Any notes about this search
+  importBatchId String?   @unique // Optional link to an ImportBatch
+
+  study         Study     @relation(fields: [studyId], references: [id], onDelete: Cascade)
+  importBatch   ImportBatch? @relation(fields: [importBatchId], references: [id])
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([studyId])
 }
 
 // ============ ENUMS ============

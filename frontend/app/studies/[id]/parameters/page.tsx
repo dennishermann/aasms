@@ -21,6 +21,7 @@ import {
   OverviewTab,
   ResearchQuestionsTab,
   CriteriaTab,
+  SearchProtocolTab,
   ClassificationTab,
   RecipesTab,
 } from "@/components/parameters/tabs";
@@ -156,6 +157,7 @@ export default function ParametersPage() {
     "research-questions": researchQuestions.some(rq => rq.question.trim().length > 0),
     criteria: inclusionCriteria.some(c => c.criterion.trim().length > 0) ||
       exclusionCriteria.some(c => c.criterion.trim().length > 0),
+    "search-protocol": true, // Content is fetched dynamically by component
     classification: facets.some(f => f.name.trim().length > 0),
     recipes: (apiRecipes?.length ?? 0) > 0,
   };
@@ -237,6 +239,11 @@ export default function ParametersPage() {
               hasError={hasError("criteria")}
               onSave={() => handleSaveTab("criteria")}
             />
+          </TabsContent>
+
+          {/* Search Protocol Tab */}
+          <TabsContent value="search-protocol" className="mt-0">
+            <SearchProtocolTab studyId={studyId} />
           </TabsContent>
 
           {/* Classification Tab */}
