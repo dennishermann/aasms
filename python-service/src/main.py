@@ -3,7 +3,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from src.api.routers import analysis, parsing, scraping, imports, system, coding
+from src.api.routers import analysis, parsing, scraping, imports, system, coding, export
 from src.core.config import settings
 import logging
 
@@ -39,6 +39,7 @@ app.include_router(scraping.router, prefix="/api")
 app.include_router(imports.router, prefix="/api")
 app.include_router(system.router, prefix="/api")
 app.include_router(coding.router, prefix="/api")
+app.include_router(export.router, prefix="/api")
 
 
 @app.get("/")
