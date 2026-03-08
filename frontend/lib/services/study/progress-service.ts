@@ -24,8 +24,6 @@ export function computeStudyProgress(data: {
   includedSources: number;
   excludedSources: number;
   classifiedSources: number; // included sources that have classifications
-  totalRecipes: number;
-  recipesRun: number;
 }): StudyProgress {
   // Collection phase: total sources with content (PDF or full text)
   const collectionTotal = data.totalSources;
@@ -63,13 +61,13 @@ export function computeStudyProgress(data: {
         ? "complete"
         : "in_progress";
 
-  // Analysis phase: recipes run out of total recipes
-  const analysisTotal = data.totalRecipes;
-  const analysisCurrent = data.recipesRun;
+  // Analysis phase: based on whether classification is complete and sources exist
+  const analysisTotal = data.includedSources;
+  const analysisCurrent = data.classifiedSources;
   const analysisPercentage =
     analysisTotal > 0 ? Math.round((analysisCurrent / analysisTotal) * 100) : 0;
   const analysisStatus: "not_started" | "in_progress" | "complete" =
-    analysisCurrent === 0
+    analysisTotal === 0
       ? "not_started"
       : analysisCurrent === analysisTotal
         ? "complete"
@@ -108,15 +106,15 @@ export function computeStudyProgress(data: {
     },
     analysis: {
       label: "Analysis",
-      description: "Run research question recipes",
+      description: "Explore and visualize results",
       current: analysisCurrent,
       total: analysisTotal,
       percentage: analysisPercentage,
       status: analysisStatus,
       detail:
         analysisTotal > 0
-          ? `${analysisCurrent} of ${analysisTotal} recipes run`
-          : "No recipes defined yet",
+          ? `${analysisCurrent} of ${analysisTotal} classified`
+          : "No included sources yet",
     },
   };
 }

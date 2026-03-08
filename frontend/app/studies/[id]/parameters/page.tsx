@@ -23,7 +23,6 @@ import {
   CriteriaTab,
   SearchProtocolTab,
   ClassificationTab,
-  RecipesTab,
 } from "@/components/parameters/tabs";
 
 export default function ParametersPage() {
@@ -53,7 +52,7 @@ export default function ParametersPage() {
   const [saveSuccess, setSaveSuccess] = useState<TabKey | null>(null);
 
   // Data fetching
-  const { study, apiFacets, apiRecipes, isLoading, studyError, initialFormData, facetsFetching } =
+  const { study, apiFacets, isLoading, studyError, initialFormData, facetsFetching } =
     useParametersData(studyId);
 
   // Initialize form state when data is loaded
@@ -149,7 +148,6 @@ export default function ParametersPage() {
       exclusionCriteria.some((c) => c.criterion.trim().length > 0),
     "search-protocol": true, // Content is fetched dynamically by component
     classification: facets.some((f) => f.name.trim().length > 0),
-    recipes: (apiRecipes?.length ?? 0) > 0,
   };
 
   return (
@@ -255,15 +253,6 @@ export default function ParametersPage() {
             />
           </TabsContent>
 
-          {/* RQ Recipes Tab */}
-          <TabsContent value="recipes" className="mt-0">
-            <RecipesTab
-              studyId={studyId}
-              apiRecipes={apiRecipes || []}
-              apiFacets={apiFacets || []}
-              researchQuestions={researchQuestions}
-            />
-          </TabsContent>
         </Tabs>
 
         {/* Unsaved Changes Dialog */}

@@ -5,7 +5,7 @@ import { useMemo } from "react";
 import { ResearchQuestion } from "@/components/parameters/research-questions-editor";
 import { Criterion } from "@/components/parameters/criteria-editor";
 import { Facet } from "@/components/parameters/classification-schema-editor";
-import { useRecipes } from "@/hooks/use-recipes";
+
 
 // API Types
 interface Study {
@@ -106,7 +106,6 @@ export interface UseParametersDataResult {
   study: Study | undefined;
   parameters: Parameters | null | undefined;
   apiFacets: ApiFacet[] | undefined;
-  apiRecipes: any[] | undefined;
 
   // Loading states
   isLoading: boolean;
@@ -114,7 +113,6 @@ export interface UseParametersDataResult {
   parametersLoading: boolean;
   facetsLoading: boolean;
   facetsFetching: boolean;
-  recipesLoading: boolean;
 
   // Errors
   studyError: Error | null;
@@ -125,7 +123,7 @@ export interface UseParametersDataResult {
 
 /**
  * Custom hook for fetching all parameters page data.
- * Handles study, parameters, facets, and recipes data fetching.
+ * Handles study, parameters, and facets data fetching.
  */
 export function useParametersData(studyId: string): UseParametersDataResult {
   const {
@@ -152,8 +150,6 @@ export function useParametersData(studyId: string): UseParametersDataResult {
     queryFn: () => fetchFacets(studyId),
     enabled: !!study,
   });
-
-  const { data: apiRecipes, isLoading: recipesLoading } = useRecipes(studyId);
 
   // Compute initial form data when all data is loaded
   const initialFormData = useMemo<ParametersFormData | null>(() => {
@@ -184,19 +180,17 @@ export function useParametersData(studyId: string): UseParametersDataResult {
     };
   }, [study, parameters, apiFacets, parametersLoading, facetsLoading, facetsFetching]);
 
-  const isLoading = studyLoading || parametersLoading || facetsLoading || recipesLoading;
+  const isLoading = studyLoading || parametersLoading || facetsLoading;
 
   return {
     study,
     parameters,
     apiFacets,
-    apiRecipes,
     isLoading,
     studyLoading,
     parametersLoading,
     facetsLoading,
     facetsFetching,
-    recipesLoading,
     studyError,
     initialFormData,
   };

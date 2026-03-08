@@ -1,6 +1,6 @@
 "use client";
 
-import { FileText, HelpCircle, Filter, Tags, FlaskConical, Search } from "lucide-react";
+import { FileText, HelpCircle, Filter, Tags, Search } from "lucide-react";
 
 // Tab configuration with colors and labels
 export const TAB_CONFIG = {
@@ -33,12 +33,6 @@ export const TAB_CONFIG = {
     label: "Classification Schema",
     color: "bg-orange-500",
     lightColor: "bg-orange-100 text-orange-700",
-  },
-  recipes: {
-    icon: FlaskConical,
-    label: "Synthesis Recipes",
-    color: "bg-indigo-500",
-    lightColor: "bg-indigo-100 text-indigo-700",
   },
 } as const;
 

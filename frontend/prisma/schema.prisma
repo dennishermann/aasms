@@ -24,7 +24,6 @@ model Study {
   importBatches           ImportBatch[]
   facets                  Facet[]
   analysisConfigurations  AnalysisConfiguration[]
-  recipes                 RqRecipe[]
   searchProtocolEntries   SearchProtocolEntry[]
 }
 
@@ -35,7 +34,6 @@ model ResearchQuestion {
   order    Int
   study    Study                   @relation(fields: [studyId], references: [id], onDelete: Cascade)
   facets   FacetResearchQuestion[]
-  recipes  RqRecipe[]
 
   @@index([studyId])
 }
@@ -125,10 +123,6 @@ model Facet {
   classifications     Classification[]
   facetKeywords       FacetKeyword[]
   facetKeywordMappings FacetKeywordMapping[]
-  // Recipe relations
-  recipesAsX          RqRecipe[]              @relation("RecipeXFacet")
-  recipesAsY          RqRecipe[]              @relation("RecipeYFacet")
-  recipesAsGroupBy    RqRecipe[]              @relation("RecipeGroupByFacet")
 
   @@index([studyId])
 }
@@ -494,115 +488,3 @@ enum ImportStatus {
   PARTIAL
 }
 
-// ============ RQ RECIPES & ANSWERS ============
-
-enum RecipeType {
-  DISTRIBUTION // Single facet frequency distribution
-  MAP          // Two-facet cross-tabulation (systematic map)
-  TREND        // Publication trends over time
-  GAP          // Research gap analysis
-}
-
-enum RecipeStatus {
-  DRAFT   // Being edited, missing required fields
-  VALID   // All required fields set, ready to run
-  BLOCKED // Referenced facet deleted or incomplete coding
-}
-
-enum RunStatus {
-  NOT_RUN    // Never executed
-  UP_TO_DATE // Results match current dataset state
-  STALE      // Dataset changed since last run
-  RUNNING    // Currently executing
-  ERROR      // Last run failed
-}
-
-model RqRecipe {
-  id                 String            @id @default(uuid())
-  studyId            String
-  name               String
-  description        String?
-
-  // Link to research question (optional but recommended)
-  researchQuestionId String?
-
-  // Recipe type
-  type               RecipeType
-
-  // Dimensions (type-specific usage)
-  // DISTRIBUTION: xFacetId only
-  // MAP: xFacetId (rows) + yFacetId (columns)
-  // TREND: groupByFacetId (optional grouping)
-  // GAP: facetIds[] stored in config
-  xFacetId           String?
-  yFacetId           String?
-  groupByFacetId     String?
-
-  // Configuration stored as JSON for flexibility
-  // Contains: filters[], metric, missingHandling, sortOrder, vizPreference, gapThreshold, gapFacetIds
-  config             Json              @default("{}")
-
-  // Versioning - increments on substantive changes
-  version            Int               @default(1)
-
-  // Status
-  status             RecipeStatus      @default(DRAFT)
-  statusReason       String?
-
-  // Order for display
-  order              Int               @default(0)
-
-  createdAt          DateTime          @default(now())
-  updatedAt          DateTime          @updatedAt
-
-  // Relations
-  study              Study             @relation(fields: [studyId], references: [id], onDelete: Cascade)
-  researchQuestion   ResearchQuestion? @relation(fields: [researchQuestionId], references: [id], onDelete: SetNull)
-  xFacet             Facet?            @relation("RecipeXFacet", fields: [xFacetId], references: [id], onDelete: SetNull)
-  yFacet             Facet?            @relation("RecipeYFacet", fields: [yFacetId], references: [id], onDelete: SetNull)
-  groupByFacet       Facet?            @relation("RecipeGroupByFacet", fields: [groupByFacetId], references: [id], onDelete: SetNull)
-  runs               RqRun[]
-
-  @@index([studyId])
-  @@index([researchQuestionId])
-}
-
-model RqRun {
-  id                  String    @id @default(uuid())
-  recipeId            String
-
-  // Version of recipe when this run was created
-  recipeVersion       Int
-
-  // Dataset state snapshot
-  datasetHash         String    // Hash of classified sources at run time
-  includedSourceCount Int       // Number of sources included
-
-  // Status
-  status              RunStatus @default(RUNNING)
-  errorMessage        String?
-
-  // Results stored as JSON
-  // Structure depends on recipe type:
-  // DISTRIBUTION: FrequencyResult
-  // MAP: CrossTabResult
-  // TREND: TimeSeriesResult
-  // GAP: GapAnalysis
-  resultData          Json?
-
-  // Computed findings (deterministic key insights)
-  keyFindings         Json?     // Array of finding strings
-
-  // Figure specification for rendering
-  figureSpec          Json?     // Chart configuration
-
-  // Timestamps
-  startedAt           DateTime  @default(now())
-  completedAt         DateTime?
-
-  // Relations
-  recipe              RqRecipe  @relation(fields: [recipeId], references: [id], onDelete: Cascade)
-
-  @@index([recipeId])
-  @@index([status])
-}

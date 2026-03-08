@@ -14,8 +14,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       sourcesWithPdf,
       sourcesNeedingPdf,
       pendingSources,
-      totalRecipes,
-      recipesWithRuns,
     ] = await Promise.all([
       prisma.source.count({ where: { studyId } }),
       prisma.source.count({
@@ -36,12 +34,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       prisma.source.count({
         where: { studyId, status: "PENDING" },
       }),
-      prisma.rqRecipe.count({
-        where: { studyId },
-      }),
-      prisma.rqRecipe.count({
-        where: { studyId, runs: { some: {} } },
-      }),
     ]);
 
     // Analyzed sources = included + excluded (screened)
@@ -57,8 +49,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         includedSources,
         excludedSources,
         classifiedSources,
-        totalRecipes,
-        recipesRun: recipesWithRuns,
       },
     });
   } catch (error) {
