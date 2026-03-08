@@ -300,16 +300,20 @@ chrome-extension/
 
 ---
 
+## Documentation
+
+- [Methodology Reference](docs/methodology.md) — SMS/MLR process summary (Petersen et al. 2015, Garousi et al. 2019)
+- [Platform Workflows & Gap Analysis](docs/workflows.md) — maps methodology phases to platform features
+
 ## Current Limitations / Work in Progress
 
-Some features may still be under development:
-
-- [ ] Manual override UI for inclusion decisions
-- [ ] Export to standard formats (BibTeX, CSV, RIS)
+- [ ] Web scraping endpoint (stub exists, not implemented)
+- [ ] Grey literature quality assessment
+- [ ] Inter-rater reliability (Cohen's kappa) statistics
+- [ ] PRISMA flow diagram visualization
 - [ ] Multi-user collaboration
 - [ ] Full-text search across sources
 - [ ] Firefox extension support
-- [ ] Batch operations on sources
 
 ---
 
