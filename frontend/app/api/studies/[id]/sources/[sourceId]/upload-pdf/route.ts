@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { uploadFile, generateStoragePath, initializeBucket } from "@/lib/minio";
 import { SourceStatus } from "@prisma/client";
 import { PYTHON_SERVICE_URL } from "@/lib/python-service";
+import { STUDY_WITH_CRITERIA_AND_FACETS_INCLUDE } from "@/lib/queries/study-includes";
 
 
 export async function POST(
@@ -16,28 +17,7 @@ export async function POST(
     const source = await prisma.source.findFirst({
       where: { id: sourceId, studyId },
       include: {
-        study: {
-          include: {
-            parameters: {
-              include: {
-                inclusionCriteria: { orderBy: { order: "asc" } },
-                exclusionCriteria: { orderBy: { order: "asc" } },
-              },
-            },
-            researchQuestions: { orderBy: { order: "asc" } },
-            facets: {
-              include: {
-                categories: { orderBy: { order: "asc" } },
-                researchQuestions: {
-                  include: {
-                    researchQuestion: true,
-                  },
-                },
-              },
-              orderBy: { order: "asc" },
-            },
-          },
-        },
+        study: { include: STUDY_WITH_CRITERIA_AND_FACETS_INCLUDE },
       },
     });
 

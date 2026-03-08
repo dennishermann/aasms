@@ -3,6 +3,7 @@ import { SourceStatus } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { downloadFile } from "@/lib/minio";
 import { PYTHON_SERVICE_URL } from "@/lib/python-service";
+import { STUDY_WITH_FACETS_INCLUDE } from "@/lib/queries/study-includes";
 
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -26,22 +27,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         ],
       },
       include: {
-        study: {
-          include: {
-            researchQuestions: { orderBy: { order: "asc" } },
-            facets: {
-              include: {
-                categories: { orderBy: { order: "asc" } },
-                researchQuestions: {
-                  include: {
-                    researchQuestion: true,
-                  },
-                },
-              },
-              orderBy: { order: "asc" },
-            },
-          },
-        },
+        study: { include: STUDY_WITH_FACETS_INCLUDE },
         analysis: {
           include: {
             classifications: true,
