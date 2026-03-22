@@ -77,5 +77,16 @@ Core model chain: **Study** → **Source** → **SourceAnalysis** → **Classifi
 - **Config**: pydantic-settings in `src/core/config.py`, reads from `.env`
 - **Retry/rate-limit**: tenacity for retries, aiolimiter for API throttling
 
+## Report Writing
+- When writing or editing `report/report.tex`, follow the rules in `report/WRITING_RULES.md`
+- Track implementation items discovered during writing in `report/BACKLOG.md`
+
+## Testing
+- **Always** add tests for new features and endpoints
+- **Frontend unit tests**: Vitest with jsdom environment. Run `npm run test` in `frontend/`. Test files use `*.test.ts` or `*.test.tsx` suffix
+- **Frontend e2e tests**: Playwright specs in `frontend/e2e/`. Run `npm run test:e2e` in `frontend/`
+- **Python service tests**: pytest. Run `uv run pytest` in `python-service/`
+- **API route tests**: Mock Prisma client via `vi.mock("@/lib/db")` and test request/response behavior
+
 ## Git Conventions
 - **Never** add "Co-Authored-By" lines to commit messages

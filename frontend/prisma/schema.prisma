@@ -49,6 +49,10 @@ model StudyParameters {
   formalSources     FormalSource[]
   greySources       GreySource[]
   inclusionCriteria InclusionCriterion[]
+  picoPopulation    String?   @db.Text
+  picoIntervention  String?   @db.Text
+  picoComparison    String?   @db.Text
+  picoOutcome       String?   @db.Text
   study             Study                @relation(fields: [studyId], references: [id], onDelete: Cascade)
 
   @@index([studyId])
