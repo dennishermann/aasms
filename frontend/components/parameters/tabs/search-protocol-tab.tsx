@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SearchProtocolEditor } from "@/components/parameters/search-protocol-editor";
-import { SaveButton } from "@/components/parameters/tabs/save-button";
+import { SearchStrategyEditor } from "@/components/parameters/search-strategy-editor";
 
 interface SearchProtocolTabProps {
   studyId: string;
@@ -10,17 +10,20 @@ interface SearchProtocolTabProps {
 
 export function SearchProtocolTab({ studyId }: SearchProtocolTabProps) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">Search Protocol Documentation</CardTitle>
-        <p className="text-sm text-muted-foreground mt-2">
-          Document all searches performed across different databases and sources. This ensures
-          reproducibility of your systematic mapping study.
-        </p>
-      </CardHeader>
-      <CardContent>
-        <SearchProtocolEditor studyId={studyId} />
-      </CardContent>
-    </Card>
+    <div className="space-y-6">
+      <SearchStrategyEditor studyId={studyId} />
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Search Execution Log</CardTitle>
+          <p className="text-sm text-muted-foreground mt-1">
+            Record each search as you execute it. Document the database, query, date, and result count
+            for reproducibility.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <SearchProtocolEditor studyId={studyId} />
+        </CardContent>
+      </Card>
+    </div>
   );
 }
