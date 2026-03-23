@@ -17,32 +17,21 @@ logger = logging.getLogger(__name__)
 
 
 # Rate limit configurations per provider
-# Format: (RPM, Input TPM, Output TPM) - we use total TPM for simplicity
+# Format: (RPM, TPM) - verified from provider dashboards 2026-03-22
 PROVIDER_RATE_LIMITS: dict[str, dict[str, tuple[int, int]]] = {
-    # OpenAI limits (Tier 1+)
+    # OpenAI: 500 RPM, 200k TPM
     "openai": {
-        "gpt-5-mini": (500, 500_000),
-        "gpt-5-mini-2025-08-07": (500, 500_000),
-        "gpt-4o": (500, 30_000),
-        "gpt-4o-mini": (500, 200_000),
-        "gpt-5.2-2025-12-11": (500, 30_000),
-        "default": (500, 30_000),
+        "default": (500, 200_000),
     },
-    # Anthropic limits (User's tier: 50 RPM, 50k input, 10k output)
-    # We use 50k as the token limit (conservative)
+    # Anthropic: Custom Plan — 4k RPM, 4M input TPM (Haiku), 2M (Sonnet/Opus)
     "anthropic": {
-        "claude-haiku-4-5-20251001": (50, 50_000),
-        "claude-sonnet-4-5-20250929": (50, 50_000),
-        "claude-3-5-sonnet-20241022": (50, 50_000),
-        "default": (50, 50_000),
+        "claude-haiku-4-5-20251001": (4_000, 4_000_000),
+        "claude-sonnet-4-6": (4_000, 2_000_000),
+        "default": (4_000, 2_000_000),
     },
-    # Google Gemini limits (Tier 1 estimates - conservative)
-    # Actual limits should be verified in Google AI Studio
+    # Gemini: 4k RPM, 4M TPM
     "gemini": {
-        "gemini-3-flash-preview": (15, 1_000_000),
-        "gemini-2.5-flash": (15, 1_000_000),
-        "gemini-2.0-flash": (15, 1_000_000),
-        "default": (15, 1_000_000),
+        "default": (4_000, 4_000_000),
     },
 }
 

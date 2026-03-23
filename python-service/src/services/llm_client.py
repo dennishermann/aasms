@@ -7,6 +7,8 @@ import json
 import logging
 from typing import Any
 
+import anthropic
+import openai
 from tenacity import (
     retry,
     retry_if_exception_type,
@@ -18,6 +20,20 @@ from src.core.config import settings
 from src.core.rate_limiter import get_anthropic_limiter, get_gemini_limiter, get_openai_limiter
 
 logger = logging.getLogger(__name__)
+
+# Only retry on rate-limit and transient server errors, not on bad requests or auth errors
+_RETRYABLE_EXCEPTIONS = (
+    openai.RateLimitError,
+    openai.APITimeoutError,
+    openai.InternalServerError,
+    openai.APIConnectionError,
+    anthropic.RateLimitError,
+    anthropic.APITimeoutError,
+    anthropic.InternalServerError,
+    anthropic.APIConnectionError,
+    asyncio.TimeoutError,
+    ConnectionError,
+)
 
 _anthropic_client = None
 _openai_client = None
@@ -199,7 +215,7 @@ async def generate_json(
 @retry(
     wait=wait_random_exponential(min=1, max=60),
     stop=stop_after_attempt(6),
-    retry=retry_if_exception_type(Exception),  # We will refine to RateLimitError inside
+    retry=retry_if_exception_type(_RETRYABLE_EXCEPTIONS),
 )
 async def _generate_json_claude_with_retry(
     model_name: str,
@@ -218,9 +234,7 @@ async def _generate_json_claude_with_retry(
 @retry(
     wait=wait_random_exponential(min=1, max=60),
     stop=stop_after_attempt(6),
-    # In production code, you should import specific RateLimitErrors from SDKs
-    # e.g. openai.RateLimitError, anthropic.RateLimitError
-    retry=retry_if_exception_type(Exception),
+    retry=retry_if_exception_type(_RETRYABLE_EXCEPTIONS),
 )
 async def _generate_json_openai_with_retry(
     model_name: str,
@@ -333,7 +347,7 @@ async def _generate_json_openai(
 @retry(
     wait=wait_random_exponential(min=1, max=60),
     stop=stop_after_attempt(6),
-    retry=retry_if_exception_type(Exception),
+    retry=retry_if_exception_type(_RETRYABLE_EXCEPTIONS),
 )
 async def _generate_json_gemini_with_retry(
     model_name: str,
