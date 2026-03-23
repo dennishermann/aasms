@@ -26,12 +26,15 @@ interface ApiFacet {
 
 interface UseParametersMutationsProps {
   studyId: string;
+  title: string;
+  description: string;
+  status: string;
   motivation: string;
   researchQuestions: ResearchQuestion[];
   inclusionCriteria: Criterion[];
   exclusionCriteria: Criterion[];
   facets: Facet[];
-  onMotivationSaved: (motivation: string) => void;
+  onOverviewSaved: (data: { title: string; description: string; status: string; motivation: string }) => void;
   onResearchQuestionsSaved: (rqs: ResearchQuestion[]) => void;
   onCriteriaSaved: (inclusion: Criterion[], exclusion: Criterion[]) => void;
   onFacetsSaved: () => void;
@@ -40,12 +43,15 @@ interface UseParametersMutationsProps {
 
 export function useParametersMutations({
   studyId,
+  title,
+  description,
+  status,
   motivation,
   researchQuestions,
   inclusionCriteria,
   exclusionCriteria,
   facets,
-  onMotivationSaved,
+  onOverviewSaved,
   onResearchQuestionsSaved,
   onCriteriaSaved,
   onFacetsSaved,
@@ -58,13 +64,14 @@ export function useParametersMutations({
       const response = await fetch(`/api/studies/${studyId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ motivation }),
+        body: JSON.stringify({ title, description, status, motivation }),
       });
-      if (!response.ok) throw new Error("Failed to save motivation");
+      if (!response.ok) throw new Error("Failed to save overview");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["study", studyId] });
-      onMotivationSaved(motivation);
+      queryClient.invalidateQueries({ queryKey: ["studies"] });
+      onOverviewSaved({ title, description, status, motivation });
       onSaveSuccess("overview");
     },
   });

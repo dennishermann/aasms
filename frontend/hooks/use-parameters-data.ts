@@ -11,6 +11,7 @@ import { Facet } from "@/components/parameters/classification-schema-editor";
 interface Study {
   id: string;
   title: string;
+  description: string | null;
   status: string;
   motivation: string | null;
   researchQuestions: Array<{
@@ -94,6 +95,9 @@ function convertApiFacetToEditorFacet(apiFacet: ApiFacet): Facet {
 }
 
 export interface ParametersFormData {
+  title: string;
+  description: string;
+  status: string;
   motivation: string;
   researchQuestions: ResearchQuestion[];
   inclusionCriteria: Criterion[];
@@ -158,6 +162,9 @@ export function useParametersData(studyId: string): UseParametersDataResult {
     }
 
     return {
+      title: study.title,
+      description: study.description || "",
+      status: study.status,
       motivation: study.motivation || "",
       researchQuestions: study.researchQuestions.map((rq) => ({
         id: rq.id,

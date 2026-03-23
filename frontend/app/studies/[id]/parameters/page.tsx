@@ -31,6 +31,9 @@ export default function ParametersPage() {
   const queryClient = useQueryClient();
 
   // Form state
+  const [title, setTitle] = useState<string>("");
+  const [description, setDescription] = useState<string>("");
+  const [status, setStatus] = useState<string>("DRAFT");
   const [researchQuestions, setResearchQuestions] = useState<ResearchQuestion[]>([]);
   const [inclusionCriteria, setInclusionCriteria] = useState<Criterion[]>([]);
   const [exclusionCriteria, setExclusionCriteria] = useState<Criterion[]>([]);
@@ -38,6 +41,9 @@ export default function ParametersPage() {
   const [motivation, setMotivation] = useState<string>("");
   const [isInitialized, setIsInitialized] = useState(false);
   const [initialState, setInitialState] = useState<{
+    title: string;
+    description: string;
+    status: string;
     motivation: string;
     researchQuestions: ResearchQuestion[];
     inclusionCriteria: Criterion[];
@@ -58,6 +64,9 @@ export default function ParametersPage() {
   // Initialize form state when data is loaded
   useEffect(() => {
     if (initialFormData && !isInitialized && !facetsFetching) {
+      setTitle(initialFormData.title);
+      setDescription(initialFormData.description);
+      setStatus(initialFormData.status);
       setMotivation(initialFormData.motivation);
       setResearchQuestions(initialFormData.researchQuestions);
       setInclusionCriteria(initialFormData.inclusionCriteria);
@@ -72,6 +81,9 @@ export default function ParametersPage() {
   const { tabChanges, showUnsavedDialog, handleConfirmLeave, handleCancelLeave } =
     useUnsavedChanges({
       currentData: {
+        title,
+        description,
+        status,
         motivation,
         researchQuestions,
         inclusionCriteria,
@@ -84,14 +96,17 @@ export default function ParametersPage() {
   // Save mutations
   const { handleSaveTab, isSaving, hasError } = useParametersMutations({
     studyId,
+    title,
+    description,
+    status,
     motivation,
     researchQuestions,
     inclusionCriteria,
     exclusionCriteria,
     facets,
-    onMotivationSaved: (mot) => {
+    onOverviewSaved: (data) => {
       if (initialState) {
-        setInitialState({ ...initialState, motivation: mot });
+        setInitialState({ ...initialState, ...data });
       }
     },
     onResearchQuestionsSaved: (rqs) => {
@@ -141,7 +156,7 @@ export default function ParametersPage() {
 
   // Tab content indicators
   const tabHasContent = {
-    overview: motivation.trim().length > 0,
+    overview: title.trim().length > 0 || motivation.trim().length > 0,
     "research-questions": researchQuestions.some((rq) => rq.question.trim().length > 0),
     criteria:
       inclusionCriteria.some((c) => c.criterion.trim().length > 0) ||
@@ -186,6 +201,12 @@ export default function ParametersPage() {
           {/* Overview Tab */}
           <TabsContent value="overview" className="mt-0">
             <OverviewTab
+              title={title}
+              onTitleChange={setTitle}
+              description={description}
+              onDescriptionChange={setDescription}
+              status={status}
+              onStatusChange={setStatus}
               motivation={motivation}
               onMotivationChange={setMotivation}
               hasChanges={tabChanges.overview}

@@ -7,6 +7,9 @@ import { Facet } from "@/components/parameters/classification-schema-editor";
 import { TabKey } from "@/components/parameters/tabs/tab-config";
 
 export interface FormData {
+  title: string;
+  description: string;
+  status: string;
   motivation: string;
   researchQuestions: ResearchQuestion[];
   inclusionCriteria: Criterion[];
@@ -58,7 +61,11 @@ export function useUnsavedChanges({
     }
 
     return {
-      overview: currentData.motivation !== initialData.motivation,
+      overview:
+        currentData.title !== initialData.title ||
+        currentData.description !== initialData.description ||
+        currentData.status !== initialData.status ||
+        currentData.motivation !== initialData.motivation,
       "research-questions":
         JSON.stringify(currentData.researchQuestions) !==
         JSON.stringify(initialData.researchQuestions),
