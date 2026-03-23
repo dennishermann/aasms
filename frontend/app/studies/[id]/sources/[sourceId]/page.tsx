@@ -196,8 +196,8 @@ export default function SourceDetailPage() {
           )}
 
           {/* Navigation */}
-          <div className="flex items-center justify-between -mb-2">
-            <Button asChild variant="ghost" size="sm" className="-ml-2">
+          <div className="flex items-center justify-between">
+            <Button asChild variant="ghost" size="sm">
               <Link href={backUrl}>← Back to Sources</Link>
             </Button>
             {navIds.length > 1 && currentIndex >= 0 && (

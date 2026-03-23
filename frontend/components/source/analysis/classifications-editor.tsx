@@ -146,7 +146,7 @@ export function ClassificationsEditor({
                     </SelectContent>
                   </Select>
                 ) : (
-                  <div className="space-y-1">
+                  <div className="space-y-2">
                     <Textarea
                       id={categoryId}
                       name={categoryId}
@@ -224,6 +224,7 @@ export function ClassificationsEditor({
             </div>
           );
         })}
+
       </div>
     </CardContent>
   );

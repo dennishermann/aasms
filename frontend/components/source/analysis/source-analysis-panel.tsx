@@ -4,12 +4,12 @@ import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Save, X as XIcon, Edit, Loader2 } from "lucide-react";
+import { Save, X as XIcon, Edit, Loader2, Tags } from "lucide-react";
 import { InclusionExclusionView } from "./inclusion-exclusion-view";
 import { InclusionExclusionEditor } from "./inclusion-exclusion-editor";
 import { ClassificationsView } from "./classifications-view";
 import { ClassificationsEditor } from "./classifications-editor";
-import { AnalysisData, Classification, CriterionEval, Facet } from "./types";
+import { AnalysisData, Classification, CriterionEval, Facet, FacetKeyword } from "./types";
 
 interface SourceAnalysisPanelProps {
   studyId: string;
@@ -46,6 +46,7 @@ export function SourceAnalysisPanel({
 
   const [isEditingInclusion, setIsEditingInclusion] = useState(false);
   const [isEditingClassifications, setIsEditingClassifications] = useState(false);
+  const [isEditingKeywords, setIsEditingKeywords] = useState(false);
 
   const [inclusionRecommendation, setInclusionRecommendation] = useState(
     initialAnalysis.inclusionRecommendation,
@@ -61,6 +62,9 @@ export function SourceAnalysisPanel({
   );
   const [classifications, setClassifications] = useState<Classification[]>(
     initialAnalysis.classifications || [],
+  );
+  const [facetKeywords, setFacetKeywords] = useState<FacetKeyword[]>(
+    initialAnalysis.facetKeywords || [],
   );
   const [relevanceScore, setRelevanceScore] = useState(initialAnalysis.relevanceScore || 0.5);
   const [qualityNotes, setQualityNotes] = useState(initialAnalysis.qualityNotes || "");
@@ -79,12 +83,19 @@ export function SourceAnalysisPanel({
     }
   }, [initialAnalysis, isEditingInclusion]);
 
-  // Keep classifications in sync unless the user is actively editing that section
+  // Keep classifications in sync unless editing
   useEffect(() => {
     if (!isEditingClassifications) {
       setClassifications(initialAnalysis.classifications || []);
     }
   }, [initialAnalysis, isEditingClassifications]);
+
+  // Keep keywords in sync unless editing keywords or classifications
+  useEffect(() => {
+    if (!isEditingClassifications && !isEditingKeywords) {
+      setFacetKeywords(initialAnalysis.facetKeywords || []);
+    }
+  }, [initialAnalysis, isEditingClassifications, isEditingKeywords]);
 
   const inclusionMutation = useMutation({
     mutationFn: async () => {
@@ -128,9 +139,7 @@ export function SourceAnalysisPanel({
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            classifications,
-          }),
+          body: JSON.stringify({ classifications }),
         },
       );
 
@@ -149,6 +158,61 @@ export function SourceAnalysisPanel({
     },
   });
 
+  const keywordMutation = useMutation({
+    mutationFn: async () => {
+      const keywordsByFacet = new Map<string, FacetKeyword[]>();
+      for (const kw of facetKeywords) {
+        const list = keywordsByFacet.get(kw.facetId) || [];
+        list.push(kw);
+        keywordsByFacet.set(kw.facetId, list);
+      }
+
+      // Include facets that had keywords before but now have none (deletions)
+      const initialKeywordFacetIds = new Set(
+        (initialAnalysis.facetKeywords || []).map((kw) => kw.facetId),
+      );
+      for (const facetId of initialKeywordFacetIds) {
+        if (!keywordsByFacet.has(facetId)) {
+          keywordsByFacet.set(facetId, []);
+        }
+      }
+
+      for (const [facetId, keywords] of keywordsByFacet) {
+        const response = await fetch(
+          `/api/studies/${studyId}/sources/${sourceId}/analysis/keywords`,
+          {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              facetId,
+              keywords: keywords.map((kw) => ({
+                keyword: kw.keyword,
+                confidence: kw.confidence,
+                evidence: kw.evidence,
+              })),
+            }),
+          },
+        );
+
+        if (!response.ok) {
+          const error = await response.json().catch(() => ({}));
+          throw new Error(error.error || "Failed to save keywords");
+        }
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["source", studyId, sourceId] });
+      queryClient.invalidateQueries({ queryKey: ["analysis", studyId, sourceId] });
+      setIsEditingKeywords(false);
+      onSuccess?.();
+    },
+  });
+
+  const handleCancelKeywords = () => {
+    setFacetKeywords(initialAnalysis.facetKeywords || []);
+    setIsEditingKeywords(false);
+  };
+
   const handleCancelInclusion = () => {
     setInclusionRecommendation(initialAnalysis.inclusionRecommendation);
     setInclusionReasoning(initialAnalysis.inclusionReasoning);
@@ -163,6 +227,7 @@ export function SourceAnalysisPanel({
 
   const handleCancelClassifications = () => {
     setClassifications(initialAnalysis.classifications || []);
+    setFacetKeywords(initialAnalysis.facetKeywords || []);
     setIsEditingClassifications(false);
   };
 
@@ -252,17 +317,27 @@ export function SourceAnalysisPanel({
               <CardTitle>Classifications</CardTitle>
               <CardDescription>Source categorization by research facets</CardDescription>
             </div>
-            {!isEditingClassifications ? (
-              <Button
-                onClick={() => setIsEditingClassifications(true)}
-                variant="outline"
-                size="sm"
-                disabled={!canEditClassifications || loadingClassifications || !showClassifications}
-              >
-                <Edit className="h-4 w-4 mr-2" />
-                Edit
-              </Button>
-            ) : (
+            {isEditingKeywords ? (
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => keywordMutation.mutate()}
+                  size="sm"
+                  disabled={keywordMutation.isPending || loadingClassifications}
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  {keywordMutation.isPending ? "Saving..." : "Save Keywords"}
+                </Button>
+                <Button
+                  onClick={handleCancelKeywords}
+                  variant="outline"
+                  size="sm"
+                  disabled={keywordMutation.isPending || loadingClassifications}
+                >
+                  <XIcon className="h-4 w-4 mr-2" />
+                  Cancel
+                </Button>
+              </div>
+            ) : isEditingClassifications ? (
               <div className="flex gap-2">
                 <Button
                   onClick={() => classificationMutation.mutate()}
@@ -282,6 +357,27 @@ export function SourceAnalysisPanel({
                   Cancel
                 </Button>
               </div>
+            ) : (
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => setIsEditingKeywords(true)}
+                  variant="outline"
+                  size="sm"
+                  disabled={!canEditClassifications || loadingClassifications}
+                >
+                  <Tags className="h-4 w-4 mr-2" />
+                  Edit Keywords
+                </Button>
+                <Button
+                  onClick={() => setIsEditingClassifications(true)}
+                  variant="outline"
+                  size="sm"
+                  disabled={!canEditClassifications || loadingClassifications}
+                >
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit
+                </Button>
+              </div>
             )}
           </CardHeader>
           {isEditingClassifications ? (
@@ -295,21 +391,24 @@ export function SourceAnalysisPanel({
           ) : (
             <ClassificationsView
               classifications={classifications}
-              facetKeywords={initialAnalysis.facetKeywords}
+              facetKeywords={isEditingKeywords ? facetKeywords : initialAnalysis.facetKeywords}
               facets={facets}
               classificationBasis={initialAnalysis.classificationBasis}
               loading={loadingClassifications}
+              isEditing={isEditingKeywords}
+              onChangeFacetKeywords={isEditingKeywords ? setFacetKeywords : undefined}
             />
           )}
         </Card>
       )}
 
-      {(inclusionMutation.error || classificationMutation.error) && (
+      {(inclusionMutation.error || classificationMutation.error || keywordMutation.error) && (
         <Card>
           <CardContent>
             <p className="text-sm text-destructive">
               {inclusionMutation.error?.message ||
                 classificationMutation.error?.message ||
+                keywordMutation.error?.message ||
                 "Failed to save analysis"}
             </p>
           </CardContent>

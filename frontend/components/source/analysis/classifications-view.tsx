@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { CardContent } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -13,9 +14,22 @@ import {
   Database,
   ShieldCheck,
   Sparkles,
-  Info,
+  Plus,
+  Pencil,
+  X,
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Classification, FacetKeyword, getFacetName, getCategoryDisplay, Facet } from "./types";
+import { KeywordDialog } from "./keyword-dialog";
 import { cn } from "@/lib/utils";
 
 interface ClassificationsViewProps {
@@ -24,6 +38,8 @@ interface ClassificationsViewProps {
   facets?: Facet[]; // All facets from schema to show "Not Set" for missing ones
   classificationBasis?: "FULL_TEXT" | "METADATA_ONLY";
   loading?: boolean;
+  isEditing?: boolean;
+  onChangeFacetKeywords?: (keywords: FacetKeyword[]) => void;
 }
 
 interface KeywordData {
@@ -117,22 +133,60 @@ const MetadataClassificationCard = ({
 const FacetClassificationCard = ({
   facetName,
   facetType,
+  facetId,
   required,
   items,
   keywordData,
   notSet,
+  isEditing,
+  allKeywords,
+  onChangeFacetKeywords,
 }: {
   facetName: string;
   facetType: "CLOSED" | "OPEN" | "OPEN_CODED";
+  facetId: string;
   required: boolean;
   items: ClassificationGroup["items"];
   keywordData?: KeywordData[];
   notSet?: boolean;
+  isEditing?: boolean;
+  allKeywords?: FacetKeyword[];
+  onChangeFacetKeywords?: (keywords: FacetKeyword[]) => void;
 }) => {
   const [expanded, setExpanded] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingKeyword, setEditingKeyword] = useState<FacetKeyword | null>(null);
+  const [deletingKeyword, setDeletingKeyword] = useState<FacetKeyword | null>(null);
+
+  const facetKeywordsForThis = (allKeywords || []).filter((kw) => kw.facetId === facetId);
+  const existingKeywordStrings = facetKeywordsForThis.map((kw) => kw.keyword);
+
+  const handleAddKeyword = (keyword: string) => {
+    if (!onChangeFacetKeywords || !allKeywords) return;
+    const newKw: FacetKeyword = {
+      id: `temp-${Date.now()}-${Math.random()}`,
+      facetId,
+      keyword,
+      confidence: null,
+      evidence: null,
+    };
+    onChangeFacetKeywords([...allKeywords, newKw]);
+  };
+
+  const handleEditKeyword = (keyword: string) => {
+    if (!onChangeFacetKeywords || !allKeywords || !editingKeyword) return;
+    onChangeFacetKeywords(
+      allKeywords.map((kw) => (kw.id === editingKeyword.id ? { ...kw, keyword } : kw)),
+    );
+  };
+
+  const handleDeleteKeyword = (id: string) => {
+    if (!onChangeFacetKeywords || !allKeywords) return;
+    onChangeFacetKeywords(allKeywords.filter((kw) => kw.id !== id));
+  };
 
   // Handle not set case
-  if (notSet) {
+  if (notSet && !isEditing) {
     return (
       <div className="border rounded-lg bg-card overflow-hidden flex flex-col border-dashed">
         <div className="p-4 flex flex-col">
@@ -204,55 +258,158 @@ const FacetClassificationCard = ({
             ))}
         </div>
 
-        {/* Display keywords for OPEN facets with confidence tooltips */}
-        {isOpenWithKeywords && (
-          <TooltipProvider>
-            <div className="mb-3 flex flex-wrap gap-1.5">
-              {keywordData.map((kw, idx) => (
-                <Tooltip key={idx}>
-                  <TooltipTrigger asChild>
-                    <Badge
-                      variant="secondary"
-                      className={cn(
-                        "text-sm px-2.5 py-1 whitespace-normal text-left h-auto font-medium cursor-help",
-                        kw.confidence && kw.confidence > 0.7
-                          ? "bg-green-50 text-green-700 border-green-200"
-                          : kw.confidence && kw.confidence > 0.4
-                            ? "bg-amber-50 text-amber-700 border-amber-200"
-                            : "bg-slate-50 text-slate-700 border-slate-200",
-                        !expanded && "line-clamp-1",
+        {/* Display keywords for OPEN facets */}
+        {(isOpenWithKeywords || (isEditing && (facetType === "OPEN" || facetType === "OPEN_CODED"))) && (
+          <div className="mb-3" onClick={(e) => isEditing && e.stopPropagation()}>
+            <TooltipProvider>
+              <div className="flex flex-wrap gap-1.5">
+                {facetKeywordsForThis.map((kw) => {
+                  const isManual = kw.confidence == null;
+                  return (
+                    <div key={kw.id} className="group relative inline-flex items-center">
+                      {!isEditing && (kw.confidence != null || kw.evidence) ? (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Badge
+                              variant={isManual ? "outline" : "secondary"}
+                              className={cn(
+                                "text-sm px-2.5 py-1 whitespace-normal text-left h-auto font-medium cursor-help",
+                                !isManual && kw.confidence && kw.confidence > 0.7
+                                  ? "bg-green-50 text-green-700 border-green-200"
+                                  : !isManual && kw.confidence && kw.confidence > 0.4
+                                    ? "bg-amber-50 text-amber-700 border-amber-200"
+                                    : !isManual
+                                      ? "bg-slate-50 text-slate-700 border-slate-200"
+                                      : "border-dashed",
+                                !expanded && "line-clamp-1",
+                              )}
+                            >
+                              {kw.keyword}
+                              {kw.confidence != null && (
+                                <span className="ml-1.5 text-[10px] opacity-70 font-mono">
+                                  {Math.round(kw.confidence * 100)}%
+                                </span>
+                              )}
+                            </Badge>
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <div className="space-y-1">
+                              <p className="font-medium">{kw.keyword}</p>
+                              {kw.confidence != null && (
+                                <p className="text-xs text-muted-foreground">
+                                  Confidence: {Math.round(kw.confidence * 100)}%
+                                </p>
+                              )}
+                              {kw.evidence && (
+                                <p className="text-xs text-muted-foreground italic">{kw.evidence}</p>
+                              )}
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      ) : (
+                        <Badge
+                          variant={isManual ? "outline" : "secondary"}
+                          className={cn(
+                            "text-sm px-2.5 py-1 whitespace-normal text-left h-auto font-medium",
+                            !isManual && kw.confidence && kw.confidence > 0.7
+                              ? "bg-green-50 text-green-700 border-green-200"
+                              : !isManual && kw.confidence && kw.confidence > 0.4
+                                ? "bg-amber-50 text-amber-700 border-amber-200"
+                                : !isManual
+                                  ? "bg-slate-50 text-slate-700 border-slate-200"
+                                  : "border-dashed",
+                            !expanded && "line-clamp-1",
+                          )}
+                        >
+                          {kw.keyword}
+                          {kw.confidence != null && (
+                            <span className="ml-1.5 text-[10px] opacity-70 font-mono">
+                              {Math.round(kw.confidence * 100)}%
+                            </span>
+                          )}
+                        </Badge>
                       )}
-                    >
-                      {kw.keyword}
-                      {kw.confidence != null && (
-                        <span className="ml-1.5 text-[10px] opacity-70 font-mono">
-                          {Math.round(kw.confidence * 100)}%
-                        </span>
-                      )}
-                    </Badge>
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-xs">
-                    <div className="space-y-1">
-                      <p className="font-medium">{kw.keyword}</p>
-                      {kw.confidence != null && (
-                        <p className="text-xs text-muted-foreground">
-                          Confidence: {Math.round(kw.confidence * 100)}%
-                        </p>
-                      )}
-                      {kw.evidence && (
-                        <p className="text-xs text-muted-foreground italic">{kw.evidence}</p>
-                      )}
-                      {!kw.evidence && !kw.confidence && (
-                        <p className="text-xs text-muted-foreground italic">
-                          No additional information
-                        </p>
+                      {isEditing && (
+                        <div className="inline-flex ml-0.5 gap-0.5">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingKeyword(kw);
+                              setDialogOpen(true);
+                            }}
+                            className="rounded-full p-0.5 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                            title="Edit keyword"
+                          >
+                            <Pencil className="h-3 w-3" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDeletingKeyword(kw)}
+                            className="rounded-full p-0.5 hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                            title="Remove keyword"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
                       )}
                     </div>
-                  </TooltipContent>
-                </Tooltip>
-              ))}
-            </div>
-          </TooltipProvider>
+                  );
+                })}
+                {isEditing && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 px-2 text-xs gap-1"
+                    onClick={() => {
+                      setEditingKeyword(null);
+                      setDialogOpen(true);
+                    }}
+                  >
+                    <Plus className="h-3 w-3" />
+                    Add
+                  </Button>
+                )}
+              </div>
+            </TooltipProvider>
+            <KeywordDialog
+              open={dialogOpen}
+              onOpenChange={(open) => {
+                setDialogOpen(open);
+                if (!open) setEditingKeyword(null);
+              }}
+              initialKeyword={editingKeyword?.keyword}
+              confidence={editingKeyword?.confidence}
+              evidence={editingKeyword?.evidence}
+              existingKeywords={existingKeywordStrings}
+              onSave={editingKeyword ? handleEditKeyword : handleAddKeyword}
+              onDelete={editingKeyword ? () => handleDeleteKeyword(editingKeyword.id) : undefined}
+            />
+            <AlertDialog
+              open={!!deletingKeyword}
+              onOpenChange={(open) => { if (!open) setDeletingKeyword(null); }}
+            >
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Remove keyword</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to remove &ldquo;{deletingKeyword?.keyword}&rdquo;?
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => {
+                      if (deletingKeyword) handleDeleteKeyword(deletingKeyword.id);
+                      setDeletingKeyword(null);
+                    }}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Remove
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
         )}
 
         {/* Display categories for CLOSED/OPEN_CODED facets */}
@@ -365,6 +522,8 @@ export function ClassificationsView({
   facets = [],
   classificationBasis,
   loading = false,
+  isEditing = false,
+  onChangeFacetKeywords,
 }: ClassificationsViewProps) {
   const hasClassifications = classifications && classifications.length > 0;
   const hasKeywords = facetKeywords && facetKeywords.length > 0;
@@ -528,10 +687,14 @@ export function ClassificationsView({
                 key={group.facetId}
                 facetName={group.facetName}
                 facetType={group.facetType}
+                facetId={group.facetId}
                 required={group.required}
                 items={group.items}
                 keywordData={group.keywordData}
                 notSet={!hasData}
+                isEditing={isEditing}
+                allKeywords={facetKeywords}
+                onChangeFacetKeywords={onChangeFacetKeywords}
               />
             );
           })}
