@@ -444,7 +444,7 @@ export function CodingWizard({
                     <div className="flex-1 flex flex-col min-w-0">
                       {searchQuery && filteredValues ? (
                         // Search Results
-                        <div className="flex-1 flex flex-col">
+                        <div className="flex-1 flex flex-col min-h-0">
                           <div className="px-4 py-2 bg-muted/20 border-b flex items-center justify-between">
                             <span className="text-sm font-medium text-muted-foreground">
                               Search Results ({filteredValues.length})
@@ -466,12 +466,12 @@ export function CodingWizard({
                               </div>
                             ) : (
                               <div className="space-y-3">
-                                {filteredValues.map(({ value, category }) => (
+                                {filteredValues.map(({ value, category }, i) => (
                                   <div
-                                    key={`${category}::${value}`}
+                                    key={`${category}::${value}::${i}`}
                                     className="flex items-center gap-2"
                                   >
-                                    <DraggableValue value={value} categoryId={category} />
+                                    <DraggableValue value={value} categoryId={category} index={i} />
                                     <span className="text-xs text-muted-foreground">
                                       in{" "}
                                       {category === "__uncategorized__" ? "Unassigned" : category}
@@ -484,7 +484,7 @@ export function CodingWizard({
                         </div>
                       ) : selectedCategoryId === "__uncategorized__" ? (
                         // Uncategorized Values
-                        <div className="flex-1 flex flex-col">
+                        <div className="flex-1 flex flex-col min-h-0">
                           <div className="px-4 py-3 border-b flex items-center gap-2">
                             <AlertCircle className="h-5 w-5 text-amber-600" />
                             <h2 className="text-lg font-semibold text-amber-800 dark:text-amber-200">
@@ -497,11 +497,12 @@ export function CodingWizard({
                           <ScrollArea className="flex-1">
                             <DroppableCategory id="__uncategorized__" className="p-4 min-h-[200px]">
                               <div className="flex flex-wrap gap-2">
-                                {uncategorized.map((v) => (
+                                {uncategorized.map((v, i) => (
                                   <DraggableValue
-                                    key={v}
+                                    key={`${v}-${i}`}
                                     value={v}
                                     categoryId="__uncategorized__"
+                                    index={i}
                                   />
                                 ))}
                               </div>
@@ -510,7 +511,7 @@ export function CodingWizard({
                         </div>
                       ) : selectedCategory ? (
                         // Category Detail View
-                        <div className="flex-1 flex flex-col">
+                        <div className="flex-1 flex flex-col min-h-0">
                           <div className="px-4 py-3 border-b flex items-center justify-between gap-4">
                             {editingCategory === selectedCategory.name ? (
                               <div className="flex-1 space-y-2">
@@ -587,11 +588,12 @@ export function CodingWizard({
                                 </div>
                               ) : (
                                 <div className="flex flex-wrap gap-2">
-                                  {selectedCategory.values.map((v) => (
+                                  {selectedCategory.values.map((v, i) => (
                                     <DraggableValue
-                                      key={v}
+                                      key={`${v}-${i}`}
                                       value={v}
                                       categoryId={selectedCategory.name}
+                                      index={i}
                                     />
                                   ))}
                                 </div>

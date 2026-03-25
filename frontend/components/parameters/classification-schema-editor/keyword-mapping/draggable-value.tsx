@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 interface DraggableValueProps {
   value: string;
   categoryId: string;
+  index?: number;
   className?: string;
 }
 
@@ -16,8 +17,8 @@ interface DraggableValueProps {
  * Used by Coding Wizard where values are just strings (not KeywordMapping objects).
  * The drag ID is constructed as `categoryId::value` to identify both source and value.
  */
-export function DraggableValue({ value, categoryId, className }: DraggableValueProps) {
-  const dragId = `${categoryId}::${value}`;
+export function DraggableValue({ value, categoryId, index, className }: DraggableValueProps) {
+  const dragId = index != null ? `${categoryId}::${value}::${index}` : `${categoryId}::${value}`;
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: dragId });
 
   const style = transform ? { transform: CSS.Translate.toString(transform) } : undefined;
