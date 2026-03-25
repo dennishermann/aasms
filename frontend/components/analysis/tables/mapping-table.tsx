@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useReactTable, getCoreRowModel, flexRender, ColumnDef } from "@tanstack/react-table";
 import { Card, CardContent, CardHeader, CardTitle, CardAction } from "@/components/ui/card";
 import {
-  Table,
   TableBody,
   TableCell,
   TableHead,
@@ -90,7 +89,7 @@ export function MappingTable({
           const isExpanded = expandedRows.has(source.id);
 
           return (
-            <div className="space-y-1 max-w-md">
+            <div className="space-y-1">
               <div className="flex items-start justify-between gap-2">
                 <button
                   onClick={() => toggleRowExpand(source.id)}
@@ -143,7 +142,7 @@ export function MappingTable({
         id: `facet_${facetId}`,
         header: () => (
           <div className="text-center">
-            <div className="font-medium truncate max-w-24" title={facet.name}>
+            <div className="font-medium text-xs" title={facet.name}>
               {facet.name}
             </div>
           </div>
@@ -155,9 +154,9 @@ export function MappingTable({
           }
 
           return (
-            <div className="flex flex-wrap gap-1 justify-center">
+            <div className="flex flex-wrap gap-1">
               {classifications.map((value, idx) => (
-                <Badge key={idx} variant="secondary" className="text-xs">
+                <Badge key={idx} variant="secondary" className="text-xs !whitespace-normal !overflow-visible">
                   {value}
                 </Badge>
               ))}
@@ -240,16 +239,22 @@ export function MappingTable({
           </div>
         ) : (
           <>
-            <div className="rounded-md border overflow-x-auto max-h-[600px] relative">
-              <Table className="text-sm">
+            <div className="rounded-md border overflow-auto max-h-[70vh]">
+              <table className="text-sm border-collapse min-w-full">
+                <colgroup>
+                  <col style={{ width: '350px', minWidth: '350px' }} />
+                  {selectedFacetIds.map(id => (
+                    <col key={id} style={{ width: '220px', minWidth: '220px' }} />
+                  ))}
+                </colgroup>
                 <TableHeader className="sticky top-0 bg-muted/95 backdrop-blur-sm z-10 shadow-sm">
                   {table.getHeaderGroups().map((headerGroup) => (
                     <TableRow key={headerGroup.id} className="hover:bg-transparent">
                       {headerGroup.headers.map((header, index) => (
                         <TableHead
                           key={header.id}
-                          className={`text-center whitespace-nowrap font-semibold py-2 px-3 ${
-                            index === 0 ? "text-left sticky left-0 bg-muted/95 z-20" : ""
+                          className={`text-center font-semibold py-2 px-3 !whitespace-normal ${
+                            index === 0 ? "text-left" : ""
                           }`}
                         >
                           {header.isPlaceholder
@@ -269,8 +274,8 @@ export function MappingTable({
                       {row.getVisibleCells().map((cell, cellIndex) => (
                         <TableCell
                           key={cell.id}
-                          className={`align-top py-2 px-3 ${
-                            cellIndex === 0 ? "font-medium sticky left-0 bg-inherit" : ""
+                          className={`align-top py-2 px-3 !whitespace-normal ${
+                            cellIndex === 0 ? "font-medium" : ""
                           }`}
                         >
                           {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -279,7 +284,7 @@ export function MappingTable({
                     </TableRow>
                   ))}
                 </TableBody>
-              </Table>
+              </table>
             </div>
 
             {/* Pagination Controls */}
