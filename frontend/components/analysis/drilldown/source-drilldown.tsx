@@ -13,17 +13,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  Download,
-  ExternalLink,
-  ChevronDown,
-  ChevronUp,
-  FileText,
-  Calendar,
-  Users,
-  Building,
-} from "lucide-react";
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Download, ExternalLink } from "lucide-react";
 
 interface SourceInfo {
   id: string;
@@ -65,114 +62,9 @@ function formatAuthors(authors: string[]): string {
 }
 
 function formatYear(dateString: string | null): string {
-  if (!dateString) return "N/A";
+  if (!dateString) return "—";
   const date = new Date(dateString);
   return date.getFullYear().toString();
-}
-
-function SourceCard({ source, studyId }: { source: SourceInfo; studyId: string }) {
-  const [showAbstract, setShowAbstract] = useState(false);
-
-  return (
-    <div className="border rounded-lg p-5 hover:bg-muted/30 transition-colors bg-card">
-      {/* Header: Title + View Button */}
-      <div className="flex items-start gap-4 mb-4">
-        <div className="flex-1 min-w-0">
-          <Link
-            href={`/studies/${studyId}/sources/${source.id}`}
-            target="_blank"
-            className="text-base font-semibold text-primary hover:underline block leading-snug"
-          >
-            {source.title}
-          </Link>
-        </div>
-        <Link href={`/studies/${studyId}/sources/${source.id}`} target="_blank">
-          <Button variant="default" size="sm" className="shrink-0">
-            <ExternalLink className="h-4 w-4 mr-2" />
-            View Details
-          </Button>
-        </Link>
-      </div>
-
-      {/* Metadata Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 text-sm mb-4">
-        <div className="flex items-start gap-2">
-          <Users className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-          <div>
-            <p className="text-xs text-muted-foreground uppercase tracking-wide">Authors</p>
-            <p className="font-medium">{formatAuthors(source.authors)}</p>
-          </div>
-        </div>
-        <div className="flex items-start gap-2">
-          <Calendar className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-          <div>
-            <p className="text-xs text-muted-foreground uppercase tracking-wide">Year</p>
-            <p className="font-medium font-mono">{formatYear(source.publicationDate)}</p>
-          </div>
-        </div>
-        <div className="flex items-start gap-2">
-          <Building className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-          <div>
-            <p className="text-xs text-muted-foreground uppercase tracking-wide">Venue</p>
-            <p className="font-medium">{source.venue || "—"}</p>
-          </div>
-        </div>
-        <div className="flex items-start gap-2">
-          <FileText className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-          <div>
-            <p className="text-xs text-muted-foreground uppercase tracking-wide">Type</p>
-            <div className="flex items-center gap-2">
-              <Badge variant={source.sourceCategory === "FORMAL" ? "default" : "secondary"}>
-                {source.sourceCategory === "FORMAL" ? "Formal" : "Grey"}
-              </Badge>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* DOI */}
-      {source.doi && (
-        <div className="mb-3">
-          <a
-            href={`https://doi.org/${source.doi}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm text-blue-600 hover:underline inline-flex items-center gap-1"
-          >
-            <span className="font-mono">DOI: {source.doi}</span>
-            <ExternalLink className="h-3 w-3" />
-          </a>
-        </div>
-      )}
-
-      {/* Abstract */}
-      {source.abstract && (
-        <div className="border-t pt-3">
-          <button
-            onClick={() => setShowAbstract(!showAbstract)}
-            className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1 font-medium"
-          >
-            {showAbstract ? (
-              <>
-                <ChevronUp className="h-4 w-4" />
-                Hide Abstract
-              </>
-            ) : (
-              <>
-                <ChevronDown className="h-4 w-4" />
-                Show Abstract
-              </>
-            )}
-          </button>
-          {showAbstract && (
-            <p className="text-sm text-muted-foreground mt-3 leading-relaxed bg-muted/50 p-4 rounded-md">
-              {source.abstract}
-            </p>
-          )}
-        </div>
-      )}
-    </div>
-  );
 }
 
 export function SourceDrilldown({
@@ -239,7 +131,7 @@ export function SourceDrilldown({
         className="!max-w-5xl !w-[90vw] max-h-[90vh] overflow-hidden flex flex-col"
         showCloseButton={false}
       >
-        <DialogHeader className="pb-4 border-b">
+        <DialogHeader className="pb-4 border-b shrink-0">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1">
               <DialogTitle className="text-xl">{title}</DialogTitle>
@@ -278,42 +170,96 @@ export function SourceDrilldown({
           </div>
         </DialogHeader>
 
-        {/* Content */}
-        <ScrollArea className="flex-1 pr-4 -mr-4">
-          <div className="py-4">
-            {isLoading ? (
-              <div className="space-y-4">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="border rounded-lg p-5">
-                    <Skeleton className="h-6 w-3/4 mb-4" />
-                    <div className="grid grid-cols-4 gap-4">
-                      <Skeleton className="h-12" />
-                      <Skeleton className="h-12" />
-                      <Skeleton className="h-12" />
-                      <Skeleton className="h-12" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : error ? (
-              <div className="text-center py-16 text-destructive">
-                <p className="text-lg font-medium">Failed to load sources</p>
-                <p className="text-sm mt-1">Please try again later</p>
-              </div>
-            ) : sources && sources.length > 0 ? (
-              <div className="space-y-4">
-                {sources.map((source) => (
-                  <SourceCard key={source.id} source={source} studyId={studyId} />
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-16 text-muted-foreground">
-                <p className="text-lg font-medium">No sources found</p>
-                <p className="text-sm mt-1">This category combination has no matching sources</p>
-              </div>
-            )}
-          </div>
-        </ScrollArea>
+        <div className="flex-1 min-h-0 overflow-y-auto">
+          {isLoading ? (
+            <div className="space-y-2 p-4">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Skeleton key={i} className="h-12 w-full" />
+              ))}
+            </div>
+          ) : error ? (
+            <div className="text-center py-16 text-destructive">
+              <p className="text-lg font-medium">Failed to load sources</p>
+              <p className="text-sm mt-1">Please try again later</p>
+            </div>
+          ) : sources && sources.length > 0 ? (
+            <div className="rounded-md border">
+              <table className="text-sm border-collapse min-w-full">
+                <colgroup>
+                  <col style={{ width: "45%", minWidth: "300px" }} />
+                  <col style={{ width: "20%", minWidth: "150px" }} />
+                  <col style={{ width: "6%", minWidth: "60px" }} />
+                  <col style={{ width: "22%", minWidth: "150px" }} />
+                  <col style={{ width: "7%", minWidth: "70px" }} />
+                </colgroup>
+                <TableHeader className="sticky top-0 bg-muted/95 backdrop-blur-sm z-10 shadow-sm">
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="text-left font-semibold py-2 px-3 !whitespace-normal">
+                      Source
+                    </TableHead>
+                    <TableHead className="text-left font-semibold py-2 px-3 !whitespace-normal">
+                      Authors
+                    </TableHead>
+                    <TableHead className="text-center font-semibold py-2 px-3">Year</TableHead>
+                    <TableHead className="text-left font-semibold py-2 px-3 !whitespace-normal">
+                      Venue
+                    </TableHead>
+                    <TableHead className="text-center font-semibold py-2 px-3">Type</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {sources.map((source, rowIndex) => (
+                    <TableRow
+                      key={source.id}
+                      className={`hover:bg-muted/50 transition-colors ${
+                        rowIndex % 2 === 0 ? "bg-background" : "bg-muted/30"
+                      }`}
+                    >
+                      <TableCell className="align-top py-2 px-3 !whitespace-normal">
+                        <div className="flex items-start justify-between gap-2">
+                          <Link
+                            href={`/studies/${studyId}/sources/${source.id}`}
+                            target="_blank"
+                            className="font-medium hover:underline line-clamp-2"
+                          >
+                            {source.title}
+                          </Link>
+                          <Link href={`/studies/${studyId}/sources/${source.id}`} target="_blank">
+                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0 shrink-0">
+                              <ExternalLink className="h-3 w-3" />
+                            </Button>
+                          </Link>
+                        </div>
+                      </TableCell>
+                      <TableCell className="align-top py-2 px-3 !whitespace-normal text-muted-foreground">
+                        {formatAuthors(source.authors)}
+                      </TableCell>
+                      <TableCell className="align-top py-2 px-3 text-center font-mono">
+                        {formatYear(source.publicationDate)}
+                      </TableCell>
+                      <TableCell className="align-top py-2 px-3 !whitespace-normal text-muted-foreground">
+                        {source.venue || "—"}
+                      </TableCell>
+                      <TableCell className="align-top py-2 px-3 text-center">
+                        <Badge
+                          variant={source.sourceCategory === "FORMAL" ? "default" : "secondary"}
+                          className="text-xs"
+                        >
+                          {source.sourceCategory === "FORMAL" ? "Formal" : "Grey"}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </table>
+            </div>
+          ) : (
+            <div className="text-center py-16 text-muted-foreground">
+              <p className="text-lg font-medium">No sources found</p>
+              <p className="text-sm mt-1">This category combination has no matching sources</p>
+            </div>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );
